@@ -8,8 +8,37 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { FileText, Users, Package, TrendingUp, FolderOpen, ShoppingCart, ArrowRight, Clock } from "lucide-react";
+import {
+  FileText,
+  Users,
+  Package,
+  FolderOpen,
+  ShoppingCart,
+  ArrowRight,
+  Clock,
+  Plus,
+  Upload,
+  UserPlus,
+  ChevronRight,
+} from "lucide-react";
 import Link from "next/link";
+
+function getFechaHoy(): string {
+  const fecha = new Date().toLocaleDateString("es-CL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  return fecha.charAt(0).toUpperCase() + fecha.slice(1);
+}
+
+function getGreeting(): string {
+  const hora = new Date().getHours();
+  if (hora < 12) return "Buenos días";
+  if (hora < 19) return "Buenas tardes";
+  return "Buenas noches";
+}
 
 async function getDashboardStats() {
   const [
@@ -77,25 +106,25 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Saludo */}
       <div>
-        <h1 className="text-2xl font-bold text-[#253158]">Dashboard</h1>
-        <p className="text-gray-500 text-sm mt-1">
-          Bienvenido, {session.nombre}
-        </p>
+        <p className="text-xs text-gray-400 mb-1">{getFechaHoy()}</p>
+        <h1 className="text-2xl font-bold text-[#253158]">
+          {getGreeting()}, {session.nombre}
+        </h1>
       </div>
 
       {/* Accesos principales */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Facturas */}
         <Link href="/facturas" className="group block">
           <div className="bg-white border border-gray-200 rounded-xl p-5 hover:border-[#253158] hover:shadow-md transition-all duration-200 h-full">
             <div className="flex items-start justify-between mb-4">
               <div className="p-2.5 bg-[#253158]/10 rounded-lg">
-                <FileText className="h-6 w-6 text-[#253158]" />
+                <FileText className="h-7 w-7 text-[#253158]" />
               </div>
               <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-[#253158] group-hover:translate-x-0.5 transition-all" />
             </div>
-            <p className="text-2xl font-bold text-[#253158]">{stats.totalFacturas}</p>
+            <p className="text-3xl font-bold text-[#253158]">{stats.totalFacturas}</p>
             <p className="text-sm font-semibold text-gray-700 mt-0.5">Facturas</p>
             {(stats.facturasCreadas + stats.facturasEnviadas) > 0 ? (
               <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
@@ -108,16 +137,15 @@ export default async function DashboardPage() {
           </div>
         </Link>
 
-        {/* Órdenes de Compra */}
         <Link href="/ordenes-compra" className="group block">
           <div className="bg-white border border-gray-200 rounded-xl p-5 hover:border-[#253158] hover:shadow-md transition-all duration-200 h-full">
             <div className="flex items-start justify-between mb-4">
               <div className="p-2.5 bg-[#253158]/10 rounded-lg">
-                <ShoppingCart className="h-6 w-6 text-[#253158]" />
+                <ShoppingCart className="h-7 w-7 text-[#253158]" />
               </div>
               <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-[#253158] group-hover:translate-x-0.5 transition-all" />
             </div>
-            <p className="text-2xl font-bold text-[#253158]">{stats.totalOC}</p>
+            <p className="text-3xl font-bold text-[#253158]">{stats.totalOC}</p>
             <p className="text-sm font-semibold text-gray-700 mt-0.5">Órdenes de Compra</p>
             {stats.ocPendientes > 0 ? (
               <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
@@ -132,16 +160,15 @@ export default async function DashboardPage() {
           </div>
         </Link>
 
-        {/* Documentos */}
         <Link href="/documentos" className="group block">
           <div className="bg-white border border-gray-200 rounded-xl p-5 hover:border-[#253158] hover:shadow-md transition-all duration-200 h-full">
             <div className="flex items-start justify-between mb-4">
               <div className="p-2.5 bg-[#253158]/10 rounded-lg">
-                <FolderOpen className="h-6 w-6 text-[#253158]" />
+                <FolderOpen className="h-7 w-7 text-[#253158]" />
               </div>
               <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-[#253158] group-hover:translate-x-0.5 transition-all" />
             </div>
-            <p className="text-2xl font-bold text-[#253158]">{stats.totalDocumentos}</p>
+            <p className="text-3xl font-bold text-[#253158]">{stats.totalDocumentos}</p>
             <p className="text-sm font-semibold text-gray-700 mt-0.5">Documentos</p>
             <p className="text-xs text-gray-400 mt-2">
               {stats.totalDocumentos === 1 ? "archivo registrado" : "archivos registrados"}
@@ -150,84 +177,116 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      {/* Métricas principales */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">
-              Total Facturas
-            </CardTitle>
-            <FileText className="h-4 w-4 text-[#253158]" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-[#253158]">
-              {stats.totalFacturas}
-            </p>
-          </CardContent>
-        </Card>
+      {/* Acciones rápidas */}
+      <div className="bg-[#253158] rounded-xl p-5">
+        <p className="text-xs font-semibold tracking-widest uppercase text-white/50 mb-4">
+          Acciones rápidas
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Link
+            href="/facturas/nueva"
+            className="flex items-center gap-3 bg-white/20 hover:bg-white/30 rounded-lg px-4 py-3 transition-colors"
+          >
+            <div className="p-1.5 bg-white/20 rounded-md flex-shrink-0">
+              <Plus className="h-5 w-5 text-white" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-white leading-tight">Crear factura</p>
+              <p className="text-xs text-white/60 leading-tight mt-0.5">Asistente paso a paso</p>
+            </div>
+          </Link>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">
-              Pendientes
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-yellow-600">
-              {stats.facturasCreadas + stats.facturasEnviadas}
-            </p>
-            <p className="text-xs text-gray-400 mt-1">
-              {stats.facturasCreadas} creadas · {stats.facturasEnviadas} enviadas
-            </p>
-          </CardContent>
-        </Card>
+          <Link
+            href="/ordenes-compra/nueva"
+            className="flex items-center gap-3 bg-white/10 hover:bg-white/20 rounded-lg px-4 py-3 transition-colors"
+          >
+            <div className="p-1.5 bg-white/10 rounded-md flex-shrink-0">
+              <ShoppingCart className="h-4 w-4 text-white" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-white leading-tight">Nueva OC</p>
+              <p className="text-xs text-white/60 leading-tight mt-0.5">Para tus proveedores</p>
+            </div>
+          </Link>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">
-              Clientes Activos
-            </CardTitle>
-            <Users className="h-4 w-4 text-[#253158]" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-[#253158]">
-              {stats.totalClientes}
-            </p>
-          </CardContent>
-        </Card>
+          <Link
+            href="/documentos"
+            className="flex items-center gap-3 bg-white/10 hover:bg-white/20 rounded-lg px-4 py-3 transition-colors"
+          >
+            <div className="p-1.5 bg-white/10 rounded-md flex-shrink-0">
+              <Upload className="h-4 w-4 text-white" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-white leading-tight">Subir documento</p>
+              <p className="text-xs text-white/60 leading-tight mt-0.5">Contrato, guía…</p>
+            </div>
+          </Link>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">
-              Productos Activos
-            </CardTitle>
-            <Package className="h-4 w-4 text-[#253158]" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-[#253158]">
-              {stats.totalProductos}
-            </p>
-          </CardContent>
-        </Card>
+          <Link
+            href="/clientes/nuevo"
+            className="flex items-center gap-3 bg-white/10 hover:bg-white/20 rounded-lg px-4 py-3 transition-colors"
+          >
+            <div className="p-1.5 bg-white/10 rounded-md flex-shrink-0">
+              <UserPlus className="h-4 w-4 text-white" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-white leading-tight">Nuevo cliente</p>
+              <p className="text-xs text-white/60 leading-tight mt-0.5">Empresa o persona</p>
+            </div>
+          </Link>
+        </div>
       </div>
 
-      {/* Estados de factura */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* KPIs compactos */}
+      <div className="flex flex-wrap gap-2">
         {[
-          { label: "Creadas", value: stats.facturasCreadas, color: "bg-blue-50 border-blue-200 text-blue-700" },
-          { label: "Enviadas", value: stats.facturasEnviadas, color: "bg-yellow-50 border-yellow-200 text-yellow-700" },
-          { label: "Pagadas", value: stats.facturasPagadas, color: "bg-green-50 border-green-200 text-green-700" },
-          { label: "Anuladas", value: stats.facturasAnuladas, color: "bg-red-50 border-red-200 text-red-600" },
-        ].map((item) => (
+          {
+            icon: Clock,
+            label: "Pendientes de pago",
+            value: stats.facturasCreadas + stats.facturasEnviadas,
+            accent: (stats.facturasCreadas + stats.facturasEnviadas) > 0,
+          },
+          { icon: Users, label: "Clientes activos", value: stats.totalClientes, accent: false },
+          { icon: Package, label: "Productos activos", value: stats.totalProductos, accent: false },
+          {
+            icon: ShoppingCart,
+            label: "OC en curso",
+            value: stats.ocPendientes,
+            accent: stats.ocPendientes > 0,
+          },
+        ].map(({ icon: Icon, label, value, accent }) => (
           <div
-            key={item.label}
-            className={`border rounded-lg p-4 text-center ${item.color}`}
+            key={label}
+            className="flex items-center gap-2.5 bg-white border border-gray-200 rounded-lg px-4 py-2.5"
           >
-            <p className="text-2xl font-bold">{item.value}</p>
-            <p className="text-sm font-medium mt-1">{item.label}</p>
+            <Icon className={`h-4 w-4 flex-shrink-0 ${accent ? "text-amber-500" : "text-[#253158]"}`} />
+            <span className="text-sm text-gray-500">{label}</span>
+            <span className={`text-sm font-bold ${accent ? "text-amber-600" : "text-[#253158]"}`}>
+              {value}
+            </span>
           </div>
         ))}
+      </div>
+
+      {/* Estado de facturas */}
+      <div className="bg-white border border-gray-200 rounded-xl p-5">
+        <p className="text-sm font-semibold text-[#253158] mb-4">Estado de facturas</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { label: "Creadas", value: stats.facturasCreadas, color: "bg-blue-50 border-blue-200 text-blue-700" },
+            { label: "Enviadas", value: stats.facturasEnviadas, color: "bg-yellow-50 border-yellow-200 text-yellow-700" },
+            { label: "Pagadas", value: stats.facturasPagadas, color: "bg-green-50 border-green-200 text-green-700" },
+            { label: "Anuladas", value: stats.facturasAnuladas, color: "bg-red-50 border-red-200 text-[#c6352e]" },
+          ].map((item) => (
+            <div
+              key={item.label}
+              className={`border rounded-lg p-3 text-center ${item.color}`}
+            >
+              <p className="text-xl font-bold">{item.value}</p>
+              <p className="text-xs font-medium mt-0.5">{item.label}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Últimas facturas */}
@@ -243,39 +302,67 @@ export default async function DashboardPage() {
             Ver todas →
           </Link>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {stats.ultimasFacturas.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-4">
+            <p className="text-gray-400 text-sm text-center py-8 px-6">
               No hay facturas aún
             </p>
           ) : (
-            <div className="space-y-3">
-              {stats.ultimasFacturas.map((inv) => (
-                <Link
-                  key={inv.id}
-                  href={`/facturas/${inv.id}`}
-                  className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">
-                      #{inv.numero_factura}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {inv.client.nombre}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-gray-800">
-                      {formatCurrency(Number(inv.total), inv.moneda as "CLP" | "USD" | "UF")}
-                    </p>
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${estadoBadge[inv.estado]}`}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-6 py-3">
+                      N° Factura
+                    </th>
+                    <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">
+                      Cliente
+                    </th>
+                    <th className="text-right text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">
+                      Total
+                    </th>
+                    <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">
+                      Estado
+                    </th>
+                    <th className="w-8 px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {stats.ultimasFacturas.map((inv) => (
+                    <tr
+                      key={inv.id}
+                      className="hover:bg-gray-50 transition-colors"
                     >
-                      {inv.estado}
-                    </span>
-                  </div>
-                </Link>
-              ))}
+                      <td className="px-6 py-3.5">
+                        <Link
+                          href={`/facturas/${inv.id}`}
+                          className="font-mono text-xs font-medium text-gray-800 hover:text-[#253158]"
+                        >
+                          #{inv.numero_factura}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3.5 text-gray-600 max-w-[180px] truncate">
+                        {inv.client.nombre}
+                      </td>
+                      <td className="px-4 py-3.5 text-right font-semibold text-gray-800 font-mono text-xs">
+                        {formatCurrency(Number(inv.total), inv.moneda as "CLP" | "USD" | "UF")}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full font-medium ${estadoBadge[inv.estado] ?? "bg-gray-100 text-gray-600"}`}
+                        >
+                          {inv.estado}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <Link href={`/facturas/${inv.id}`}>
+                          <ChevronRight className="h-4 w-4 text-gray-300" />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>

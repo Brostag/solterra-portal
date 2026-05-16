@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   DropdownMenu,
@@ -19,6 +19,26 @@ const rolLabels: Record<Rol, string> = {
   USUARIO: "Usuario",
 };
 
+const pageTitles: Record<string, string> = {
+  "/dashboard": "Dashboard",
+  "/facturas": "Facturas",
+  "/clientes": "Clientes",
+  "/productos": "Productos",
+  "/documentos": "Documentos",
+  "/proveedores": "Proveedores",
+  "/ordenes-compra": "Órdenes de Compra",
+  "/configuracion": "Configuración",
+  "/usuarios": "Usuarios",
+  "/auditoria": "Auditoría",
+};
+
+function getPageTitle(pathname: string): string {
+  const match = Object.entries(pageTitles).find(([key]) =>
+    pathname === key || pathname.startsWith(`${key}/`)
+  );
+  return match?.[1] ?? "Portal";
+}
+
 interface TopbarProps {
   nombre: string;
   email: string;
@@ -27,6 +47,8 @@ interface TopbarProps {
 
 export default function Topbar({ nombre, email, rol }: TopbarProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const pageTitle = getPageTitle(pathname);
 
   async function handleLogout() {
     const supabase = createClient();
@@ -37,8 +59,9 @@ export default function Topbar({ nombre, email, rol }: TopbarProps) {
 
   return (
     <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#253158]/10 text-[#253158]">
+      <div className="flex items-center gap-3">
+        <h2 className="text-base font-semibold text-[#253158]">{pageTitle}</h2>
+        <span className="hidden sm:inline text-xs font-medium px-2 py-0.5 rounded-full bg-[#253158]/10 text-[#253158]">
           {rolLabels[rol]}
         </span>
       </div>

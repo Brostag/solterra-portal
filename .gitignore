@@ -41,14 +41,20 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# design reference (temporary, do not commit)
+claude desing/
+
 # qa / playwright artifacts
 .playwright-mcp/
 test-results/
 playwright-report/
 qa-screenshots/
 qa-files/
+qa-tests/
 qa_*.mjs
 qa-*.mjs
+qa-report.json
+playwright.config.ts
 
 # claude / mcp local config
 .claude/
