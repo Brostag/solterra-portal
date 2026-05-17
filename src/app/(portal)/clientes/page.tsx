@@ -1,82 +1,149 @@
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth/session";
+import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead,
+  TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Eye } from "lucide-react";
+import { Plus, Search, Eye, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-export default async function ClientesPage() {
+type FiltroActivo = "activos" | "inactivos";
+
+interface Props {
+  searchParams: Promise<{ q?: string; filtro?: string }>;
+}
+
+export default async function ClientesPage({ searchParams }: Props) {
+  const session = await getSession();
+  if (!session) redirect("/login");
+
+  const { q, filtro } = await searchParams;
+  const query = q?.trim() ?? "";
+  const filtroActivo: FiltroActivo | undefined =
+    filtro === "activos" || filtro === "inactivos" ? filtro : undefined;
+
   const clients = await prisma.client.findMany({
-    orderBy: { created_at: "desc" },
+    where: {
+      ...(filtroActivo === "activos" ? { activo: true } : filtroActivo === "inactivos" ? { activo: false } : {}),
+      ...(query
+        ? {
+            OR: [
+              { nombre: { contains: query, mode: "insensitive" } },
+              { rut: { contains: query, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    },
+    orderBy: { nombre: "asc" },
+    include: { _count: { select: { invoices: true } } },
   });
+
+  const totalActivos = await prisma.client.count({ where: { activo: true } });
+  const totalInactivos = await prisma.client.count({ where: { activo: false } });
+
+  function buildHref(f?: FiltroActivo) {
+    const params = new URLSearchParams();
+    if (f) params.set("filtro", f);
+    if (query) params.set("q", query);
+    const qs = params.toString();
+    return `/clientes${qs ? `?${qs}` : ""}`;
+  }
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[#253158]">Clientes</h1>
           <p className="text-gray-500 text-sm mt-1">
-            {clients.filter((c) => c.activo).length} clientes activos
+            {totalActivos} clientes activos · {totalInactivos} inactivos
+            {query && ` · búsqueda: "${query}"`}
           </p>
         </div>
-        <Link href="/clientes/nuevo">
-          <Button className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
-            <Plus className="h-4 w-4" />
-            Nuevo Cliente
-          </Button>
-        </Link>
+        {session.rol !== "USUARIO" && (
+          <Link href="/clientes/nuevo">
+            <Button className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
+              <Plus className="h-4 w-4" />
+              Nuevo Cliente
+            </Button>
+          </Link>
+        )}
       </div>
 
-      <div className="bg-white rounded-lg border overflow-x-auto">
+      {/* Filtros */}
+      <div className="flex flex-wrap gap-3 items-center">
+        <form method="GET" className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            name="q"
+            defaultValue={query}
+            placeholder="Buscar por nombre o RUT..."
+            className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#253158]/20 focus:border-[#253158] w-72"
+          />
+          {filtroActivo && <input type="hidden" name="filtro" value={filtroActivo} />}
+        </form>
+
+        <div className="flex gap-1.5">
+          {(["", "activos", "inactivos"] as const).map((f) => {
+            const isActive = (f === "" && !filtroActivo) || filtroActivo === f;
+            const label = f === "" ? "Todos" : f === "activos" ? "Activos" : "Inactivos";
+            return (
+              <Link key={f} href={buildHref(f as FiltroActivo | undefined)}>
+                <span className={`px-3.5 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors border ${isActive ? "bg-[#253158] text-white border-[#253158]" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}>
+                  {label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Tabla */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>RUT</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Teléfono</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="w-16" />
+            <TableRow className="bg-gray-50 hover:bg-gray-50 border-b border-gray-200">
+              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre / Razón Social</TableHead>
+              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">RUT</TableHead>
+              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</TableHead>
+              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Teléfono</TableHead>
+              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Facturas</TableHead>
+              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Estado</TableHead>
+              <TableHead className="w-12" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {clients.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-gray-400 py-8">
-                  No hay clientes registrados
+                <TableCell colSpan={7} className="text-center text-gray-400 py-12">
+                  <Users className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                  <p>{query || filtroActivo ? "No se encontraron clientes." : "No hay clientes registrados."}</p>
                 </TableCell>
               </TableRow>
             ) : (
-              clients.map((client) => (
-                <TableRow key={client.id}>
-                  <TableCell className="font-medium">{client.nombre}</TableCell>
-                  <TableCell className="text-gray-500">{client.rut ?? "—"}</TableCell>
-                  <TableCell className="text-gray-500">{client.email ?? "—"}</TableCell>
-                  <TableCell className="text-gray-500">{client.telefono ?? "—"}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={client.activo ? "default" : "secondary"}
-                      className={
-                        client.activo
-                          ? "bg-green-100 text-green-700 hover:bg-green-100"
-                          : "bg-gray-100 text-gray-500"
-                      }
-                    >
-                      {client.activo ? "Activo" : "Inactivo"}
-                    </Badge>
+              clients.map((c) => (
+                <TableRow key={c.id} className="hover:bg-gray-50 border-b border-gray-100 last:border-0">
+                  <TableCell className="px-5 py-4 font-semibold text-gray-800 text-sm">{c.nombre}</TableCell>
+                  <TableCell className="px-5 py-4 text-gray-400 text-sm font-mono">{c.rut ?? "—"}</TableCell>
+                  <TableCell className="px-5 py-4 text-sm">
+                    {c.email
+                      ? <span className="text-[#253158]">{c.email}</span>
+                      : <span className="text-gray-300">—</span>}
                   </TableCell>
-                  <TableCell>
-                    <Link href={`/clientes/${client.id}`}>
-                      <Button variant="ghost" size="sm">
+                  <TableCell className="px-5 py-4 text-gray-400 text-sm">{c.telefono ?? "—"}</TableCell>
+                  <TableCell className="px-5 py-4 text-right font-semibold text-gray-700 text-sm">{c._count.invoices}</TableCell>
+                  <TableCell className="px-5 py-4">
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-md ${c.activo ? "bg-green-50 text-green-600 border border-green-200" : "bg-gray-50 text-gray-500 border border-gray-200"}`}>
+                      {c.activo ? "Activo" : "Inactivo"}
+                    </span>
+                  </TableCell>
+                  <TableCell className="px-3 py-4">
+                    <Link href={`/clientes/${c.id}`}>
+                      <button type="button" className="p-1.5 rounded-md text-gray-400 hover:text-[#253158] hover:bg-gray-100 transition-colors">
                         <Eye className="h-4 w-4" />
-                      </Button>
+                      </button>
                     </Link>
                   </TableCell>
                 </TableRow>
@@ -88,4 +155,3 @@ export default async function ClientesPage() {
     </div>
   );
 }
-

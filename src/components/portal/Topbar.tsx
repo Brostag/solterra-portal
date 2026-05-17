@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, LogOut, User } from "lucide-react";
+import { Bell, ChevronDown, HelpCircle, LogOut, User } from "lucide-react";
 import type { Rol } from "@/types";
 
 const rolLabels: Record<Rol, string> = {
@@ -66,7 +66,24 @@ export default function Topbar({ nombre, email, rol }: TopbarProps) {
         </span>
       </div>
 
-      <DropdownMenu>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          className="relative h-9 w-9 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          aria-label="Notificaciones"
+        >
+          <Bell className="h-[18px] w-[18px]" />
+          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#c6352e]" />
+        </button>
+        <button
+          type="button"
+          className="h-9 w-9 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          aria-label="Ayuda"
+        >
+          <HelpCircle className="h-[18px] w-[18px]" />
+        </button>
+
+        <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-2 h-9 px-3 rounded-md hover:bg-gray-100 transition-colors outline-none cursor-pointer">
           <div className="h-7 w-7 rounded-full bg-[#253158] flex items-center justify-center text-white text-xs font-semibold">
             {nombre.charAt(0).toUpperCase()}
@@ -94,6 +111,7 @@ export default function Topbar({ nombre, email, rol }: TopbarProps) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      </div>
     </header>
   );
 }

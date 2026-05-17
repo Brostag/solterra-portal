@@ -123,7 +123,11 @@ export default function NuevaFacturaForm({
             <Label>Cliente <span className="text-[#c6352e]">*</span></Label>
             <Select value={clientId} onValueChange={(v) => setClientId(v ?? "")}>
               <SelectTrigger>
-                <SelectValue placeholder="Seleccionar cliente..." />
+                <SelectValue placeholder="Seleccionar cliente...">
+                  {selectedClient
+                    ? `${selectedClient.nombre}${selectedClient.rut ? ` — ${selectedClient.rut}` : ""}`
+                    : null}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {clients.map((c) => (

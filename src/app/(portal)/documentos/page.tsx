@@ -21,6 +21,16 @@ const TIPO_LABELS: Record<string, string> = {
   OTRO:              "Otro",
 };
 
+const TIPO_COLORS: Record<string, string> = {
+  CONTRATO:          "bg-purple-50 text-purple-600 border border-purple-200",
+  COTIZACION:        "bg-blue-50 text-blue-600 border border-blue-200",
+  FACTURA_PROVEEDOR: "bg-amber-50 text-amber-600 border border-amber-200",
+  GUIA_DESPACHO:     "bg-sky-50 text-sky-600 border border-sky-200",
+  ORDEN_COMPRA:      "bg-indigo-50 text-indigo-600 border border-indigo-200",
+  CERTIFICADO:       "bg-green-50 text-green-600 border border-green-200",
+  OTRO:              "bg-gray-50 text-gray-500 border border-gray-200",
+};
+
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -39,10 +49,10 @@ export default async function DocumentosPage({ searchParams }: Props) {
 
   const where: Record<string, unknown> = {};
   if (tipo) where.tipo_documento = tipo;
-  if (entidad === "facturas")   where.invoice_id        = { not: null };
-  if (entidad === "oc")         where.purchase_order_id = { not: null };
-  if (entidad === "clientes")   where.client_id         = { not: null };
-  if (entidad === "proveedores")where.supplier_id       = { not: null };
+  if (entidad === "facturas")    where.invoice_id        = { not: null };
+  if (entidad === "oc")          where.purchase_order_id = { not: null };
+  if (entidad === "clientes")    where.client_id         = { not: null };
+  if (entidad === "proveedores") where.supplier_id       = { not: null };
 
   const documents = await prisma.document.findMany({
     where,
@@ -56,8 +66,8 @@ export default async function DocumentosPage({ searchParams }: Props) {
     },
   });
 
-  const canUpload  = session.rol !== "USUARIO";
-  const canDelete  = session.rol !== "USUARIO";
+  const canUpload = session.rol !== "USUARIO";
+  const canDelete = session.rol !== "USUARIO";
 
   const tipos = Object.keys(TIPO_LABELS);
   const entidades = [
@@ -67,17 +77,23 @@ export default async function DocumentosPage({ searchParams }: Props) {
     { value: "proveedores", label: "Proveedores" },
   ];
 
+  const chipBase = "px-3.5 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors border";
+  const chipActive = "bg-[#253158] text-white border-[#253158]";
+  const chipInactive = "bg-white text-gray-600 border-gray-200 hover:bg-gray-50";
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[#253158]">Documentos</h1>
-          <p className="text-gray-500 text-sm mt-1">{documents.length} archivo{documents.length !== 1 ? "s" : ""}</p>
+          <p className="text-gray-500 text-sm mt-1">
+            {documents.length} archivo{documents.length !== 1 ? "s" : ""}
+          </p>
         </div>
       </div>
 
-      {/* Upload global */}
+      {/* Upload */}
       {canUpload && (
         <div className="space-y-2">
           <p className="text-sm font-medium text-gray-700">Subir documento</p>
@@ -85,47 +101,47 @@ export default async function DocumentosPage({ searchParams }: Props) {
         </div>
       )}
 
-      {/* Filtros */}
-      <div className="flex flex-wrap gap-2 text-sm">
-        <Link
-          href="/documentos"
-          className={`px-3 py-1.5 rounded-full border ${!tipo && !entidad ? "bg-[#253158] text-white border-[#253158]" : "border-gray-300 text-gray-600 hover:border-[#253158]"}`}
-        >
-          Todos
-        </Link>
-        {tipos.map((t) => (
-          <Link
-            key={t}
-            href={`/documentos?tipo=${t}${entidad ? `&entidad=${entidad}` : ""}`}
-            className={`px-3 py-1.5 rounded-full border ${tipo === t ? "bg-[#253158] text-white border-[#253158]" : "border-gray-300 text-gray-600 hover:border-[#253158]"}`}
-          >
-            {TIPO_LABELS[t]}
+      {/* Filtros por tipo */}
+      <div className="space-y-3">
+        <div className="flex flex-wrap gap-1.5 items-center">
+          <Link href={`/documentos${entidad ? `?entidad=${entidad}` : ""}`}>
+            <span className={`${chipBase} ${!tipo ? chipActive : chipInactive}`}>Todos los tipos</span>
           </Link>
-        ))}
-        <span className="border-l border-gray-200 mx-1" />
-        {entidades.map((e) => (
-          <Link
-            key={e.value}
-            href={`/documentos?entidad=${e.value}${tipo ? `&tipo=${tipo}` : ""}`}
-            className={`px-3 py-1.5 rounded-full border ${entidad === e.value ? "bg-indigo-600 text-white border-indigo-600" : "border-gray-300 text-gray-600 hover:border-indigo-400"}`}
-          >
-            {e.label}
+          {tipos.map((t) => (
+            <Link key={t} href={`/documentos?tipo=${t}${entidad ? `&entidad=${entidad}` : ""}`}>
+              <span className={`${chipBase} ${tipo === t ? chipActive : chipInactive}`}>
+                {TIPO_LABELS[t]}
+              </span>
+            </Link>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap gap-1.5 items-center">
+          <Link href={`/documentos${tipo ? `?tipo=${tipo}` : ""}`}>
+            <span className={`${chipBase} ${!entidad ? chipActive : chipInactive}`}>Todas las entidades</span>
           </Link>
-        ))}
+          {entidades.map((e) => (
+            <Link key={e.value} href={`/documentos?entidad=${e.value}${tipo ? `&tipo=${tipo}` : ""}`}>
+              <span className={`${chipBase} ${entidad === e.value ? chipActive : chipInactive}`}>
+                {e.label}
+              </span>
+            </Link>
+          ))}
+        </div>
       </div>
 
       {/* Tabla */}
-      <div className="bg-white rounded-lg border overflow-x-auto">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Archivo</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Asociado a</TableHead>
-              <TableHead>Tamaño</TableHead>
-              <TableHead>Subido por</TableHead>
-              <TableHead>Fecha</TableHead>
-              <TableHead className="w-20 text-right" />
+            <TableRow className="bg-gray-50 hover:bg-gray-50 border-b border-gray-200">
+              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Archivo</TableHead>
+              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tipo</TableHead>
+              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Asociado a</TableHead>
+              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tamaño</TableHead>
+              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Subido por</TableHead>
+              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Fecha</TableHead>
+              <TableHead className="w-20" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -153,30 +169,32 @@ export default async function DocumentosPage({ searchParams }: Props) {
                   (session.rol === "ADMINISTRADOR" || doc.uploaded_by === session.id);
 
                 return (
-                  <TableRow key={doc.id}>
-                    <TableCell className="font-medium max-w-[180px]">
+                  <TableRow key={doc.id} className="hover:bg-gray-50 border-b border-gray-100 last:border-0">
+                    <TableCell className="px-5 py-4 font-medium text-gray-800 text-sm max-w-[200px]">
                       <span className="truncate block" title={doc.nombre_archivo}>
                         {doc.nombre_archivo}
                       </span>
                     </TableCell>
-                    <TableCell className="text-gray-500 text-sm">
-                      {TIPO_LABELS[doc.tipo_documento] ?? doc.tipo_documento}
+                    <TableCell className="px-5 py-4">
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-md ${TIPO_COLORS[doc.tipo_documento] ?? "bg-gray-50 text-gray-500 border border-gray-200"}`}>
+                        {TIPO_LABELS[doc.tipo_documento] ?? doc.tipo_documento}
+                      </span>
                     </TableCell>
-                    <TableCell className="text-sm">
+                    <TableCell className="px-5 py-4 text-sm">
                       {asociado ? (
-                        <Link href={asociado.href} className="text-[#253158] hover:underline">
+                        <Link href={asociado.href} className="text-[#253158] hover:underline font-medium">
                           {asociado.label}
                         </Link>
                       ) : (
-                        <span className="text-gray-400">—</span>
+                        <span className="text-gray-300">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-gray-500 text-sm">{formatSize(doc.tamaño)}</TableCell>
-                    <TableCell className="text-gray-500 text-sm">{doc.uploader.nombre}</TableCell>
-                    <TableCell className="text-gray-500 text-sm">
+                    <TableCell className="px-5 py-4 text-gray-400 text-sm">{formatSize(doc.tamaño)}</TableCell>
+                    <TableCell className="px-5 py-4 text-gray-500 text-sm">{doc.uploader.nombre}</TableCell>
+                    <TableCell className="px-5 py-4 text-gray-400 text-sm">
                       {new Date(doc.created_at).toLocaleDateString("es-CL")}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-3 py-4">
                       <div className="flex items-center justify-end gap-1">
                         <DocumentDownloadButton docId={doc.id} />
                         {canDeleteThis && (
@@ -194,4 +212,3 @@ export default async function DocumentosPage({ searchParams }: Props) {
     </div>
   );
 }
-
