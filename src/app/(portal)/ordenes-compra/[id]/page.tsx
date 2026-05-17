@@ -11,6 +11,7 @@ import OCActions from "./OCActions";
 import NuevoOCForm from "../nueva/NuevoOCForm";
 import { changeOrderStatus, annulOrder } from "../actions";
 import DocumentsSection from "@/components/portal/DocumentsSection";
+import PrintPdfButton from "@/components/portal/PrintPdfButton";
 
 const ESTADO_COLORS: Record<EstadoOC, string> = {
   BORRADOR:  "bg-gray-100 text-gray-600",
@@ -135,6 +136,7 @@ export default async function OCDetailPage({ params, searchParams }: Props) {
               PDF
             </Button>
           </a>
+          <PrintPdfButton pdfUrl={`/api/ordenes-compra/${id}/pdf`} />
         </div>
       </div>
 

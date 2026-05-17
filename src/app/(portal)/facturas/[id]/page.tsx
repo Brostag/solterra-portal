@@ -75,7 +75,7 @@ export default async function FacturaDetailPage({ params }: Props) {
               PDF
             </Button>
           </a>
-          <PrintButton />
+          <PrintButton pdfUrl={`/api/facturas/${id}/pdf`} />
         </div>
       </div>
 
