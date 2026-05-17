@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getCompanySettings } from "@/lib/company-settings";
 import NuevaFacturaForm from "./NuevaFacturaForm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -16,16 +17,7 @@ export default async function NuevaFacturaPage() {
       orderBy: { nombre: "asc" },
       select: { id: true, nombre: true, precio_unitario: true },
     }),
-    prisma.companySettings.findFirst({
-      select: {
-        iva_porcentaje: true,
-        moneda_principal: true,
-        razon_social: true,
-        rut: true,
-        giro: true,
-        direccion: true,
-      },
-    }),
+    getCompanySettings(),
   ]);
 
   const configWarnings: string[] = [];

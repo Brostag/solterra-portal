@@ -6,6 +6,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { InvoiceDocument } from "@/lib/pdf/invoice-template";
+import { getCompanySettings } from "@/lib/company-settings";
 
 export async function GET(
   request: NextRequest,
@@ -34,18 +35,7 @@ export async function GET(
     return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
   }
 
-  const config = await prisma.companySettings.findFirst({
-    select: {
-      razon_social: true,
-      rut: true,
-      giro: true,
-      direccion: true,
-      email: true,
-      telefono: true,
-      logo_url: true,
-      iva_porcentaje: true,
-    },
-  });
+  const config = await getCompanySettings();
 
   const ivaPercent = config ? Number(config.iva_porcentaje) : 19;
 
@@ -93,6 +83,7 @@ export async function GET(
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `inline; filename="factura-${invoice.numero_factura}.pdf"`,
+      "Cache-Control": "private, max-age=300",
     },
   });
 }

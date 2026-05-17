@@ -60,6 +60,9 @@ playwright.config.ts
 .claude/
 .mcp.json
 
+# audit / analysis docs (local only)
+AUDITORIA_*.md
+
 # logs and temp
 *.log
 *.tmp

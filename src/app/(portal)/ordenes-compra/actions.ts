@@ -8,6 +8,7 @@ import { calculateOCTotals } from "@/lib/currency";
 import { purchaseOrderSchema, annulOCSchema, type PurchaseOrderData } from "@/lib/validations/purchase-order";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getCompanySettings } from "@/lib/company-settings";
 import type { EstadoOC } from "@/types";
 
 // ── Allowed state transitions by minimum role ────────────────────────────────
@@ -34,8 +35,9 @@ function canTransition(from: string, to: EstadoOC, rol: string): boolean {
 // ── OC number generation ─────────────────────────────────────────────────────
 
 async function getNextOCNumber(): Promise<string> {
+  // TODO: si el sistema supera OC-9999, migrar a correlativo numérico o secuencia de BD
   const last = await prisma.purchaseOrder.findFirst({
-    orderBy: { created_at: "desc" },
+    orderBy: { numero: "desc" },
     select: { numero: true },
   });
   if (!last) return "OC-0001";
@@ -53,7 +55,7 @@ export async function createPurchaseOrder(rawData: PurchaseOrderData): Promise<{
 
   const validated = purchaseOrderSchema.parse(rawData);
 
-  const config = await prisma.companySettings.findFirst({ select: { iva_porcentaje: true } });
+  const config = await getCompanySettings();
   const ivaPercent = config ? Number(config.iva_porcentaje) : 19;
 
   const totals = calculateOCTotals(validated.items, validated.descuento_pct, ivaPercent);
@@ -119,7 +121,7 @@ export async function updatePurchaseOrder(id: string, rawData: PurchaseOrderData
 
   const validated = purchaseOrderSchema.parse(rawData);
 
-  const config = await prisma.companySettings.findFirst({ select: { iva_porcentaje: true } });
+  const config = await getCompanySettings();
   const ivaPercent = config ? Number(config.iva_porcentaje) : 19;
   const totals = calculateOCTotals(validated.items, validated.descuento_pct, ivaPercent);
 

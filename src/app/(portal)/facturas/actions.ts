@@ -9,10 +9,12 @@ import { invoiceSchema, annulSchema } from "@/lib/validations/invoice";
 import { validateInvoicePreflight } from "@/lib/validations/invoice-preflight";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getCompanySettings } from "@/lib/company-settings";
 
 async function getNextInvoiceNumber(): Promise<string> {
+  // TODO: si el sistema supera F-9999, migrar a correlativo numérico o secuencia de BD
   const last = await prisma.invoice.findFirst({
-    orderBy: { created_at: "desc" },
+    orderBy: { numero_factura: "desc" },
     select: { numero_factura: true },
   });
   if (!last) return "F-0001";
@@ -32,9 +34,7 @@ export async function createInvoice(rawData: {
 
   const validated = invoiceSchema.parse(rawData);
 
-  const config = await prisma.companySettings.findFirst({
-    select: { iva_porcentaje: true },
-  });
+  const config = await getCompanySettings();
   const ivaPercent = config ? Number(config.iva_porcentaje) : 19;
 
   const totals = calculateInvoiceTotals(validated.items, ivaPercent);

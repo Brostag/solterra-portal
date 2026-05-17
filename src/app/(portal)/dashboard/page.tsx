@@ -10,8 +10,6 @@ import {
 } from "@/components/ui/card";
 import {
   FileText,
-  Users,
-  Package,
   FolderOpen,
   ShoppingCart,
   ArrowRight,
@@ -41,26 +39,26 @@ function getGreeting(): string {
 }
 
 async function getDashboardStats() {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+
+  // 9 queries instead of 15: invoice/OC status counts use groupBy
   const [
-    totalFacturas,
-    facturasCreadas,
-    facturasEnviadas,
-    facturasPagadas,
-    facturasAnuladas,
+    invoicesByEstado,
     totalClientes,
+    totalClientesRegistrados,
     totalProductos,
     totalDocumentos,
     ultimasFacturas,
-    totalOC,
-    ocPendientes,
-    ocAprobadas,
+    ocByEstado,
+    facturadoEsteMes,
+    facturadoMesPasado,
   ] = await Promise.all([
-    prisma.invoice.count(),
-    prisma.invoice.count({ where: { estado: "CREADA" } }),
-    prisma.invoice.count({ where: { estado: "ENVIADA" } }),
-    prisma.invoice.count({ where: { estado: "PAGADA" } }),
-    prisma.invoice.count({ where: { estado: "ANULADA" } }),
+    prisma.invoice.groupBy({ by: ["estado"], _count: { id: true } }),
     prisma.client.count({ where: { activo: true } }),
+    prisma.client.count(),
     prisma.product.count({ where: { activo: true } }),
     prisma.document.count(),
     prisma.invoice.findMany({
@@ -68,12 +66,43 @@ async function getDashboardStats() {
       orderBy: { created_at: "desc" },
       include: { client: { select: { nombre: true } } },
     }),
-    prisma.purchaseOrder.count({ where: { activo: true } }),
-    prisma.purchaseOrder.count({
-      where: { activo: true, estado: { in: ["BORRADOR", "EMITIDA", "ENVIADA"] } },
+    prisma.purchaseOrder.groupBy({ by: ["estado"], where: { activo: true }, _count: { id: true } }),
+    prisma.invoice.aggregate({
+      where: { created_at: { gte: startOfMonth }, estado: { not: "ANULADA" } },
+      _sum: { total: true },
     }),
-    prisma.purchaseOrder.count({ where: { activo: true, estado: "APROBADA" } }),
+    prisma.invoice.aggregate({
+      where: { created_at: { gte: startOfLastMonth, lte: endOfLastMonth }, estado: { not: "ANULADA" } },
+      _sum: { total: true },
+    }),
   ]);
+
+  // Derive invoice counts from groupBy
+  const invCount: Record<string, number> = {};
+  let totalFacturas = 0;
+  for (const g of invoicesByEstado) {
+    invCount[g.estado] = g._count.id;
+    totalFacturas += g._count.id;
+  }
+  const facturasCreadas = invCount["CREADA"] ?? 0;
+  const facturasEnviadas = invCount["ENVIADA"] ?? 0;
+  const facturasPagadas = invCount["PAGADA"] ?? 0;
+  const facturasAnuladas = invCount["ANULADA"] ?? 0;
+
+  // Derive OC counts from groupBy
+  const ocCount: Record<string, number> = {};
+  let totalOC = 0;
+  for (const g of ocByEstado) {
+    ocCount[g.estado] = g._count.id;
+    totalOC += g._count.id;
+  }
+  const ocPendientes = (ocCount["BORRADOR"] ?? 0) + (ocCount["EMITIDA"] ?? 0) + (ocCount["ENVIADA"] ?? 0);
+  const ocAprobadas = ocCount["APROBADA"] ?? 0;
+
+  const montoMes = Number(facturadoEsteMes._sum.total ?? 0);
+  const montoMesPasado = Number(facturadoMesPasado._sum.total ?? 0);
+  const pctCambioFacturado =
+    montoMesPasado > 0 ? ((montoMes - montoMesPasado) / montoMesPasado) * 100 : null;
 
   return {
     totalFacturas,
@@ -82,20 +111,23 @@ async function getDashboardStats() {
     facturasPagadas,
     facturasAnuladas,
     totalClientes,
+    totalClientesRegistrados,
     totalProductos,
     totalDocumentos,
     ultimasFacturas,
     totalOC,
     ocPendientes,
     ocAprobadas,
+    montoFacturadoEsteMes: montoMes,
+    pctCambioFacturado,
   };
 }
 
 const estadoBadge: Record<string, string> = {
-  CREADA: "bg-blue-100 text-blue-700",
-  ENVIADA: "bg-yellow-100 text-yellow-700",
-  PAGADA: "bg-green-100 text-green-700",
-  ANULADA: "bg-red-100 text-red-600",
+  CREADA:  "bg-blue-50  text-blue-700  border border-blue-200",
+  ENVIADA: "bg-amber-50 text-amber-700 border border-amber-200",
+  PAGADA:  "bg-green-50 text-green-700 border border-green-200",
+  ANULADA: "bg-red-50   text-red-600   border border-red-200",
 };
 
 export default async function DashboardPage() {
@@ -178,195 +210,210 @@ export default async function DashboardPage() {
       </div>
 
       {/* Acciones rápidas */}
-      <div className="bg-[#253158] rounded-xl p-5">
-        <p className="text-xs font-semibold tracking-widest uppercase text-white/50 mb-4">
+      <div className="bg-white rounded-xl p-5 border border-gray-100">
+        <p className="text-xs font-semibold tracking-widest uppercase text-gray-400 mb-4">
           Acciones rápidas
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {/* CTA primario */}
           <Link
             href="/facturas/nueva"
-            className="flex items-center gap-3 bg-white/20 hover:bg-white/30 rounded-lg px-4 py-3 transition-colors"
+            className="flex items-center gap-3 bg-[#253158] hover:bg-[#1d2a4f] rounded-lg px-4 py-3 transition-colors"
           >
             <div className="p-1.5 bg-white/20 rounded-md flex-shrink-0">
               <Plus className="h-5 w-5 text-white" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-white leading-tight">Crear factura</p>
-              <p className="text-xs text-white/60 leading-tight mt-0.5">Asistente paso a paso</p>
+              <p className="text-xs text-white/70 leading-tight mt-0.5">Asistente paso a paso</p>
             </div>
           </Link>
 
+          {/* Acciones secundarias */}
           <Link
             href="/ordenes-compra/nueva"
-            className="flex items-center gap-3 bg-white/10 hover:bg-white/20 rounded-lg px-4 py-3 transition-colors"
+            className="group flex items-center gap-3 bg-white border border-gray-200 hover:bg-[#253158] hover:border-[#253158] rounded-lg px-4 py-3 transition-colors"
           >
-            <div className="p-1.5 bg-white/10 rounded-md flex-shrink-0">
-              <ShoppingCart className="h-4 w-4 text-white" />
+            <div className="p-1.5 bg-gray-100 group-hover:bg-white/20 rounded-md flex-shrink-0 transition-colors">
+              <ShoppingCart className="h-4 w-4 text-[#253158] group-hover:text-white transition-colors" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-white leading-tight">Nueva OC</p>
-              <p className="text-xs text-white/60 leading-tight mt-0.5">Para tus proveedores</p>
+              <p className="text-sm font-semibold text-gray-700 group-hover:text-white leading-tight transition-colors">Nueva OC</p>
+              <p className="text-xs text-gray-400 group-hover:text-white/70 leading-tight mt-0.5 transition-colors">Para tus proveedores</p>
             </div>
           </Link>
 
           <Link
             href="/documentos"
-            className="flex items-center gap-3 bg-white/10 hover:bg-white/20 rounded-lg px-4 py-3 transition-colors"
+            className="group flex items-center gap-3 bg-white border border-gray-200 hover:bg-[#253158] hover:border-[#253158] rounded-lg px-4 py-3 transition-colors"
           >
-            <div className="p-1.5 bg-white/10 rounded-md flex-shrink-0">
-              <Upload className="h-4 w-4 text-white" />
+            <div className="p-1.5 bg-gray-100 group-hover:bg-white/20 rounded-md flex-shrink-0 transition-colors">
+              <Upload className="h-4 w-4 text-[#253158] group-hover:text-white transition-colors" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-white leading-tight">Subir documento</p>
-              <p className="text-xs text-white/60 leading-tight mt-0.5">Contrato, guía…</p>
+              <p className="text-sm font-semibold text-gray-700 group-hover:text-white leading-tight transition-colors">Subir documento</p>
+              <p className="text-xs text-gray-400 group-hover:text-white/70 leading-tight mt-0.5 transition-colors">Contrato, guía…</p>
             </div>
           </Link>
 
           <Link
             href="/clientes/nuevo"
-            className="flex items-center gap-3 bg-white/10 hover:bg-white/20 rounded-lg px-4 py-3 transition-colors"
+            className="group flex items-center gap-3 bg-white border border-gray-200 hover:bg-[#253158] hover:border-[#253158] rounded-lg px-4 py-3 transition-colors"
           >
-            <div className="p-1.5 bg-white/10 rounded-md flex-shrink-0">
-              <UserPlus className="h-4 w-4 text-white" />
+            <div className="p-1.5 bg-gray-100 group-hover:bg-white/20 rounded-md flex-shrink-0 transition-colors">
+              <UserPlus className="h-4 w-4 text-[#253158] group-hover:text-white transition-colors" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-white leading-tight">Nuevo cliente</p>
-              <p className="text-xs text-white/60 leading-tight mt-0.5">Empresa o persona</p>
+              <p className="text-sm font-semibold text-gray-700 group-hover:text-white leading-tight transition-colors">Nuevo cliente</p>
+              <p className="text-xs text-gray-400 group-hover:text-white/70 leading-tight mt-0.5 transition-colors">Empresa o persona</p>
             </div>
           </Link>
         </div>
       </div>
 
-      {/* KPIs compactos */}
-      <div className="flex flex-wrap gap-2">
+      {/* KPIs principales */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
+          <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-400 mb-3">
+            Facturado este mes
+          </p>
+          <p className="text-2xl font-bold text-[#253158]">
+            {formatCurrency(stats.montoFacturadoEsteMes, "CLP")}
+          </p>
+          {stats.pctCambioFacturado !== null && (
+            <p
+              className={`text-xs mt-1.5 ${
+                stats.pctCambioFacturado >= 0 ? "text-green-600" : "text-red-500"
+              }`}
+            >
+              {stats.pctCambioFacturado >= 0 ? "↑" : "↓"}{" "}
+              {Math.abs(stats.pctCambioFacturado).toFixed(1)}% vs mes anterior
+            </p>
+          )}
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
+          <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-400 mb-3">
+            Pendientes de pago
+          </p>
+          <p className={`text-3xl font-bold ${(stats.facturasCreadas + stats.facturasEnviadas) > 0 ? "text-amber-600" : "text-[#253158]"}`}>
+            {stats.facturasCreadas + stats.facturasEnviadas}
+          </p>
+          <p className="text-xs text-gray-400 mt-1.5">
+            {stats.facturasCreadas} creadas · {stats.facturasEnviadas} enviadas
+          </p>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
+          <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-400 mb-3">
+            Clientes activos
+          </p>
+          <p className="text-3xl font-bold text-[#253158]">{stats.totalClientes}</p>
+          <p className="text-xs text-gray-400 mt-1.5">
+            de {stats.totalClientesRegistrados} registrados
+          </p>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
+          <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-400 mb-3">
+            Productos activos
+          </p>
+          <p className="text-3xl font-bold text-[#253158]">{stats.totalProductos}</p>
+          <p className="text-xs text-gray-400 mt-1.5">en catálogo</p>
+        </div>
+      </div>
+
+      {/* Estado de facturas */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          {
-            icon: Clock,
-            label: "Pendientes de pago",
-            value: stats.facturasCreadas + stats.facturasEnviadas,
-            accent: (stats.facturasCreadas + stats.facturasEnviadas) > 0,
-          },
-          { icon: Users, label: "Clientes activos", value: stats.totalClientes, accent: false },
-          { icon: Package, label: "Productos activos", value: stats.totalProductos, accent: false },
-          {
-            icon: ShoppingCart,
-            label: "OC en curso",
-            value: stats.ocPendientes,
-            accent: stats.ocPendientes > 0,
-          },
-        ].map(({ icon: Icon, label, value, accent }) => (
+          { label: "Creadas",  value: stats.facturasCreadas,  bg: "bg-blue-50",   text: "text-blue-700"   },
+          { label: "Enviadas", value: stats.facturasEnviadas, bg: "bg-amber-50",  text: "text-amber-600"  },
+          { label: "Pagadas",  value: stats.facturasPagadas,  bg: "bg-green-50",  text: "text-green-700"  },
+          { label: "Anuladas", value: stats.facturasAnuladas, bg: "bg-red-50",    text: "text-red-600"    },
+        ].map((item) => (
           <div
-            key={label}
-            className="flex items-center gap-2.5 bg-white border border-gray-200 rounded-lg px-4 py-2.5"
+            key={item.label}
+            className={`rounded-xl p-5 ${item.bg}`}
           >
-            <Icon className={`h-4 w-4 flex-shrink-0 ${accent ? "text-amber-500" : "text-[#253158]"}`} />
-            <span className="text-sm text-gray-500">{label}</span>
-            <span className={`text-sm font-bold ${accent ? "text-amber-600" : "text-[#253158]"}`}>
-              {value}
-            </span>
+            <p className={`text-3xl font-bold ${item.text}`}>{item.value}</p>
+            <p className={`text-sm font-semibold mt-1.5 ${item.text}`}>{item.label}</p>
           </div>
         ))}
       </div>
 
-      {/* Estado de facturas */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5">
-        <p className="text-sm font-semibold text-[#253158] mb-4">Estado de facturas</p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            { label: "Creadas", value: stats.facturasCreadas, color: "bg-blue-50 border-blue-200 text-blue-700" },
-            { label: "Enviadas", value: stats.facturasEnviadas, color: "bg-yellow-50 border-yellow-200 text-yellow-700" },
-            { label: "Pagadas", value: stats.facturasPagadas, color: "bg-green-50 border-green-200 text-green-700" },
-            { label: "Anuladas", value: stats.facturasAnuladas, color: "bg-red-50 border-red-200 text-[#c6352e]" },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className={`border rounded-lg p-3 text-center ${item.color}`}
-            >
-              <p className="text-xl font-bold">{item.value}</p>
-              <p className="text-xs font-medium mt-0.5">{item.label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Últimas facturas */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base font-semibold text-[#253158]">
-            Últimas Facturas
-          </CardTitle>
+      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h3 className="text-base font-semibold text-[#253158]">Últimas facturas</h3>
           <Link
             href="/facturas"
-            className="text-sm text-[#253158] hover:underline font-medium"
+            className="text-sm text-[#253158]/70 hover:text-[#253158] font-medium transition-colors"
           >
             Ver todas →
           </Link>
-        </CardHeader>
-        <CardContent className="p-0">
-          {stats.ultimasFacturas.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-8 px-6">
-              No hay facturas aún
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100">
-                    <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-6 py-3">
-                      N° Factura
-                    </th>
-                    <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">
-                      Cliente
-                    </th>
-                    <th className="text-right text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">
-                      Total
-                    </th>
-                    <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">
-                      Estado
-                    </th>
-                    <th className="w-8 px-4 py-3" />
+        </div>
+
+        {stats.ultimasFacturas.length === 0 ? (
+          <p className="text-gray-400 text-sm text-center py-10">No hay facturas aún</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="text-left text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-6 py-3">
+                    Nº Factura
+                  </th>
+                  <th className="text-left text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-4 py-3">
+                    Cliente
+                  </th>
+                  <th className="text-right text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-4 py-3">
+                    Total
+                  </th>
+                  <th className="text-left text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-4 py-3">
+                    Estado
+                  </th>
+                  <th className="w-8 px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody>
+                {stats.ultimasFacturas.map((inv) => (
+                  <tr
+                    key={inv.id}
+                    className="border-b border-gray-200 hover:bg-gray-50/60 transition-colors last:border-0"
+                  >
+                    <td className="px-6 py-4">
+                      <Link
+                        href={`/facturas/${inv.id}`}
+                        className="font-mono text-xs font-bold text-gray-800 hover:text-[#253158] transition-colors"
+                      >
+                        #{inv.numero_factura}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-[#253158] font-medium max-w-[200px] truncate">
+                      {inv.client.nombre}
+                    </td>
+                    <td className="px-4 py-4 text-right font-semibold text-sm text-gray-800 font-mono tabular-nums">
+                      {formatCurrency(Number(inv.total), inv.moneda as "CLP" | "USD" | "UF")}
+                    </td>
+                    <td className="px-4 py-4">
+                      <span
+                        className={`inline-flex items-center text-[11px] px-2.5 py-1 rounded-full font-semibold ${estadoBadge[inv.estado] ?? "bg-gray-100 text-gray-600 border border-gray-200"}`}
+                      >
+                        {inv.estado}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <Link href={`/facturas/${inv.id}`}>
+                        <ChevronRight className="h-4 w-4 text-gray-300 hover:text-gray-500 transition-colors" />
+                      </Link>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {stats.ultimasFacturas.map((inv) => (
-                    <tr
-                      key={inv.id}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-6 py-3.5">
-                        <Link
-                          href={`/facturas/${inv.id}`}
-                          className="font-mono text-xs font-medium text-gray-800 hover:text-[#253158]"
-                        >
-                          #{inv.numero_factura}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3.5 text-gray-600 max-w-[180px] truncate">
-                        {inv.client.nombre}
-                      </td>
-                      <td className="px-4 py-3.5 text-right font-semibold text-gray-800 font-mono text-xs">
-                        {formatCurrency(Number(inv.total), inv.moneda as "CLP" | "USD" | "UF")}
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full font-medium ${estadoBadge[inv.estado] ?? "bg-gray-100 text-gray-600"}`}
-                        >
-                          {inv.estado}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <Link href={`/facturas/${inv.id}`}>
-                          <ChevronRight className="h-4 w-4 text-gray-300" />
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getCompanySettings } from "@/lib/company-settings";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { formatCurrency } from "@/lib/currency";
@@ -45,7 +46,7 @@ export default async function OCDetailPage({ params, searchParams }: Props) {
         items: { orderBy: { orden: "asc" }, include: { producto: { select: { nombre: true } } } },
       },
     }),
-    prisma.companySettings.findFirst({ select: { iva_porcentaje: true } }),
+    getCompanySettings(),
   ]);
 
   if (!oc) notFound();

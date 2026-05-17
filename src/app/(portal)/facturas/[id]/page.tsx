@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getCompanySettings } from "@/lib/company-settings";
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
@@ -38,9 +39,7 @@ export default async function FacturaDetailPage({ params }: Props) {
         items: { include: { product: { select: { nombre: true } } } },
       },
     }),
-    prisma.companySettings.findFirst({
-      select: { razon_social: true, rut: true },
-    }),
+    getCompanySettings(),
   ]);
 
   if (!invoice) notFound();

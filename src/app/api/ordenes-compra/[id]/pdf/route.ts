@@ -5,6 +5,7 @@ import type { DocumentProps } from "@react-pdf/renderer";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { PurchaseOrderDocument } from "@/lib/pdf/purchase-order-template";
+import { getCompanySettings } from "@/lib/company-settings";
 import React from "react";
 
 export async function GET(
@@ -29,7 +30,7 @@ export async function GET(
         items: { orderBy: { orden: "asc" } },
       },
     }),
-    prisma.companySettings.findFirst(),
+    getCompanySettings(),
   ]);
 
   if (!oc) return NextResponse.json({ error: "OC no encontrada" }, { status: 404 });
@@ -95,6 +96,7 @@ export async function GET(
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `inline; filename="${oc.numero}.pdf"`,
+      "Cache-Control": "private, max-age=300",
     },
   });
 }

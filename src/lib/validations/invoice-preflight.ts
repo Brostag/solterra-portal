@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getCompanySettings } from "@/lib/company-settings";
 
 export interface PreflightInput {
   client_id: string;
@@ -19,15 +20,7 @@ export async function validateInvoicePreflight(
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  const config = await prisma.companySettings.findFirst({
-    select: {
-      razon_social: true,
-      rut: true,
-      giro: true,
-      direccion: true,
-      iva_porcentaje: true,
-    },
-  });
+  const config = await getCompanySettings();
 
   if (!config) {
     errors.push(

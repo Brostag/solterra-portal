@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getCompanySettings } from "@/lib/company-settings";
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import NuevoOCForm from "./NuevoOCForm";
@@ -19,7 +20,7 @@ export default async function NuevaOrdenCompraPage() {
       select: { id: true, nombre: true, precio_unitario: true },
       orderBy: { nombre: "asc" },
     }),
-    prisma.companySettings.findFirst({ select: { iva_porcentaje: true } }),
+    getCompanySettings(),
   ]);
 
   const ivaPercent = config ? Number(config.iva_porcentaje) : 19;
