@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth/session";
+import { getPortalSessionFast } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import {
   Table, TableBody, TableCell, TableHead,
@@ -36,7 +36,7 @@ interface Props {
 }
 
 export default async function OrdenesCompraPage({ searchParams }: Props) {
-  const session = await getSession();
+  const session = await getPortalSessionFast();
   if (!session) redirect("/login");
 
   const { q, estado } = await searchParams;

@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { getCompanySettings } from "@/lib/company-settings";
-import { getSession } from "@/lib/auth/session";
+import { getPortalSessionFast } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import NuevoOCForm from "./NuevoOCForm";
 
 export default async function NuevaOrdenCompraPage() {
-  const session = await getSession();
+  const session = await getPortalSessionFast();
   if (!session) redirect("/login");
   if (session.rol === "USUARIO") redirect("/ordenes-compra");
 

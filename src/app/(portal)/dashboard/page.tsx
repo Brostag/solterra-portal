@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth/session";
+import { getPortalSessionFast } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { formatCurrency } from "@/lib/currency";
 import {
@@ -131,7 +131,7 @@ const estadoBadge: Record<string, string> = {
 };
 
 export default async function DashboardPage() {
-  const session = await getSession();
+  const session = await getPortalSessionFast();
   if (!session) redirect("/login");
 
   const stats = await getDashboardStats();

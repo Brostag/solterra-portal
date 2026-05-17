@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getCompanySettings } from "@/lib/company-settings";
 import { notFound, redirect } from "next/navigation";
-import { getSession } from "@/lib/auth/session";
+import { getPortalSessionFast } from "@/lib/auth/session";
 import { formatCurrency } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -35,7 +35,7 @@ interface Props {
 export default async function OCDetailPage({ params, searchParams }: Props) {
   const { id } = await params;
   const { edit } = await searchParams;
-  const session = await getSession();
+  const session = await getPortalSessionFast();
   if (!session) redirect("/login");
 
   const [oc, config] = await Promise.all([

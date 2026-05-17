@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth/session";
+import { getPortalSessionFast } from "@/lib/auth/session";
 import { redirect, notFound } from "next/navigation";
 import { updateSupplier } from "../actions";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export default async function ProveedorDetailPage({ params }: Props) {
-  const session = await getSession();
+  const session = await getPortalSessionFast();
   if (!session) redirect("/login");
 
   const { id } = await params;

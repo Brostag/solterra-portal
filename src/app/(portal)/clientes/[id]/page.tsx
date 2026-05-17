@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
-import { getSession } from "@/lib/auth/session";
+import { getPortalSessionFast } from "@/lib/auth/session";
 import { updateClient, deactivateClient } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,7 @@ interface Props {
 
 export default async function ClienteDetailPage({ params }: Props) {
   const { id } = await params;
-  const session = await getSession();
+  const session = await getPortalSessionFast();
   if (!session) redirect("/login");
 
   const client = await prisma.client.findUnique({

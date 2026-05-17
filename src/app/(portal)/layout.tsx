@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth/session";
+import { getPortalSessionFast } from "@/lib/auth/session";
 import Sidebar from "@/components/portal/Sidebar";
 import Topbar from "@/components/portal/Topbar";
 import { AuthListener } from "@/components/portal/AuthListener";
@@ -9,7 +9,7 @@ export default async function PortalLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSession();
+  const session = await getPortalSessionFast();
   if (!session) redirect("/login");
 
   return (

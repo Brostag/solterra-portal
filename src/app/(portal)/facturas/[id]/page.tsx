@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getCompanySettings } from "@/lib/company-settings";
 import { notFound } from "next/navigation";
-import { getSession } from "@/lib/auth/session";
+import { getPortalSessionFast } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { formatCurrency } from "@/lib/currency";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +27,7 @@ interface Props {
 
 export default async function FacturaDetailPage({ params }: Props) {
   const { id } = await params;
-  const session = await getSession();
+  const session = await getPortalSessionFast();
   if (!session) redirect("/login");
 
   const [invoice, config] = await Promise.all([

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth/session";
+import { getPortalSessionFast } from "@/lib/auth/session";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ interface Props {
 
 export default async function UsuarioDetailPage({ params }: Props) {
   const { id } = await params;
-  const session = await getSession();
+  const session = await getPortalSessionFast();
   if (!session) redirect("/login");
   if (session.rol !== "ADMINISTRADOR") redirect("/dashboard");
 

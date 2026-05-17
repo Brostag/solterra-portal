@@ -1,5 +1,5 @@
 import { getCompanySettings } from "@/lib/company-settings";
-import { getSession } from "@/lib/auth/session";
+import { getPortalSessionFast } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { saveConfig } from "./actions";
 import { SubmitButton } from "@/components/portal/SubmitButton";
@@ -22,7 +22,7 @@ export default async function ConfiguracionPage({ searchParams }: Props) {
   const sp = await searchParams;
   const guardado = sp.guardado === "1";
 
-  const session = await getSession();
+  const session = await getPortalSessionFast();
   if (!session) redirect("/login");
   if (session.rol !== "ADMINISTRADOR") redirect("/dashboard");
 

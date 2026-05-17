@@ -1,4 +1,4 @@
-import { getSession } from "@/lib/auth/session";
+import { getPortalSessionFast } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { createSupplier } from "../actions";
 import { SubmitButton } from "@/components/portal/SubmitButton";
@@ -10,7 +10,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 export default async function NuevoProveedorPage() {
-  const session = await getSession();
+  const session = await getPortalSessionFast();
   if (!session) redirect("/login");
   if (session.rol === "USUARIO") redirect("/proveedores");
 

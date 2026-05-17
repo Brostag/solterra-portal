@@ -1,4 +1,4 @@
-import { getSession } from "@/lib/auth/session";
+import { getPortalSessionFast } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ const ROL_OPTIONS = [
 ];
 
 export default async function NuevoUsuarioPage() {
-  const session = await getSession();
+  const session = await getPortalSessionFast();
   if (!session) redirect("/login");
   if (session.rol !== "ADMINISTRADOR") redirect("/usuarios");
 

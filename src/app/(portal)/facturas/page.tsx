@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth/session";
+import { getPortalSessionFast } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
@@ -40,7 +40,7 @@ interface Props {
 }
 
 export default async function FacturasPage({ searchParams }: Props) {
-  const session = await getSession();
+  const session = await getPortalSessionFast();
   if (!session) redirect("/login");
 
   const { q, estado } = await searchParams;
