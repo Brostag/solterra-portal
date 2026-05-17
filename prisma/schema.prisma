@@ -124,6 +124,8 @@ model Invoice {
   items             InvoiceItem[]
   documents         Document[]
 
+  @@index([client_id])
+  @@index([created_at])
   @@map("invoices")
 }
 
@@ -139,6 +141,7 @@ model InvoiceItem {
   invoice         Invoice  @relation(fields: [invoice_id], references: [id])
   product         Product? @relation(fields: [product_id], references: [id])
 
+  @@index([invoice_id])
   @@map("invoice_items")
 }
 
@@ -162,6 +165,11 @@ model Document {
   supplier          Supplier?      @relation(fields: [supplier_id], references: [id])
   uploader          Profile        @relation(fields: [uploaded_by], references: [id])
 
+  @@index([invoice_id])
+  @@index([purchase_order_id])
+  @@index([client_id])
+  @@index([supplier_id])
+  @@index([created_at])
   @@map("documents")
 }
 
@@ -213,6 +221,8 @@ model PurchaseOrder {
   items            PurchaseOrderItem[]
   documents        Document[]
 
+  @@index([proveedor_id])
+  @@index([created_at])
   @@map("purchase_orders")
 }
 
@@ -228,6 +238,7 @@ model PurchaseOrderItem {
   ordenCompra     PurchaseOrder  @relation(fields: [orden_compra_id], references: [id], onDelete: Cascade)
   producto        Product?       @relation(fields: [producto_id], references: [id])
 
+  @@index([orden_compra_id])
   @@map("purchase_order_items")
 }
 
@@ -240,5 +251,7 @@ model AuditLog {
   created_at DateTime @default(now())
   user       Profile  @relation(fields: [user_id], references: [id])
 
+  @@index([user_id])
+  @@index([created_at])
   @@map("audit_logs")
 }

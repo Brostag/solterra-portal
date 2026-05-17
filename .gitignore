@@ -66,6 +66,7 @@ QA_PERFORMANCE_*.md
 SPRINT*_PERFORMANCE_*.md
 SPRINT*_QUICK_WINS*.md
 PERFORMANCE_*.md
+PLAN_*.md
 
 # qa screenshots at root
 [0-9][0-9]-*.png
