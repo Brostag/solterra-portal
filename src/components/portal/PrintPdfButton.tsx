@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Printer } from "lucide-react";
+import { Printer, Loader2 } from "lucide-react";
 
 interface Props {
   pdfUrl: string;
@@ -9,15 +10,29 @@ interface Props {
 }
 
 export default function PrintPdfButton({ pdfUrl, label = "Imprimir" }: Props) {
+  const [opening, setOpening] = useState(false);
+
+  function handleClick() {
+    if (opening) return;
+    setOpening(true);
+    window.open(pdfUrl, "_blank");
+    setTimeout(() => setOpening(false), 3000);
+  }
+
   return (
     <Button
       variant="outline"
       size="sm"
       className="gap-2"
-      onClick={() => window.open(pdfUrl, "_blank")}
+      onClick={handleClick}
+      disabled={opening}
     >
-      <Printer className="h-4 w-4" />
-      {label}
+      {opening ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <Printer className="h-4 w-4" />
+      )}
+      {opening ? "Abriendo PDF..." : label}
     </Button>
   );
 }

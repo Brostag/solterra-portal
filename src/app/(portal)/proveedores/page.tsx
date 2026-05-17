@@ -24,25 +24,26 @@ export default async function ProveedoresPage({ searchParams }: Props) {
   const filtroActivo: FiltroActivo | undefined =
     filtro === "activos" || filtro === "inactivos" ? filtro : undefined;
 
-  const suppliers = await prisma.supplier.findMany({
-    where: {
-      ...(filtroActivo === "activos" ? { activo: true } : filtroActivo === "inactivos" ? { activo: false } : {}),
-      ...(query
-        ? {
-            OR: [
-              { nombre: { contains: query, mode: "insensitive" } },
-              { rut: { contains: query, mode: "insensitive" } },
-              { contacto: { contains: query, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-    },
-    orderBy: { nombre: "asc" },
-    include: { _count: { select: { purchaseOrders: true } } },
-  });
-
-  const totalActivos = await prisma.supplier.count({ where: { activo: true } });
-  const totalInactivos = await prisma.supplier.count({ where: { activo: false } });
+  const [suppliers, totalActivos, totalInactivos] = await Promise.all([
+    prisma.supplier.findMany({
+      where: {
+        ...(filtroActivo === "activos" ? { activo: true } : filtroActivo === "inactivos" ? { activo: false } : {}),
+        ...(query
+          ? {
+              OR: [
+                { nombre: { contains: query, mode: "insensitive" } },
+                { rut: { contains: query, mode: "insensitive" } },
+                { contacto: { contains: query, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { nombre: "asc" },
+      include: { _count: { select: { purchaseOrders: true } } },
+    }),
+    prisma.supplier.count({ where: { activo: true } }),
+    prisma.supplier.count({ where: { activo: false } }),
+  ]);
 
   function buildHref(f?: FiltroActivo) {
     const params = new URLSearchParams();

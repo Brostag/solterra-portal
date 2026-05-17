@@ -16,9 +16,14 @@ export default function ProductoActions({ productId, deactivate }: ProductoActio
 
   async function handleDeactivate() {
     setLoading(true);
-    await deactivate(productId);
-    setLoading(false);
-    setOpen(false);
+    try {
+      await deactivate(productId);
+    } catch {
+      // error handled silently; button re-enables via finally
+    } finally {
+      setLoading(false);
+      setOpen(false);
+    }
   }
 
   return (

@@ -55,6 +55,7 @@ export default function Sidebar({ rol }: SidebarProps) {
           height={36}
           className="h-8 w-auto object-contain"
           style={{ mixBlendMode: "screen" }}
+          priority
         />
       </div>
 

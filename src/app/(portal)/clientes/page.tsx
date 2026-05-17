@@ -24,24 +24,25 @@ export default async function ClientesPage({ searchParams }: Props) {
   const filtroActivo: FiltroActivo | undefined =
     filtro === "activos" || filtro === "inactivos" ? filtro : undefined;
 
-  const clients = await prisma.client.findMany({
-    where: {
-      ...(filtroActivo === "activos" ? { activo: true } : filtroActivo === "inactivos" ? { activo: false } : {}),
-      ...(query
-        ? {
-            OR: [
-              { nombre: { contains: query, mode: "insensitive" } },
-              { rut: { contains: query, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-    },
-    orderBy: { nombre: "asc" },
-    include: { _count: { select: { invoices: true } } },
-  });
-
-  const totalActivos = await prisma.client.count({ where: { activo: true } });
-  const totalInactivos = await prisma.client.count({ where: { activo: false } });
+  const [clients, totalActivos, totalInactivos] = await Promise.all([
+    prisma.client.findMany({
+      where: {
+        ...(filtroActivo === "activos" ? { activo: true } : filtroActivo === "inactivos" ? { activo: false } : {}),
+        ...(query
+          ? {
+              OR: [
+                { nombre: { contains: query, mode: "insensitive" } },
+                { rut: { contains: query, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { nombre: "asc" },
+      include: { _count: { select: { invoices: true } } },
+    }),
+    prisma.client.count({ where: { activo: true } }),
+    prisma.client.count({ where: { activo: false } }),
+  ]);
 
   function buildHref(f?: FiltroActivo) {
     const params = new URLSearchParams();

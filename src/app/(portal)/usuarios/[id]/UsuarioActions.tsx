@@ -17,9 +17,14 @@ export default function UsuarioActions({ userId, userName, deactivate }: Props) 
 
   async function handleConfirm() {
     setLoading(true);
-    await deactivate(userId);
-    setLoading(false);
-    setOpen(false);
+    try {
+      await deactivate(userId);
+    } catch {
+      // error handled silently; button re-enables via finally
+    } finally {
+      setLoading(false);
+      setOpen(false);
+    }
   }
 
   return (

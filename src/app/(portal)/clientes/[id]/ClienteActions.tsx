@@ -16,9 +16,14 @@ export default function ClienteActions({ clientId, deactivate }: ClienteActionsP
 
   async function handleDeactivate() {
     setLoading(true);
-    await deactivate(clientId);
-    setLoading(false);
-    setOpen(false);
+    try {
+      await deactivate(clientId);
+    } catch {
+      // error handled silently; button re-enables via finally
+    } finally {
+      setLoading(false);
+      setOpen(false);
+    }
   }
 
   return (
