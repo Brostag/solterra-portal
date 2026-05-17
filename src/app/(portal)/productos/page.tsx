@@ -25,24 +25,25 @@ export default async function ProductosPage({ searchParams }: Props) {
   const filtroActivo: FiltroActivo | undefined =
     filtro === "activos" || filtro === "inactivos" ? filtro : undefined;
 
-  const products = await prisma.product.findMany({
-    where: {
-      ...(filtroActivo === "activos" ? { activo: true } : filtroActivo === "inactivos" ? { activo: false } : {}),
-      ...(query
-        ? {
-            OR: [
-              { nombre: { contains: query, mode: "insensitive" } },
-              { codigo_interno: { contains: query, mode: "insensitive" } },
-              { descripcion: { contains: query, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-    },
-    orderBy: { created_at: "desc" },
-  });
-
-  const totalActivos = await prisma.product.count({ where: { activo: true } });
-  const totalInactivos = await prisma.product.count({ where: { activo: false } });
+  const [products, totalActivos, totalInactivos] = await Promise.all([
+    prisma.product.findMany({
+      where: {
+        ...(filtroActivo === "activos" ? { activo: true } : filtroActivo === "inactivos" ? { activo: false } : {}),
+        ...(query
+          ? {
+              OR: [
+                { nombre: { contains: query, mode: "insensitive" } },
+                { codigo_interno: { contains: query, mode: "insensitive" } },
+                { descripcion: { contains: query, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { created_at: "desc" },
+    }),
+    prisma.product.count({ where: { activo: true } }),
+    prisma.product.count({ where: { activo: false } }),
+  ]);
 
   function buildHref(f?: FiltroActivo) {
     const params = new URLSearchParams();
