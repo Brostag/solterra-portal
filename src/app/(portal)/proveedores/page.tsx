@@ -39,6 +39,7 @@ export default async function ProveedoresPage({ searchParams }: Props) {
           : {}),
       },
       orderBy: { nombre: "asc" },
+      take: 200,
       include: { _count: { select: { purchaseOrders: true } } },
     }),
     prisma.supplier.count({ where: { activo: true } }),

@@ -40,6 +40,7 @@ export default async function ProductosPage({ searchParams }: Props) {
           : {}),
       },
       orderBy: { created_at: "desc" },
+      take: 200,
     }),
     prisma.product.count({ where: { activo: true } }),
     prisma.product.count({ where: { activo: false } }),

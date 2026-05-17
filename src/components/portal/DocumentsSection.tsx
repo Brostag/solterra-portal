@@ -45,6 +45,7 @@ export default async function DocumentsSection({
   const documents = await prisma.document.findMany({
     where,
     orderBy: { created_at: "desc" },
+    take: 50,
     include: { uploader: { select: { nombre: true } } },
   });
 

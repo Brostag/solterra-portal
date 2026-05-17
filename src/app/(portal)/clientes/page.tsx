@@ -38,6 +38,7 @@ export default async function ClientesPage({ searchParams }: Props) {
           : {}),
       },
       orderBy: { nombre: "asc" },
+      take: 200,
       include: { _count: { select: { invoices: true } } },
     }),
     prisma.client.count({ where: { activo: true } }),

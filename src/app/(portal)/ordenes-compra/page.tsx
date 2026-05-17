@@ -58,6 +58,7 @@ export default async function OrdenesCompraPage({ searchParams }: Props) {
     },
     include: { proveedor: { select: { nombre: true } } },
     orderBy: { created_at: "desc" },
+    take: 200,
   });
 
   return (

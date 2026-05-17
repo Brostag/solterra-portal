@@ -57,6 +57,7 @@ export default async function DocumentosPage({ searchParams }: Props) {
   const documents = await prisma.document.findMany({
     where,
     orderBy: { created_at: "desc" },
+    take: 200,
     include: {
       client:         { select: { nombre: true } },
       invoice:        { select: { numero_factura: true } },

@@ -60,6 +60,7 @@ export default async function FacturasPage({ searchParams }: Props) {
         : {}),
     },
     orderBy: { created_at: "desc" },
+    take: 200,
     include: {
       client: { select: { nombre: true } },
       user:   { select: { nombre: true } },
