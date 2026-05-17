@@ -170,70 +170,78 @@ export default function NuevaFacturaForm({
         <div className="bg-white rounded-lg border p-6 space-y-4">
           <h2 className="font-semibold text-[#253158]">Productos / Servicios</h2>
 
-          <div className="space-y-3">
+          {/* Header de columnas */}
+          <div className="grid gap-3 items-center" style={{ gridTemplateColumns: "1fr 120px 160px 100px 36px" }}>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Descripción</div>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Cantidad</div>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Precio Unitario</div>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider text-right">Subtotal</div>
+            <div />
+          </div>
+
+          <div className="space-y-2">
             {items.map((item, idx) => (
-              <div key={idx} className="grid grid-cols-12 gap-3 items-end">
-                <div className="col-span-4 space-y-1">
-                  {idx === 0 && <Label className="text-xs text-gray-500">Descripción</Label>}
-                  <div className="flex gap-2">
-                    <Select
-                      value={item.product_id ?? ""}
-                      onValueChange={(v) => { if (v) updateLine(idx, "product_id", v); }}
-                    >
-                      <SelectTrigger className="w-10 px-2 flex-shrink-0">
-                        <Plus className="h-3 w-3" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {products.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      value={item.descripcion}
-                      onChange={(e) => updateLine(idx, "descripcion", e.target.value)}
-                      placeholder="Descripción del servicio"
-                    />
-                  </div>
-                </div>
-                <div className="col-span-2 space-y-1">
-                  {idx === 0 && <Label className="text-xs text-gray-500">Cantidad</Label>}
-                  <Input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    value={item.cantidad}
-                    onChange={(e) => updateLine(idx, "cantidad", parseFloat(e.target.value) || 0)}
-                  />
-                </div>
-                <div className="col-span-3 space-y-1">
-                  {idx === 0 && <Label className="text-xs text-gray-500">Precio Unitario</Label>}
-                  <Input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={item.precio_unitario}
-                    onChange={(e) => updateLine(idx, "precio_unitario", parseFloat(e.target.value) || 0)}
-                  />
-                </div>
-                <div className="col-span-2 space-y-1">
-                  {idx === 0 && <Label className="text-xs text-gray-500">Subtotal</Label>}
-                  <p className="h-10 flex items-center text-sm font-medium text-gray-700">
-                    {formatCurrency(item.cantidad * item.precio_unitario, moneda)}
-                  </p>
-                </div>
-                <div className="col-span-1 flex items-end pb-0.5">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeLine(idx)}
-                    disabled={items.length === 1}
-                    className="text-gray-400 hover:text-[#c6352e]"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+              <div key={idx} className="grid gap-3 items-center" style={{ gridTemplateColumns: "1fr 120px 160px 100px 36px" }}>
+                {/* Descripción — con autocompletado del catálogo */}
+                <Input
+                  value={item.descripcion}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const matched = products.find((p) => p.nombre === val);
+                    if (matched) {
+                      setItems(items.map((it, i) => i !== idx ? it : {
+                        ...it,
+                        descripcion: val,
+                        product_id: matched.id,
+                        precio_unitario: matched.precio_unitario,
+                      }));
+                    } else {
+                      updateLine(idx, "descripcion", val);
+                    }
+                  }}
+                  placeholder="Escribir descripción o elegir del catálogo..."
+                  list={`catalog-${idx}`}
+                />
+                <datalist id={`catalog-${idx}`}>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.nombre} />
+                  ))}
+                </datalist>
+
+                {/* Cantidad */}
+                <Input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={item.cantidad}
+                  onChange={(e) => updateLine(idx, "cantidad", parseFloat(e.target.value) || 0)}
+                />
+
+                {/* Precio unitario */}
+                <Input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={item.precio_unitario}
+                  onChange={(e) => updateLine(idx, "precio_unitario", parseFloat(e.target.value) || 0)}
+                />
+
+                {/* Subtotal */}
+                <p className="text-sm font-medium text-gray-700 text-right tabular-nums">
+                  {formatCurrency(item.cantidad * item.precio_unitario, moneda)}
+                </p>
+
+                {/* Eliminar */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeLine(idx)}
+                  disabled={items.length === 1}
+                  className="h-8 w-8 p-0 text-gray-300 hover:text-[#c6352e] hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             ))}
           </div>
