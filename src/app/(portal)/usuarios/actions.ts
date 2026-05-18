@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { profileCacheTag } from "@/lib/auth/session";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -65,7 +66,7 @@ export async function updateUser(userId: string, formData: FormData) {
 
   const prev = await prisma.profile.findUnique({
     where: { id: userId },
-    select: { nombre: true, rol: true },
+    select: { nombre: true, rol: true, auth_user_id: true },
   });
   if (!prev) throw new Error("Usuario no encontrado");
 
@@ -74,6 +75,7 @@ export async function updateUser(userId: string, formData: FormData) {
     data: { nombre: validated.nombre, rol: validated.rol },
   });
 
+  revalidateTag(profileCacheTag(prev.auth_user_id));
   await logAudit(session.id, "usuario_actualizado", "usuarios", `${validated.nombre} → ${validated.rol}`);
   revalidatePath("/usuarios");
   revalidatePath(`/usuarios/${userId}`);
@@ -88,7 +90,7 @@ export async function deactivateUser(userId: string) {
 
   const user = await prisma.profile.findUnique({
     where: { id: userId },
-    select: { nombre: true },
+    select: { nombre: true, auth_user_id: true },
   });
   if (!user) return;
 
@@ -97,6 +99,7 @@ export async function deactivateUser(userId: string) {
     data: { activo: false },
   });
 
+  revalidateTag(profileCacheTag(user.auth_user_id));
   await logAudit(session.id, "usuario_desactivado", "usuarios", user.nombre);
   revalidatePath("/usuarios");
 }

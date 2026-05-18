@@ -7,7 +7,8 @@ import { logAudit } from "@/lib/audit";
 import { calculateInvoiceTotals } from "@/lib/currency";
 import { invoiceSchema, annulSchema } from "@/lib/validations/invoice";
 import { validateInvoicePreflight } from "@/lib/validations/invoice-preflight";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { DASHBOARD_STATS_TAG } from "@/app/(portal)/dashboard/page";
 import { redirect } from "next/navigation";
 import { getCompanySettings } from "@/lib/company-settings";
 
@@ -90,6 +91,7 @@ export async function createInvoice(rawData: {
   );
 
   revalidatePath("/facturas");
+  revalidateTag(DASHBOARD_STATS_TAG);
   return { id: invoice.id };
 }
 
@@ -130,6 +132,7 @@ export async function updateInvoiceStatus(
 
   revalidatePath(`/facturas/${invoiceId}`);
   revalidatePath("/facturas");
+  revalidateTag(DASHBOARD_STATS_TAG);
 }
 
 export async function annulInvoice(invoiceId: string, formData: FormData) {
@@ -164,4 +167,5 @@ export async function annulInvoice(invoiceId: string, formData: FormData) {
 
   revalidatePath(`/facturas/${invoiceId}`);
   revalidatePath("/facturas");
+  revalidateTag(DASHBOARD_STATS_TAG);
 }

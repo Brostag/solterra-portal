@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
+import { unstable_cache } from "next/cache";
 import { formatCurrency } from "@/lib/currency";
 import {
   Card,
@@ -21,6 +22,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+export const DASHBOARD_STATS_TAG = "dashboard-stats";
+
 function getFechaHoy(): string {
   const fecha = new Date().toLocaleDateString("es-CL", {
     weekday: "long",
@@ -38,7 +41,8 @@ function getGreeting(): string {
   return "Buenas noches";
 }
 
-async function getDashboardStats() {
+const getDashboardStats = unstable_cache(
+  async () => {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -121,7 +125,10 @@ async function getDashboardStats() {
     montoFacturadoEsteMes: montoMes,
     pctCambioFacturado,
   };
-}
+  },
+  [DASHBOARD_STATS_TAG],
+  { revalidate: 60, tags: [DASHBOARD_STATS_TAG] }
+);
 
 const estadoBadge: Record<string, string> = {
   CREADA:  "bg-blue-50  text-blue-700  border border-blue-200",

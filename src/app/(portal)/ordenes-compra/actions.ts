@@ -6,9 +6,10 @@ import { getSession } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { calculateOCTotals } from "@/lib/currency";
 import { purchaseOrderSchema, annulOCSchema, type PurchaseOrderData } from "@/lib/validations/purchase-order";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCompanySettings } from "@/lib/company-settings";
+import { DASHBOARD_STATS_TAG } from "@/app/(portal)/dashboard/page";
 import type { EstadoOC } from "@/types";
 
 // ── Allowed state transitions by minimum role ────────────────────────────────
@@ -102,6 +103,7 @@ export async function createPurchaseOrder(rawData: PurchaseOrderData): Promise<{
 
   await logAudit(session.id, "oc_creada", "ordenes-compra", `Nº ${numero} | Total: ${totals.total}`);
   revalidatePath("/ordenes-compra");
+  revalidateTag(DASHBOARD_STATS_TAG);
   return { id: oc.id };
 }
 
@@ -159,6 +161,7 @@ export async function updatePurchaseOrder(id: string, rawData: PurchaseOrderData
   await logAudit(session.id, "oc_editada", "ordenes-compra", `Nº ${oc.numero}`);
   revalidatePath(`/ordenes-compra/${id}`);
   revalidatePath("/ordenes-compra");
+  revalidateTag(DASHBOARD_STATS_TAG);
 }
 
 // ── Change status ────────────────────────────────────────────────────────────
@@ -178,6 +181,7 @@ export async function changeOrderStatus(id: string, newStatus: EstadoOC): Promis
   await logAudit(session.id, `oc_${newStatus.toLowerCase()}`, "ordenes-compra", `Nº ${oc.numero}`);
   revalidatePath(`/ordenes-compra/${id}`);
   revalidatePath("/ordenes-compra");
+  revalidateTag(DASHBOARD_STATS_TAG);
 }
 
 // ── Annul ────────────────────────────────────────────────────────────────────
@@ -196,4 +200,5 @@ export async function annulOrder(id: string, motivo: string): Promise<void> {
   await logAudit(session.id, "oc_anulada", "ordenes-compra", `Nº ${oc.numero} | Motivo: ${motivo_anulacion}`);
   revalidatePath(`/ordenes-compra/${id}`);
   revalidatePath("/ordenes-compra");
+  revalidateTag(DASHBOARD_STATS_TAG);
 }

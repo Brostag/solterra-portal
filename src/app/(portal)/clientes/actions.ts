@@ -4,8 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { clientSchema } from "@/lib/validations/client";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
+import { DASHBOARD_STATS_TAG } from "@/app/(portal)/dashboard/page";
 
 export async function createClient(formData: FormData) {
   const session = await getSession();
@@ -24,6 +25,7 @@ export async function createClient(formData: FormData) {
   await logAudit(session.id, "cliente_creado", "clientes", `ID: ${client.id} Nombre: ${client.nombre}`);
 
   revalidatePath("/clientes");
+  revalidateTag(DASHBOARD_STATS_TAG);
   redirect("/clientes");
 }
 
@@ -44,6 +46,7 @@ export async function updateClient(id: string, formData: FormData) {
   await logAudit(session.id, "cliente_editado", "clientes", `ID: ${id}`);
 
   revalidatePath("/clientes");
+  revalidateTag(DASHBOARD_STATS_TAG);
   redirect("/clientes");
 }
 
@@ -58,4 +61,5 @@ export async function deactivateClient(id: string) {
   await logAudit(session.id, "cliente_desactivado", "clientes", `ID: ${id}`);
 
   revalidatePath("/clientes");
+  revalidateTag(DASHBOARD_STATS_TAG);
 }

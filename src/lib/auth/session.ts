@@ -2,7 +2,23 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import type { UserSession } from "@/types";
+
+export const profileCacheTag = (authUserId: string) => `profile-${authUserId}`;
+
+// Cache de 120s por auth_user_id — evita 1 query Prisma por request en todas las rutas.
+// Invalidar con revalidateTag(profileCacheTag(authUserId)) al editar/desactivar un usuario.
+const getCachedProfile = (authUserId: string) =>
+  unstable_cache(
+    () =>
+      prisma.profile.findUnique({
+        where: { auth_user_id: authUserId },
+        select: { id: true, email: true, nombre: true, rol: true, activo: true },
+      }),
+    ["profile", authUserId],
+    { revalidate: 120, tags: [profileCacheTag(authUserId)] }
+  )();
 
 export const getSession = cache(async (): Promise<UserSession | null> => {
   const supabase = await createClient();
@@ -12,11 +28,7 @@ export const getSession = cache(async (): Promise<UserSession | null> => {
 
   if (!user) return null;
 
-  const profile = await prisma.profile.findUnique({
-    where: { auth_user_id: user.id },
-    select: { id: true, email: true, nombre: true, rol: true, activo: true },
-  });
-
+  const profile = await getCachedProfile(user.id);
   if (!profile) return null;
 
   if (!profile.activo) {
@@ -40,11 +52,7 @@ export const getPortalSessionFast = cache(async (): Promise<UserSession | null> 
 
   if (!session?.user) return null;
 
-  const profile = await prisma.profile.findUnique({
-    where: { auth_user_id: session.user.id },
-    select: { id: true, email: true, nombre: true, rol: true, activo: true },
-  });
-
+  const profile = await getCachedProfile(session.user.id);
   if (!profile) return null;
 
   if (!profile.activo) {
