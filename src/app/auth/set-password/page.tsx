@@ -34,6 +34,28 @@ export default function SetPasswordPage() {
     const supabase = createClient();
     let resolved = false;
 
+    function markReady() {
+      if (resolved) return;
+      resolved = true;
+      setSessionReady(true);
+      setChecking(false);
+    }
+
+    function markFailed() {
+      if (resolved) return;
+      resolved = true;
+      setChecking(false);
+    }
+
+    // PKCE: invite redirects here with ?code= — exchange it before waiting for auth events
+    const code = params.get("code");
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error: exchangeError }) => {
+        if (exchangeError) markFailed();
+        else markReady();
+      });
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (
@@ -41,9 +63,7 @@ export default function SetPasswordPage() {
           event === "PASSWORD_RECOVERY" ||
           (event === "INITIAL_SESSION" && session)
         ) {
-          resolved = true;
-          setSessionReady(true);
-          setChecking(false);
+          markReady();
         }
       }
     );
