@@ -118,8 +118,8 @@ export default function NuevaFacturaForm({
           </div>
         )}
         {/* Cabecera */}
-        <div className="bg-white rounded-lg border p-6 grid grid-cols-3 gap-4">
-          <div className="col-span-2 space-y-2">
+        <div className="bg-white rounded-lg border p-4 sm:p-6 flex flex-col sm:grid sm:grid-cols-3 gap-4">
+          <div className="sm:col-span-2 space-y-2">
             <Label>Cliente <span className="text-[#c6352e]">*</span></Label>
             <Select value={clientId} onValueChange={(v) => setClientId(v ?? "")}>
               <SelectTrigger>
@@ -132,7 +132,8 @@ export default function NuevaFacturaForm({
               <SelectContent>
                 {clients.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
-                    {c.nombre}{c.rut ? ` — ${c.rut}` : ""}
+                    <span className="font-medium">{c.nombre}</span>
+                    {c.rut && <span className="block text-xs text-gray-400 leading-tight">{c.rut}</span>}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -167,22 +168,90 @@ export default function NuevaFacturaForm({
         </div>
 
         {/* Líneas de factura */}
-        <div className="bg-white rounded-lg border p-6 space-y-4">
+        <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-4">
           <h2 className="font-semibold text-[#253158]">Productos / Servicios</h2>
 
-          {/* Header de columnas */}
-          <div className="grid gap-3 items-center" style={{ gridTemplateColumns: "1fr 120px 160px 100px 36px" }}>
-            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Descripción</div>
-            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Cantidad</div>
-            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Precio Unitario</div>
-            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider text-right">Subtotal</div>
-            <div />
+          {/* Móvil: tarjetas verticales — sm:hidden */}
+          <div className="sm:hidden space-y-3">
+            {items.map((item, idx) => (
+              <div key={idx} className="border border-gray-200 rounded-lg p-3 space-y-3">
+                <div className="space-y-1.5">
+                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Descripción</span>
+                  <Input
+                    value={item.descripcion}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const matched = products.find((p) => p.nombre === val);
+                      if (matched) {
+                        setItems(items.map((it, i) => i !== idx ? it : {
+                          ...it,
+                          descripcion: val,
+                          product_id: matched.id,
+                          precio_unitario: matched.precio_unitario,
+                        }));
+                      } else {
+                        updateLine(idx, "descripcion", val);
+                      }
+                    }}
+                    placeholder="Descripción o catálogo..."
+                    list={`catalog-m-${idx}`}
+                  />
+                  <datalist id={`catalog-m-${idx}`}>
+                    {products.map((p) => <option key={p.id} value={p.nombre} />)}
+                  </datalist>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1.5">
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Cantidad</span>
+                    <Input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      value={item.cantidad}
+                      onChange={(e) => updateLine(idx, "cantidad", parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Precio Unit.</span>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={item.precio_unitario}
+                      onChange={(e) => updateLine(idx, "precio_unitario", parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-1 border-t border-gray-100">
+                  <span className="text-sm font-semibold text-[#253158] tabular-nums">
+                    Subtotal: {formatCurrency(item.cantidad * item.precio_unitario, moneda)}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeLine(idx)}
+                    disabled={items.length === 1}
+                    className="h-8 w-8 p-0 text-gray-300 hover:text-[#c6352e] hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
           </div>
 
-          <div className="space-y-2">
+          {/* Desktop: grid de columnas — hidden sm:block */}
+          <div className="hidden sm:block space-y-2">
+            <div className="grid gap-3 items-center" style={{ gridTemplateColumns: "1fr 120px 160px 100px 36px" }}>
+              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Descripción</div>
+              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Cantidad</div>
+              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Precio Unitario</div>
+              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider text-right">Subtotal</div>
+              <div />
+            </div>
             {items.map((item, idx) => (
               <div key={idx} className="grid gap-3 items-center" style={{ gridTemplateColumns: "1fr 120px 160px 100px 36px" }}>
-                {/* Descripción — con autocompletado del catálogo */}
                 <Input
                   value={item.descripcion}
                   onChange={(e) => {
@@ -200,15 +269,11 @@ export default function NuevaFacturaForm({
                     }
                   }}
                   placeholder="Escribir descripción o elegir del catálogo..."
-                  list={`catalog-${idx}`}
+                  list={`catalog-d-${idx}`}
                 />
-                <datalist id={`catalog-${idx}`}>
-                  {products.map((p) => (
-                    <option key={p.id} value={p.nombre} />
-                  ))}
+                <datalist id={`catalog-d-${idx}`}>
+                  {products.map((p) => <option key={p.id} value={p.nombre} />)}
                 </datalist>
-
-                {/* Cantidad */}
                 <Input
                   type="number"
                   min="0.01"
@@ -216,8 +281,6 @@ export default function NuevaFacturaForm({
                   value={item.cantidad}
                   onChange={(e) => updateLine(idx, "cantidad", parseFloat(e.target.value) || 0)}
                 />
-
-                {/* Precio unitario */}
                 <Input
                   type="number"
                   min="0"
@@ -225,13 +288,9 @@ export default function NuevaFacturaForm({
                   value={item.precio_unitario}
                   onChange={(e) => updateLine(idx, "precio_unitario", parseFloat(e.target.value) || 0)}
                 />
-
-                {/* Subtotal */}
                 <p className="text-sm font-medium text-gray-700 text-right tabular-nums">
                   {formatCurrency(item.cantidad * item.precio_unitario, moneda)}
                 </p>
-
-                {/* Eliminar */}
                 <Button
                   type="button"
                   variant="ghost"
@@ -260,7 +319,7 @@ export default function NuevaFacturaForm({
 
         {/* Totales */}
         <div className="bg-white rounded-lg border p-6">
-          <div className="max-w-xs ml-auto space-y-2">
+          <div className="space-y-2 sm:max-w-xs sm:ml-auto">
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Subtotal</span>
               <span className="font-medium">{formatCurrency(totals.subtotal, moneda)}</span>
