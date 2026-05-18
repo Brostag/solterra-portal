@@ -10,9 +10,9 @@ export default function ClientesLoading() {
         </div>
         <Skeleton className="h-9 w-36" />
       </div>
-      <div className="bg-white rounded-lg border">
+      <div className="bg-white rounded-lg border border-gray-200">
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-4 px-4 py-3 border-b last:border-0">
+          <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-gray-100 last:border-0">
             <Skeleton className="h-4 w-32 flex-1" />
             <Skeleton className="h-4 w-24" />
             <Skeleton className="h-4 w-20" />

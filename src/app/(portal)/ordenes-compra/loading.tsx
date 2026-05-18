@@ -10,13 +10,13 @@ export default function OrdenesCompraLoading() {
         </div>
         <Skeleton className="h-9 w-44" />
       </div>
-      <div className="bg-white rounded-lg border">
-        <div className="flex gap-3 p-4 border-b">
+      <div className="bg-white rounded-lg border border-gray-200">
+        <div className="flex gap-3 p-4 border-b border-gray-100">
           <Skeleton className="h-8 w-full max-w-xs" />
           <Skeleton className="h-8 w-32" />
         </div>
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-4 px-4 py-3 border-b last:border-0">
+          <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-gray-100 last:border-0">
             <Skeleton className="h-4 w-20" />
             <Skeleton className="h-4 w-36 flex-1" />
             <Skeleton className="h-5 w-16" />

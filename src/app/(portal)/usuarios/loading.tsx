@@ -20,7 +20,7 @@ export default function UsuariosLoading() {
         <Skeleton className="h-9 w-20" />
       </div>
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="flex gap-4 px-5 py-3 border-b bg-gray-50">
+        <div className="flex gap-4 px-5 py-3 border-b border-gray-100 bg-gray-50">
           <Skeleton className="h-4 w-28" />
           <Skeleton className="h-4 w-40" />
           <Skeleton className="h-4 w-24" />
@@ -28,7 +28,7 @@ export default function UsuariosLoading() {
           <Skeleton className="h-4 w-24" />
         </div>
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-4 px-5 py-4 border-b last:border-0">
+          <div key={i} className="flex items-center gap-4 px-5 py-4 border-b border-gray-100 last:border-0">
             <Skeleton className="h-4 w-32" />
             <Skeleton className="h-4 w-44" />
             <Skeleton className="h-5 w-24 rounded-md" />

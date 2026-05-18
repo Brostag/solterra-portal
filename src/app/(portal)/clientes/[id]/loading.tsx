@@ -26,7 +26,7 @@ export default function ClienteDetailLoading() {
           <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
             <Skeleton className="h-5 w-32" />
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 py-2 border-b last:border-0">
+              <div key={i} className="flex items-center gap-4 py-2 border-b border-gray-100 last:border-0">
                 <Skeleton className="h-4 w-24" />
                 <Skeleton className="h-4 w-28 flex-1" />
                 <Skeleton className="h-5 w-16" />

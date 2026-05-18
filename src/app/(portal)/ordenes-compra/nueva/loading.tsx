@@ -29,7 +29,7 @@ export default function NuevaOCLoading() {
             ))}
           </div>
         </div>
-        <div className="flex justify-end gap-3 pt-4 border-t">
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
           <Skeleton className="h-10 w-24" />
           <Skeleton className="h-10 w-36" />
         </div>

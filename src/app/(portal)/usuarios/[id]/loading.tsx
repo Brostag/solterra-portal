@@ -30,7 +30,7 @@ export default function UsuarioDetailLoading() {
             <Skeleton className="h-6 w-24 rounded-full" />
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-6 pt-4">
-            <div className="border-t pt-4">
+            <div className="border-t border-gray-100 pt-4">
               <Skeleton className="h-10 w-40" />
             </div>
           </div>

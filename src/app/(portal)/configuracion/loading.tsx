@@ -10,7 +10,7 @@ export default function ConfiguracionLoading() {
 
       {[1, 2, 3].map((section) => (
         <div key={section} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="flex items-center gap-3 px-6 py-4 border-b bg-gray-50">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50">
             <Skeleton className="h-8 w-8 rounded-lg" />
             <div className="space-y-1">
               <Skeleton className="h-4 w-40" />
