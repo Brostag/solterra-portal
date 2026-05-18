@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -40,9 +41,15 @@ interface SidebarProps {
 
 export default function Sidebar({ rol }: SidebarProps) {
   const pathname = usePathname();
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPendingHref(null);
+  }, [pathname]);
 
   const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(`${href}/`);
+    pendingHref === href ||
+    (!pendingHref && (pathname === href || pathname.startsWith(`${href}/`)));
 
   return (
     <aside className="flex flex-col w-64 h-full bg-[#253158] text-white flex-shrink-0">
@@ -68,6 +75,7 @@ export default function Sidebar({ rol }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => setPendingHref(item.href)}
               className={cn(
                 "relative flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors",
                 active
@@ -98,6 +106,7 @@ export default function Sidebar({ rol }: SidebarProps) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={() => setPendingHref(item.href)}
                   className={cn(
                     "relative flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors",
                     active
