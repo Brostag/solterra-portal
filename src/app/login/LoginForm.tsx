@@ -112,10 +112,10 @@ export default function LoginForm() {
       </div>
 
       {/* ── Panel derecho ── */}
-      <div className="flex flex-col items-center justify-center bg-[#f6f7f9] px-10 py-12 overflow-y-auto">
+      <div className="flex flex-col items-center justify-center bg-[#f6f7f9] px-4 sm:px-10 py-6 sm:py-12 overflow-y-auto">
 
         {/* Logo en mobile */}
-        <div className="flex justify-center mb-8 lg:hidden">
+        <div className="flex justify-center mb-5 sm:mb-8 lg:hidden">
           <Image src="/solterra-logo.png" alt="Solterra" width={140} height={48} className="h-10 w-auto" />
         </div>
 
@@ -124,7 +124,7 @@ export default function LoginForm() {
           <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_24px_60px_-20px_rgba(20,33,61,0.28),0_2px_8px_rgba(20,33,61,0.06)] overflow-hidden">
 
             {/* Encabezado */}
-            <div className="px-12 pt-12 pb-6">
+            <div className="px-6 pt-8 pb-5 sm:px-12 sm:pt-12 sm:pb-6">
               <h1 className="text-[2.15rem] font-bold text-[#1b2a4e] leading-tight tracking-tight">
                 Iniciar sesión
               </h1>
@@ -135,7 +135,7 @@ export default function LoginForm() {
             </div>
 
             {/* Formulario */}
-            <div className="px-12 pb-12 space-y-5">
+            <div className="px-6 pb-8 sm:px-12 sm:pb-12 space-y-5">
               {resetSuccess && (
                 <div className="text-sm text-green-700 bg-green-50 border border-green-200 px-4 py-3 rounded-lg">
                   Contraseña actualizada. Ya puedes iniciar sesión.
