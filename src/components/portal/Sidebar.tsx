@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -48,6 +48,7 @@ interface SidebarProps {
 
 export default function Sidebar({ rol, mobileOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -59,6 +60,13 @@ export default function Sidebar({ rol, mobileOpen = false, onClose }: SidebarPro
   useEffect(() => {
     setPendingHref(null);
   }, [pathname]);
+
+  // Warm up all portal routes on sidebar mount so Turbopack compiles them
+  // before the user clicks, and Next.js caches the RSC payload in production.
+  useEffect(() => {
+    const all = [...navItems, ...(rol === "ADMINISTRADOR" ? adminItems : [])];
+    all.forEach((item) => router.prefetch(item.href));
+  }, [router, rol]);
 
   function toggle() {
     const next = !collapsed;
@@ -164,7 +172,10 @@ export default function Sidebar({ rol, mobileOpen = false, onClose }: SidebarPro
             <Link
               key={item.href}
               href={item.href}
+              prefetch
               onClick={() => setPendingHref(item.href)}
+              onMouseEnter={() => router.prefetch(item.href)}
+              onFocus={() => router.prefetch(item.href)}
               title={collapsed ? item.label : undefined}
               className={linkClass(active)}
             >
@@ -199,7 +210,10 @@ export default function Sidebar({ rol, mobileOpen = false, onClose }: SidebarPro
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch
                   onClick={() => setPendingHref(item.href)}
+                  onMouseEnter={() => router.prefetch(item.href)}
+                  onFocus={() => router.prefetch(item.href)}
                   title={collapsed ? item.label : undefined}
                   className={linkClass(active)}
                 >
