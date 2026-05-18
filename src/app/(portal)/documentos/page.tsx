@@ -51,13 +51,23 @@ export default async function DocumentosPage({ searchParams }: Props) {
   if (entidad === "clientes")    where.client_id         = { not: null };
   if (entidad === "proveedores") where.supplier_id       = { not: null };
 
-  const [session, documents] = await Promise.all([
+  const [session, documents, total] = await Promise.all([
     getPortalSessionFast(),
     prisma.document.findMany({
       where,
       orderBy: { created_at: "desc" },
-      take: 200,
-      include: {
+      take: 50,
+      select: {
+        id:                true,
+        nombre_archivo:    true,
+        tipo_documento:    true,
+        tamaño:            true,
+        invoice_id:        true,
+        purchase_order_id: true,
+        client_id:         true,
+        supplier_id:       true,
+        uploaded_by:       true,
+        created_at:        true,
         client:         { select: { nombre: true } },
         invoice:        { select: { numero_factura: true } },
         purchase_order: { select: { numero: true } },
@@ -65,6 +75,7 @@ export default async function DocumentosPage({ searchParams }: Props) {
         uploader:       { select: { nombre: true } },
       },
     }),
+    prisma.document.count({ where }),
   ]);
   if (!session) redirect("/login");
 
@@ -90,7 +101,9 @@ export default async function DocumentosPage({ searchParams }: Props) {
         <div>
           <h1 className="text-2xl font-bold text-[#253158]">Documentos</h1>
           <p className="text-gray-500 text-sm mt-1">
-            {documents.length} archivo{documents.length !== 1 ? "s" : ""}
+            {total > 50
+              ? `${documents.length} de ${total} archivos — mostrando los más recientes`
+              : `${total} archivo${total !== 1 ? "s" : ""}`}
           </p>
         </div>
       </div>
