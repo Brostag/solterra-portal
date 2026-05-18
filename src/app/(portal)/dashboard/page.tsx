@@ -148,16 +148,16 @@ export default async function DashboardPage() {
       </div>
 
       {/* Accesos principales */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Link href="/facturas" className="group block">
-          <div className="bg-white border border-gray-200 rounded-xl p-5 hover:border-[#253158] hover:shadow-md transition-all duration-200 h-full">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-2.5 bg-[#253158]/10 rounded-lg">
-                <FileText className="h-7 w-7 text-[#253158]" />
+          <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 hover:border-[#253158] hover:shadow-md transition-all duration-200 h-full">
+            <div className="flex items-start justify-between mb-3 sm:mb-4">
+              <div className="p-2 sm:p-2.5 bg-[#253158]/10 rounded-lg">
+                <FileText className="h-6 w-6 sm:h-7 sm:w-7 text-[#253158]" />
               </div>
               <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-[#253158] group-hover:translate-x-0.5 transition-all" />
             </div>
-            <p className="text-3xl font-bold text-[#253158]">{stats.totalFacturas}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-[#253158]">{stats.totalFacturas}</p>
             <p className="text-sm font-semibold text-gray-700 mt-0.5">Facturas</p>
             {(stats.facturasCreadas + stats.facturasEnviadas) > 0 ? (
               <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
@@ -171,14 +171,14 @@ export default async function DashboardPage() {
         </Link>
 
         <Link href="/ordenes-compra" className="group block">
-          <div className="bg-white border border-gray-200 rounded-xl p-5 hover:border-[#253158] hover:shadow-md transition-all duration-200 h-full">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-2.5 bg-[#253158]/10 rounded-lg">
-                <ShoppingCart className="h-7 w-7 text-[#253158]" />
+          <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 hover:border-[#253158] hover:shadow-md transition-all duration-200 h-full">
+            <div className="flex items-start justify-between mb-3 sm:mb-4">
+              <div className="p-2 sm:p-2.5 bg-[#253158]/10 rounded-lg">
+                <ShoppingCart className="h-6 w-6 sm:h-7 sm:w-7 text-[#253158]" />
               </div>
               <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-[#253158] group-hover:translate-x-0.5 transition-all" />
             </div>
-            <p className="text-3xl font-bold text-[#253158]">{stats.totalOC}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-[#253158]">{stats.totalOC}</p>
             <p className="text-sm font-semibold text-gray-700 mt-0.5">Órdenes de Compra</p>
             {stats.ocPendientes > 0 ? (
               <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
@@ -194,14 +194,14 @@ export default async function DashboardPage() {
         </Link>
 
         <Link href="/documentos" className="group block">
-          <div className="bg-white border border-gray-200 rounded-xl p-5 hover:border-[#253158] hover:shadow-md transition-all duration-200 h-full">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-2.5 bg-[#253158]/10 rounded-lg">
-                <FolderOpen className="h-7 w-7 text-[#253158]" />
+          <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 hover:border-[#253158] hover:shadow-md transition-all duration-200 h-full">
+            <div className="flex items-start justify-between mb-3 sm:mb-4">
+              <div className="p-2 sm:p-2.5 bg-[#253158]/10 rounded-lg">
+                <FolderOpen className="h-6 w-6 sm:h-7 sm:w-7 text-[#253158]" />
               </div>
               <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-[#253158] group-hover:translate-x-0.5 transition-all" />
             </div>
-            <p className="text-3xl font-bold text-[#253158]">{stats.totalDocumentos}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-[#253158]">{stats.totalDocumentos}</p>
             <p className="text-sm font-semibold text-gray-700 mt-0.5">Documentos</p>
             <p className="text-xs text-gray-400 mt-2">
               {stats.totalDocumentos === 1 ? "archivo registrado" : "archivos registrados"}
@@ -273,7 +273,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* KPIs principales */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-400 mb-3">
             Facturado este mes
@@ -297,7 +297,7 @@ export default async function DashboardPage() {
           <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-400 mb-3">
             Pendientes de pago
           </p>
-          <p className={`text-3xl font-bold ${(stats.facturasCreadas + stats.facturasEnviadas) > 0 ? "text-amber-600" : "text-[#253158]"}`}>
+          <p className={`text-2xl sm:text-3xl font-bold ${(stats.facturasCreadas + stats.facturasEnviadas) > 0 ? "text-amber-600" : "text-[#253158]"}`}>
             {stats.facturasCreadas + stats.facturasEnviadas}
           </p>
           <p className="text-xs text-gray-400 mt-1.5">
@@ -309,7 +309,7 @@ export default async function DashboardPage() {
           <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-400 mb-3">
             Clientes activos
           </p>
-          <p className="text-3xl font-bold text-[#253158]">{stats.totalClientes}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-[#253158]">{stats.totalClientes}</p>
           <p className="text-xs text-gray-400 mt-1.5">
             de {stats.totalClientesRegistrados} registrados
           </p>
@@ -319,13 +319,13 @@ export default async function DashboardPage() {
           <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-400 mb-3">
             Productos activos
           </p>
-          <p className="text-3xl font-bold text-[#253158]">{stats.totalProductos}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-[#253158]">{stats.totalProductos}</p>
           <p className="text-xs text-gray-400 mt-1.5">en catálogo</p>
         </div>
       </div>
 
       {/* Estado de facturas */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
         {[
           { label: "Creadas",  value: stats.facturasCreadas,  bg: "bg-blue-50",   text: "text-blue-700"   },
           { label: "Enviadas", value: stats.facturasEnviadas, bg: "bg-amber-50",  text: "text-amber-600"  },
@@ -336,7 +336,7 @@ export default async function DashboardPage() {
             key={item.label}
             className={`rounded-xl p-4 sm:p-5 ${item.bg}`}
           >
-            <p className={`text-3xl font-bold ${item.text}`}>{item.value}</p>
+            <p className={`text-2xl sm:text-3xl font-bold ${item.text}`}>{item.value}</p>
             <p className={`text-sm font-semibold mt-1.5 ${item.text}`}>{item.label}</p>
           </div>
         ))}
