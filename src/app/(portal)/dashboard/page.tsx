@@ -138,11 +138,11 @@ export default async function DashboardPage() {
   if (!session) redirect("/login");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* Saludo */}
       <div>
         <p className="text-xs text-gray-400 mb-1">{getFechaHoy()}</p>
-        <h1 className="text-2xl font-bold text-[#253158]">
+        <h1 className="text-xl sm:text-2xl font-bold text-[#253158]">
           {getGreeting()}, {session.nombre}
         </h1>
       </div>
@@ -211,62 +211,62 @@ export default async function DashboardPage() {
       </div>
 
       {/* Acciones rápidas */}
-      <div className="bg-white rounded-xl p-5 border border-gray-100">
-        <p className="text-xs font-semibold tracking-widest uppercase text-gray-400 mb-4">
+      <div className="bg-white rounded-xl p-4 sm:p-5 border border-gray-100">
+        <p className="text-xs font-semibold tracking-widest uppercase text-gray-400 mb-3 sm:mb-4">
           Acciones rápidas
         </p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           {/* CTA primario */}
           <Link
             href="/facturas/nueva"
-            className="flex items-center gap-3 bg-[#253158] hover:bg-[#1d2a4f] rounded-lg px-4 py-3 transition-colors"
+            className="flex items-center gap-2 sm:gap-3 bg-[#253158] hover:bg-[#1d2a4f] rounded-lg px-3 sm:px-4 py-3 transition-colors"
           >
             <div className="p-1.5 bg-white/20 rounded-md flex-shrink-0">
-              <Plus className="h-5 w-5 text-white" />
+              <Plus className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-white leading-tight">Crear factura</p>
-              <p className="text-xs text-white/70 leading-tight mt-0.5">Asistente paso a paso</p>
+              <p className="text-xs text-white/70 leading-tight mt-0.5 hidden xs:block sm:block">Asistente paso a paso</p>
             </div>
           </Link>
 
           {/* Acciones secundarias */}
           <Link
             href="/ordenes-compra/nueva"
-            className="group flex items-center gap-3 bg-white border border-gray-200 hover:bg-[#253158] hover:border-[#253158] rounded-lg px-4 py-3 transition-colors"
+            className="group flex items-center gap-2 sm:gap-3 bg-white border border-gray-200 hover:bg-[#253158] hover:border-[#253158] rounded-lg px-3 sm:px-4 py-3 transition-colors"
           >
             <div className="p-1.5 bg-gray-100 group-hover:bg-white/20 rounded-md flex-shrink-0 transition-colors">
               <ShoppingCart className="h-4 w-4 text-[#253158] group-hover:text-white transition-colors" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-gray-700 group-hover:text-white leading-tight transition-colors">Nueva OC</p>
-              <p className="text-xs text-gray-400 group-hover:text-white/70 leading-tight mt-0.5 transition-colors">Para tus proveedores</p>
+              <p className="text-xs text-gray-400 group-hover:text-white/70 leading-tight mt-0.5 hidden sm:block transition-colors">Para tus proveedores</p>
             </div>
           </Link>
 
           <Link
             href="/documentos"
-            className="group flex items-center gap-3 bg-white border border-gray-200 hover:bg-[#253158] hover:border-[#253158] rounded-lg px-4 py-3 transition-colors"
+            className="group flex items-center gap-2 sm:gap-3 bg-white border border-gray-200 hover:bg-[#253158] hover:border-[#253158] rounded-lg px-3 sm:px-4 py-3 transition-colors"
           >
             <div className="p-1.5 bg-gray-100 group-hover:bg-white/20 rounded-md flex-shrink-0 transition-colors">
               <Upload className="h-4 w-4 text-[#253158] group-hover:text-white transition-colors" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-gray-700 group-hover:text-white leading-tight transition-colors">Subir documento</p>
-              <p className="text-xs text-gray-400 group-hover:text-white/70 leading-tight mt-0.5 transition-colors">Contrato, guía…</p>
+              <p className="text-xs text-gray-400 group-hover:text-white/70 leading-tight mt-0.5 hidden sm:block transition-colors">Contrato, guía…</p>
             </div>
           </Link>
 
           <Link
             href="/clientes/nuevo"
-            className="group flex items-center gap-3 bg-white border border-gray-200 hover:bg-[#253158] hover:border-[#253158] rounded-lg px-4 py-3 transition-colors"
+            className="group flex items-center gap-2 sm:gap-3 bg-white border border-gray-200 hover:bg-[#253158] hover:border-[#253158] rounded-lg px-3 sm:px-4 py-3 transition-colors"
           >
             <div className="p-1.5 bg-gray-100 group-hover:bg-white/20 rounded-md flex-shrink-0 transition-colors">
               <UserPlus className="h-4 w-4 text-[#253158] group-hover:text-white transition-colors" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-gray-700 group-hover:text-white leading-tight transition-colors">Nuevo cliente</p>
-              <p className="text-xs text-gray-400 group-hover:text-white/70 leading-tight mt-0.5 transition-colors">Empresa o persona</p>
+              <p className="text-xs text-gray-400 group-hover:text-white/70 leading-tight mt-0.5 hidden sm:block transition-colors">Empresa o persona</p>
             </div>
           </Link>
         </div>
@@ -278,7 +278,7 @@ export default async function DashboardPage() {
           <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-400 mb-3">
             Facturado este mes
           </p>
-          <p className="text-2xl font-bold text-[#253158]">
+          <p className="text-xl sm:text-2xl font-bold text-[#253158] break-all">
             {formatCurrency(stats.montoFacturadoEsteMes, "CLP")}
           </p>
           {stats.pctCambioFacturado !== null && (
@@ -334,7 +334,7 @@ export default async function DashboardPage() {
         ].map((item) => (
           <div
             key={item.label}
-            className={`rounded-xl p-5 ${item.bg}`}
+            className={`rounded-xl p-4 sm:p-5 ${item.bg}`}
           >
             <p className={`text-3xl font-bold ${item.text}`}>{item.value}</p>
             <p className={`text-sm font-semibold mt-1.5 ${item.text}`}>{item.label}</p>
@@ -344,7 +344,7 @@ export default async function DashboardPage() {
 
       {/* Últimas facturas */}
       <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-gray-100">
           <h3 className="text-base font-semibold text-[#253158]">Últimas facturas</h3>
           <Link
             href="/facturas"
@@ -357,62 +357,96 @@ export default async function DashboardPage() {
         {stats.ultimasFacturas.length === 0 ? (
           <p className="text-gray-400 text-sm text-center py-10">No hay facturas aún</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-6 py-3">
-                    Nº Factura
-                  </th>
-                  <th className="text-left text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-4 py-3">
-                    Cliente
-                  </th>
-                  <th className="text-right text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-4 py-3">
-                    Total
-                  </th>
-                  <th className="text-left text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-4 py-3">
-                    Estado
-                  </th>
-                  <th className="w-8 px-4 py-3" />
-                </tr>
-              </thead>
-              <tbody>
-                {stats.ultimasFacturas.map((inv) => (
-                  <tr
-                    key={inv.id}
-                    className="border-b border-gray-200 hover:bg-gray-50/60 transition-colors last:border-0"
-                  >
-                    <td className="px-6 py-4">
-                      <Link
-                        href={`/facturas/${inv.id}`}
-                        className="font-mono text-xs font-bold text-gray-800 hover:text-[#253158] transition-colors"
-                      >
+          <>
+            {/* Móvil: lista de cards */}
+            <div className="sm:hidden divide-y divide-gray-100">
+              {stats.ultimasFacturas.map((inv) => (
+                <Link
+                  key={inv.id}
+                  href={`/facturas/${inv.id}`}
+                  className="flex items-center justify-between px-4 py-3.5 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-mono text-xs font-bold text-gray-500">
                         #{inv.numero_factura}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-4 text-sm text-[#253158] font-medium max-w-[200px] truncate">
-                      {inv.client.nombre}
-                    </td>
-                    <td className="px-4 py-4 text-right font-semibold text-sm text-gray-800 font-mono tabular-nums">
-                      {formatCurrency(Number(inv.total), inv.moneda as "CLP" | "USD" | "UF")}
-                    </td>
-                    <td className="px-4 py-4">
+                      </span>
                       <span
-                        className={`inline-flex items-center text-[11px] px-2.5 py-1 rounded-full font-semibold ${estadoBadge[inv.estado] ?? "bg-gray-100 text-gray-600 border border-gray-200"}`}
+                        className={`inline-flex items-center text-[10px] px-2 py-0.5 rounded-full font-semibold ${estadoBadge[inv.estado] ?? "bg-gray-100 text-gray-600 border border-gray-200"}`}
                       >
                         {inv.estado}
                       </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <Link href={`/facturas/${inv.id}`}>
-                        <ChevronRight className="h-4 w-4 text-gray-300 hover:text-gray-500 transition-colors" />
-                      </Link>
-                    </td>
+                    </div>
+                    <p className="text-sm font-medium text-[#253158] truncate">
+                      {inv.client.nombre}
+                    </p>
+                    <p className="text-xs font-semibold text-gray-700 font-mono tabular-nums mt-0.5">
+                      {formatCurrency(Number(inv.total), inv.moneda as "CLP" | "USD" | "UF")}
+                    </p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-gray-300 flex-shrink-0 ml-3" />
+                </Link>
+              ))}
+            </div>
+
+            {/* Desktop: tabla */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    <th className="text-left text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-6 py-3">
+                      Nº Factura
+                    </th>
+                    <th className="text-left text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-4 py-3">
+                      Cliente
+                    </th>
+                    <th className="text-right text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-4 py-3">
+                      Total
+                    </th>
+                    <th className="text-left text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-4 py-3">
+                      Estado
+                    </th>
+                    <th className="w-8 px-4 py-3" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {stats.ultimasFacturas.map((inv) => (
+                    <tr
+                      key={inv.id}
+                      className="border-b border-gray-200 hover:bg-gray-50/60 transition-colors last:border-0"
+                    >
+                      <td className="px-6 py-4">
+                        <Link
+                          href={`/facturas/${inv.id}`}
+                          className="font-mono text-xs font-bold text-gray-800 hover:text-[#253158] transition-colors"
+                        >
+                          #{inv.numero_factura}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-[#253158] font-medium max-w-[200px] truncate">
+                        {inv.client.nombre}
+                      </td>
+                      <td className="px-4 py-4 text-right font-semibold text-sm text-gray-800 font-mono tabular-nums">
+                        {formatCurrency(Number(inv.total), inv.moneda as "CLP" | "USD" | "UF")}
+                      </td>
+                      <td className="px-4 py-4">
+                        <span
+                          className={`inline-flex items-center text-[11px] px-2.5 py-1 rounded-full font-semibold ${estadoBadge[inv.estado] ?? "bg-gray-100 text-gray-600 border border-gray-200"}`}
+                        >
+                          {inv.estado}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <Link href={`/facturas/${inv.id}`}>
+                          <ChevronRight className="h-4 w-4 text-gray-300 hover:text-gray-500 transition-colors" />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>
