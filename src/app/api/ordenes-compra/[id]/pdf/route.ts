@@ -95,7 +95,7 @@ export async function GET(
   return new NextResponse(buffer, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${oc.numero}.pdf"`,
+      "Content-Disposition": `attachment; filename="orden-compra-${oc.numero}.pdf"`,
       "Cache-Control": "private, max-age=300",
     },
   });

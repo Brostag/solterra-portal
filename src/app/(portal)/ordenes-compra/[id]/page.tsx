@@ -104,24 +104,24 @@ export default async function OCDetailPage({ params, searchParams }: Props) {
   return (
     <div className="max-w-3xl space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <Link href="/ordenes-compra">
-            <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="sm" className="flex-shrink-0"><ArrowLeft className="h-4 w-4" /></Button>
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-[#253158]">{oc.numero}</h1>
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-[#253158]">{oc.numero}</h1>
             <p className="text-gray-500 text-sm">
               Creada por {oc.creadoPor.nombre} ·{" "}
               {new Date(oc.fecha_emision).toLocaleDateString("es-CL")}
             </p>
           </div>
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${ESTADO_COLORS[estado]}`}>
+          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${ESTADO_COLORS[estado]}`}>
             {ESTADO_LABELS[estado]}
           </span>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 pl-10 sm:pl-0">
           {canEdit && estado === "BORRADOR" && (
             <Link href={`/ordenes-compra/${id}?edit=1`}>
               <Button variant="outline" size="sm" className="gap-2">
@@ -130,10 +130,10 @@ export default async function OCDetailPage({ params, searchParams }: Props) {
               </Button>
             </Link>
           )}
-          <a href={`/api/ordenes-compra/${id}/pdf`} target="_blank" rel="noreferrer">
+          <a href={`/api/ordenes-compra/${id}/pdf`} download={`orden-compra-${oc.numero}.pdf`}>
             <Button variant="outline" size="sm" className="gap-2">
               <Download className="h-4 w-4" />
-              PDF
+              Descargar
             </Button>
           </a>
           <PrintPdfButton pdfUrl={`/api/ordenes-compra/${id}/pdf`} />
@@ -181,7 +181,54 @@ export default async function OCDetailPage({ params, searchParams }: Props) {
 
       {/* Tabla de ítems */}
       <div className="bg-white rounded-lg border overflow-hidden">
-        <table className="w-full text-sm">
+        {/* Móvil: filas expandidas — sm:hidden */}
+        <div className="sm:hidden">
+          <div className="divide-y divide-gray-100">
+            {oc.items.map((item) => (
+              <div key={item.id} className="px-4 py-3">
+                <p className="text-sm font-medium text-gray-800">{item.descripcion}</p>
+                {item.producto && (
+                  <p className="text-xs text-gray-400 mt-0.5">Catálogo: {item.producto.nombre}</p>
+                )}
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-xs text-gray-400">
+                    {Number(item.cantidad)} × {formatCurrency(Number(item.valor_unitario), moneda)}
+                  </span>
+                  <span className="text-sm font-semibold text-gray-800 tabular-nums">
+                    {formatCurrency(Number(item.total), moneda)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="border-t bg-gray-50 divide-y divide-gray-100">
+            <div className="flex justify-between px-4 py-2 text-sm">
+              <span className="text-gray-500">Subtotal</span>
+              <span className="font-medium tabular-nums">{formatCurrency(Number(oc.subtotal), moneda)}</span>
+            </div>
+            {Number(oc.descuento_pct) > 0 && (
+              <div className="flex justify-between px-4 py-2 text-sm">
+                <span className="text-gray-500">Descuento ({Number(oc.descuento_pct)}%)</span>
+                <span className="font-medium text-[#c6352e] tabular-nums">−{formatCurrency(Number(oc.descuento_monto), moneda)}</span>
+              </div>
+            )}
+            <div className="flex justify-between px-4 py-2 text-sm">
+              <span className="text-gray-500">Neto</span>
+              <span className="font-medium tabular-nums">{formatCurrency(Number(oc.neto), moneda)}</span>
+            </div>
+            <div className="flex justify-between px-4 py-2 text-sm">
+              <span className="text-gray-500">IVA ({ivaPercent}%)</span>
+              <span className="font-medium tabular-nums">{formatCurrency(Number(oc.iva_monto), moneda)}</span>
+            </div>
+            <div className="flex justify-between px-4 py-3 font-bold text-[#253158] bg-[#253158]/5">
+              <span>TOTAL {oc.moneda}</span>
+              <span className="tabular-nums text-base">{formatCurrency(Number(oc.total), moneda)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop: tabla — hidden sm:block */}
+        <table className="hidden sm:table w-full text-sm">
           <thead className="bg-[#253158] text-white">
             <tr>
               <th className="text-center px-4 py-3 font-semibold w-24">Cantidad</th>
