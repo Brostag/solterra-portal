@@ -49,13 +49,13 @@ export default async function FacturaDetailPage({ params }: Props) {
   return (
     <div className="max-w-3xl space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <Link href="/facturas">
-            <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="sm" className="flex-shrink-0"><ArrowLeft className="h-4 w-4" /></Button>
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-[#253158]">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-[#253158]">
               Factura #{invoice.numero_factura}
             </h1>
             <p className="text-gray-500 text-sm">
@@ -63,16 +63,16 @@ export default async function FacturaDetailPage({ params }: Props) {
               {new Date(invoice.fecha_emision).toLocaleDateString("es-CL")}
             </p>
           </div>
-          <Badge className={`${estadoColors[invoice.estado]} hover:${estadoColors[invoice.estado]}`}>
+          <Badge className={`${estadoColors[invoice.estado]} hover:${estadoColors[invoice.estado]} flex-shrink-0`}>
             {invoice.estado}
           </Badge>
         </div>
 
-        <div className="flex gap-2">
-          <a href={`/api/facturas/${id}/pdf`} target="_blank" rel="noreferrer">
+        <div className="flex gap-2 pl-10 sm:pl-0">
+          <a href={`/api/facturas/${id}/pdf`} download={`factura-${invoice.numero_factura}.pdf`}>
             <Button variant="outline" size="sm" className="gap-2">
               <Download className="h-4 w-4" />
-              PDF
+              Descargar
             </Button>
           </a>
           <PrintButton pdfUrl={`/api/facturas/${id}/pdf`} />
@@ -80,7 +80,7 @@ export default async function FacturaDetailPage({ params }: Props) {
       </div>
 
       {/* Datos empresa y cliente */}
-      <div className="bg-white rounded-lg border p-6 grid grid-cols-2 gap-6">
+      <div className="bg-white rounded-lg border p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <div>
           <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Emisor</p>
           <p className="font-semibold text-[#253158]">{config?.razon_social ?? "Solterra"}</p>
@@ -105,7 +105,41 @@ export default async function FacturaDetailPage({ params }: Props) {
 
       {/* Items */}
       <div className="bg-white rounded-lg border overflow-hidden">
-        <table className="w-full text-sm">
+        {/* Móvil: filas expandidas — sm:hidden */}
+        <div className="sm:hidden">
+          <div className="divide-y divide-gray-100">
+            {invoice.items.map((item) => (
+              <div key={item.id} className="px-4 py-3">
+                <p className="text-sm font-medium text-gray-800">{item.descripcion}</p>
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-xs text-gray-400">
+                    {Number(item.cantidad)} × {formatCurrency(Number(item.precio_unitario), moneda)}
+                  </span>
+                  <span className="text-sm font-semibold text-gray-800 tabular-nums">
+                    {formatCurrency(Number(item.subtotal), moneda)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="border-t bg-gray-50 divide-y divide-gray-100">
+            <div className="flex justify-between px-4 py-2 text-sm">
+              <span className="text-gray-500">Subtotal</span>
+              <span className="font-medium tabular-nums">{formatCurrency(Number(invoice.subtotal), moneda)}</span>
+            </div>
+            <div className="flex justify-between px-4 py-2 text-sm">
+              <span className="text-gray-500">IVA</span>
+              <span className="font-medium tabular-nums">{formatCurrency(Number(invoice.iva), moneda)}</span>
+            </div>
+            <div className="flex justify-between px-4 py-3 font-bold text-[#253158] bg-[#253158]/5">
+              <span>Total</span>
+              <span className="tabular-nums text-base">{formatCurrency(Number(invoice.total), moneda)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop: tabla — hidden sm:block */}
+        <table className="hidden sm:table w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
               <th className="text-left px-4 py-3 text-gray-500 font-medium">Descripción</th>
