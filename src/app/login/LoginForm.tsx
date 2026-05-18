@@ -112,11 +112,11 @@ export default function LoginForm() {
       </div>
 
       {/* ── Panel derecho ── */}
-      <div className="flex flex-col items-center justify-center bg-[#f6f7f9] px-4 sm:px-10 py-6 sm:py-12 overflow-y-auto">
+      <div className="flex flex-col items-center justify-start sm:justify-center bg-[#f6f7f9] px-4 sm:px-10 pt-12 pb-6 sm:py-12 overflow-y-auto">
 
         {/* Logo en mobile */}
-        <div className="flex justify-center mb-5 sm:mb-8 lg:hidden">
-          <Image src="/solterra-logo.png" alt="Solterra" width={140} height={48} className="h-10 w-auto" />
+        <div className="flex justify-center mb-4 sm:mb-8 lg:hidden">
+          <Image src="https://ext.same-assets.com/2134444905/2150008532.png" alt="Solterra Logo" width={150} height={50} className="h-12 w-auto" />
         </div>
 
         {/* Tarjeta */}
