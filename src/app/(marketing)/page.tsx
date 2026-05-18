@@ -7,15 +7,14 @@ export default function Home() {
   return (
     <>
       {/* Hero Section with Video Background */}
-      <section className="relative h-[80vh] min-h-[600px] flex items-center overflow-hidden">
+      <section className="relative h-[80vh] min-h-[600px] flex items-center overflow-hidden bg-[#1a2035]">
         {/* Video Background */}
         <video
           autoPlay
           loop
           muted
           playsInline
-          preload="none"
-          poster="https://ext.same-assets.com/2134444905/2150008532.png"
+          preload="auto"
           className="absolute inset-0 w-full h-full object-cover"
         >
           <source
