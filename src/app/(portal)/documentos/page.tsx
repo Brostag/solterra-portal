@@ -42,9 +42,6 @@ interface Props {
 }
 
 export default async function DocumentosPage({ searchParams }: Props) {
-  const session = await getPortalSessionFast();
-  if (!session) redirect("/login");
-
   const { tipo, entidad } = await searchParams;
 
   const where: Record<string, unknown> = {};
@@ -54,18 +51,22 @@ export default async function DocumentosPage({ searchParams }: Props) {
   if (entidad === "clientes")    where.client_id         = { not: null };
   if (entidad === "proveedores") where.supplier_id       = { not: null };
 
-  const documents = await prisma.document.findMany({
-    where,
-    orderBy: { created_at: "desc" },
-    take: 200,
-    include: {
-      client:         { select: { nombre: true } },
-      invoice:        { select: { numero_factura: true } },
-      purchase_order: { select: { numero: true } },
-      supplier:       { select: { nombre: true } },
-      uploader:       { select: { nombre: true } },
-    },
-  });
+  const [session, documents] = await Promise.all([
+    getPortalSessionFast(),
+    prisma.document.findMany({
+      where,
+      orderBy: { created_at: "desc" },
+      take: 200,
+      include: {
+        client:         { select: { nombre: true } },
+        invoice:        { select: { numero_factura: true } },
+        purchase_order: { select: { numero: true } },
+        supplier:       { select: { nombre: true } },
+        uploader:       { select: { nombre: true } },
+      },
+    }),
+  ]);
+  if (!session) redirect("/login");
 
   const canUpload = session.rol !== "USUARIO";
   const canDelete = session.rol !== "USUARIO";

@@ -131,10 +131,11 @@ const estadoBadge: Record<string, string> = {
 };
 
 export default async function DashboardPage() {
-  const session = await getPortalSessionFast();
+  const [session, stats] = await Promise.all([
+    getPortalSessionFast(),
+    getDashboardStats(),
+  ]);
   if (!session) redirect("/login");
-
-  const stats = await getDashboardStats();
 
   return (
     <div className="space-y-6">

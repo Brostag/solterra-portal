@@ -26,31 +26,32 @@ interface Props {
 }
 
 export default async function AuditoriaPage({ searchParams }: Props) {
-  const session = await getPortalSessionFast();
-  if (!session) redirect("/login");
-  if (session.rol !== "ADMINISTRADOR") redirect("/dashboard");
-
   const { q, modulo } = await searchParams;
   const query = q?.trim() ?? "";
   const moduloFilter = MODULOS.includes(modulo ?? "") ? modulo : undefined;
 
-  const logs = await prisma.auditLog.findMany({
-    where: {
-      ...(moduloFilter ? { modulo: moduloFilter } : {}),
-      ...(query
-        ? {
-            OR: [
-              { accion: { contains: query, mode: "insensitive" } },
-              { detalle: { contains: query, mode: "insensitive" } },
-              { user: { nombre: { contains: query, mode: "insensitive" } } },
-            ],
-          }
-        : {}),
-    },
-    orderBy: { created_at: "desc" },
-    take: 200,
-    include: { user: { select: { nombre: true } } },
-  });
+  const [session, logs] = await Promise.all([
+    getPortalSessionFast(),
+    prisma.auditLog.findMany({
+      where: {
+        ...(moduloFilter ? { modulo: moduloFilter } : {}),
+        ...(query
+          ? {
+              OR: [
+                { accion: { contains: query, mode: "insensitive" } },
+                { detalle: { contains: query, mode: "insensitive" } },
+                { user: { nombre: { contains: query, mode: "insensitive" } } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { created_at: "desc" },
+      take: 200,
+      include: { user: { select: { nombre: true } } },
+    }),
+  ]);
+  if (!session) redirect("/login");
+  if (session.rol !== "ADMINISTRADOR") redirect("/dashboard");
 
   const chipBase = "px-3.5 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors border";
   const chipActive = "bg-[#253158] text-white border-[#253158]";

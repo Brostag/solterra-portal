@@ -22,11 +22,12 @@ export default async function ConfiguracionPage({ searchParams }: Props) {
   const sp = await searchParams;
   const guardado = sp.guardado === "1";
 
-  const session = await getPortalSessionFast();
+  const [session, config] = await Promise.all([
+    getPortalSessionFast(),
+    getCompanySettings(),
+  ]);
   if (!session) redirect("/login");
   if (session.rol !== "ADMINISTRADOR") redirect("/dashboard");
-
-  const config = await getCompanySettings();
 
   return (
     <div className="max-w-3xl space-y-8">

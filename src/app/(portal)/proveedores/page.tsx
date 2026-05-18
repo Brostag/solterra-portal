@@ -16,15 +16,13 @@ interface Props {
 }
 
 export default async function ProveedoresPage({ searchParams }: Props) {
-  const session = await getPortalSessionFast();
-  if (!session) redirect("/login");
-
   const { q, filtro } = await searchParams;
   const query = q?.trim() ?? "";
   const filtroActivo: FiltroActivo | undefined =
     filtro === "activos" || filtro === "inactivos" ? filtro : undefined;
 
-  const [suppliers, totalActivos, totalInactivos] = await Promise.all([
+  const [session, suppliers, totalActivos, totalInactivos] = await Promise.all([
+    getPortalSessionFast(),
     prisma.supplier.findMany({
       where: {
         ...(filtroActivo === "activos" ? { activo: true } : filtroActivo === "inactivos" ? { activo: false } : {}),
@@ -45,6 +43,7 @@ export default async function ProveedoresPage({ searchParams }: Props) {
     prisma.supplier.count({ where: { activo: true } }),
     prisma.supplier.count({ where: { activo: false } }),
   ]);
+  if (!session) redirect("/login");
 
   function buildHref(f?: FiltroActivo) {
     const params = new URLSearchParams();

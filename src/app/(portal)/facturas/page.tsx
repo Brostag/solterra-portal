@@ -40,32 +40,33 @@ interface Props {
 }
 
 export default async function FacturasPage({ searchParams }: Props) {
-  const session = await getPortalSessionFast();
-  if (!session) redirect("/login");
-
   const { q, estado } = await searchParams;
   const query = q?.trim() ?? "";
   const estadoFilter = ESTADOS_FILTER.includes(estado as EstadoFactura) ? (estado as EstadoFactura) : undefined;
 
-  const invoices = await prisma.invoice.findMany({
-    where: {
-      ...(estadoFilter ? { estado: estadoFilter } : {}),
-      ...(query
-        ? {
-            OR: [
-              { numero_factura: { contains: query, mode: "insensitive" } },
-              { client: { nombre: { contains: query, mode: "insensitive" } } },
-            ],
-          }
-        : {}),
-    },
-    orderBy: { created_at: "desc" },
-    take: 200,
-    include: {
-      client: { select: { nombre: true } },
-      user:   { select: { nombre: true } },
-    },
-  });
+  const [session, invoices] = await Promise.all([
+    getPortalSessionFast(),
+    prisma.invoice.findMany({
+      where: {
+        ...(estadoFilter ? { estado: estadoFilter } : {}),
+        ...(query
+          ? {
+              OR: [
+                { numero_factura: { contains: query, mode: "insensitive" } },
+                { client: { nombre: { contains: query, mode: "insensitive" } } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { created_at: "desc" },
+      take: 200,
+      include: {
+        client: { select: { nombre: true } },
+        user:   { select: { nombre: true } },
+      },
+    }),
+  ]);
+  if (!session) redirect("/login");
 
   return (
     <div className="space-y-6">

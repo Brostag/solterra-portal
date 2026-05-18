@@ -30,30 +30,31 @@ interface Props {
 }
 
 export default async function UsuariosPage({ searchParams }: Props) {
-  const session = await getPortalSessionFast();
-  if (!session) redirect("/login");
-  if (session.rol !== "ADMINISTRADOR") redirect("/dashboard");
-
   const { q, filtro, rol } = await searchParams;
   const query = q?.trim() ?? "";
   const filtroActivo = filtro === "activos" || filtro === "inactivos" ? filtro : undefined;
   const rolFilter = ROLES.includes(rol as Rol) ? (rol as Rol) : undefined;
 
-  const users = await prisma.profile.findMany({
-    where: {
-      ...(filtroActivo === "activos" ? { activo: true } : filtroActivo === "inactivos" ? { activo: false } : {}),
-      ...(rolFilter ? { rol: rolFilter } : {}),
-      ...(query
-        ? {
-            OR: [
-              { nombre: { contains: query, mode: "insensitive" } },
-              { email: { contains: query, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-    },
-    orderBy: { created_at: "asc" },
-  });
+  const [session, users] = await Promise.all([
+    getPortalSessionFast(),
+    prisma.profile.findMany({
+      where: {
+        ...(filtroActivo === "activos" ? { activo: true } : filtroActivo === "inactivos" ? { activo: false } : {}),
+        ...(rolFilter ? { rol: rolFilter } : {}),
+        ...(query
+          ? {
+              OR: [
+                { nombre: { contains: query, mode: "insensitive" } },
+                { email: { contains: query, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { created_at: "asc" },
+    }),
+  ]);
+  if (!session) redirect("/login");
+  if (session.rol !== "ADMINISTRADOR") redirect("/dashboard");
 
   function buildHref(params: { q?: string; filtro?: string; rol?: string }) {
     const p = new URLSearchParams();

@@ -17,15 +17,13 @@ interface Props {
 }
 
 export default async function ProductosPage({ searchParams }: Props) {
-  const session = await getPortalSessionFast();
-  if (!session) redirect("/login");
-
   const { q, filtro } = await searchParams;
   const query = q?.trim() ?? "";
   const filtroActivo: FiltroActivo | undefined =
     filtro === "activos" || filtro === "inactivos" ? filtro : undefined;
 
-  const [products, totalActivos, totalInactivos] = await Promise.all([
+  const [session, products, totalActivos, totalInactivos] = await Promise.all([
+    getPortalSessionFast(),
     prisma.product.findMany({
       where: {
         ...(filtroActivo === "activos" ? { activo: true } : filtroActivo === "inactivos" ? { activo: false } : {}),
@@ -45,6 +43,7 @@ export default async function ProductosPage({ searchParams }: Props) {
     prisma.product.count({ where: { activo: true } }),
     prisma.product.count({ where: { activo: false } }),
   ]);
+  if (!session) redirect("/login");
 
   function buildHref(f?: FiltroActivo) {
     const params = new URLSearchParams();

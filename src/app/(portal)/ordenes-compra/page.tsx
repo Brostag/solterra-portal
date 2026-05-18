@@ -36,30 +36,31 @@ interface Props {
 }
 
 export default async function OrdenesCompraPage({ searchParams }: Props) {
-  const session = await getPortalSessionFast();
-  if (!session) redirect("/login");
-
   const { q, estado } = await searchParams;
   const query = q?.trim() ?? "";
   const estadoFilter = ESTADOS_FILTER.includes(estado as EstadoOC) ? (estado as EstadoOC) : undefined;
 
-  const ordenes = await prisma.purchaseOrder.findMany({
-    where: {
-      activo: true,
-      ...(estadoFilter ? { estado: estadoFilter } : {}),
-      ...(query
-        ? {
-            OR: [
-              { numero: { contains: query, mode: "insensitive" } },
-              { proveedor: { nombre: { contains: query, mode: "insensitive" } } },
-            ],
-          }
-        : {}),
-    },
-    include: { proveedor: { select: { nombre: true } } },
-    orderBy: { created_at: "desc" },
-    take: 200,
-  });
+  const [session, ordenes] = await Promise.all([
+    getPortalSessionFast(),
+    prisma.purchaseOrder.findMany({
+      where: {
+        activo: true,
+        ...(estadoFilter ? { estado: estadoFilter } : {}),
+        ...(query
+          ? {
+              OR: [
+                { numero: { contains: query, mode: "insensitive" } },
+                { proveedor: { nombre: { contains: query, mode: "insensitive" } } },
+              ],
+            }
+          : {}),
+      },
+      include: { proveedor: { select: { nombre: true } } },
+      orderBy: { created_at: "desc" },
+      take: 200,
+    }),
+  ]);
+  if (!session) redirect("/login");
 
   return (
     <div className="space-y-6">
