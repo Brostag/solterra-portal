@@ -6,7 +6,7 @@ import { SubmitButton } from "@/components/portal/SubmitButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SelectField } from "@/components/portal/SelectField";
-import { Building2, Mail, Receipt, CheckCircle2 } from "lucide-react";
+import { Building2, Mail, Receipt, CheckCircle2, Info } from "lucide-react";
 
 const MONEDA_OPTIONS = [
   { value: "CLP", label: "CLP — Peso Chileno" },
@@ -35,7 +35,7 @@ export default async function ConfiguracionPage({ searchParams }: Props) {
       <div>
         <h1 className="text-2xl font-bold text-[#253158]">Configuración</h1>
         <p className="text-gray-500 text-sm mt-1">
-          Datos de la empresa que aparecerán en facturas y documentos PDF
+          Datos de la empresa usados en facturas, órdenes de compra y documentos PDF
         </p>
       </div>
 
@@ -55,11 +55,11 @@ export default async function ConfiguracionPage({ searchParams }: Props) {
             </div>
             <div>
               <p className="text-sm font-semibold text-gray-800">Identidad de la empresa</p>
-              <p className="text-xs text-gray-400">Información legal que identifica a la empresa</p>
+              <p className="text-xs text-gray-400">Nombre legal y RUT — se muestran como emisor en facturas y PDFs</p>
             </div>
           </div>
-          <div className="p-6 grid grid-cols-2 gap-5">
-            <div className="col-span-2 space-y-2">
+          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="sm:col-span-2 space-y-2">
               <Label htmlFor="razon_social">
                 Razón Social <span className="text-[#c6352e]">*</span>
               </Label>
@@ -92,7 +92,7 @@ export default async function ConfiguracionPage({ searchParams }: Props) {
                 placeholder="Movimiento de Tierra y Maquinarias"
               />
             </div>
-            <div className="col-span-2 space-y-2">
+            <div className="sm:col-span-2 space-y-2">
               <Label htmlFor="logo_url">URL del Logo</Label>
               <Input
                 id="logo_url"
@@ -102,7 +102,7 @@ export default async function ConfiguracionPage({ searchParams }: Props) {
                 placeholder="https://ejemplo.com/logo.png"
               />
               <p className="text-xs text-gray-400">
-                URL pública de la imagen del logo — aparecerá en los documentos PDF generados
+                Dirección web pública de la imagen — se imprime en el encabezado de todos los PDFs generados
               </p>
             </div>
           </div>
@@ -116,10 +116,10 @@ export default async function ConfiguracionPage({ searchParams }: Props) {
             </div>
             <div>
               <p className="text-sm font-semibold text-gray-800">Información de contacto</p>
-              <p className="text-xs text-gray-400">Datos de contacto de la empresa</p>
+              <p className="text-xs text-gray-400">Aparecen en el pie de página de los documentos PDF</p>
             </div>
           </div>
-          <div className="p-6 grid grid-cols-2 gap-5">
+          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -139,7 +139,7 @@ export default async function ConfiguracionPage({ searchParams }: Props) {
                 placeholder="+56 55 242 6259"
               />
             </div>
-            <div className="col-span-2 space-y-2">
+            <div className="sm:col-span-2 space-y-2">
               <Label htmlFor="direccion">Dirección</Label>
               <Input
                 id="direccion"
@@ -159,10 +159,10 @@ export default async function ConfiguracionPage({ searchParams }: Props) {
             </div>
             <div>
               <p className="text-sm font-semibold text-gray-800">Configuración fiscal</p>
-              <p className="text-xs text-gray-400">Parámetros para el cálculo de documentos</p>
+              <p className="text-xs text-gray-400">Valores por defecto al crear facturas y órdenes de compra</p>
             </div>
           </div>
-          <div className="p-6 grid grid-cols-2 gap-5">
+          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="space-y-2">
               <Label>Moneda Principal</Label>
               <SelectField
@@ -187,17 +187,44 @@ export default async function ConfiguracionPage({ searchParams }: Props) {
                 defaultValue={config ? String(config.iva_porcentaje) : "19"}
               />
               <p className="text-xs text-gray-400">
-                Porcentaje de IVA aplicado en facturas (por defecto: 19%)
+                Se usa para calcular IVA al crear nuevas facturas y órdenes de compra (Chile: 19%)
               </p>
             </div>
           </div>
         </div>
 
+        {/* Bloque informativo */}
+        <div className="bg-blue-50 rounded-xl border border-blue-100 p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Info className="h-4 w-4 text-blue-500 flex-shrink-0" />
+            <p className="text-sm font-semibold text-blue-800">¿Dónde se usa esta configuración?</p>
+          </div>
+          <ul className="space-y-2 text-sm text-blue-700">
+            <li className="flex gap-2">
+              <span className="text-blue-400 flex-shrink-0 mt-0.5">·</span>
+              <span><strong>Datos de empresa</strong> (Razón Social, RUT, Giro): aparecen como emisor en facturas, órdenes de compra y documentos PDF.</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-blue-400 flex-shrink-0 mt-0.5">·</span>
+              <span><strong>Logo</strong>: se imprime en el encabezado de todos los documentos PDF generados por el sistema.</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-blue-400 flex-shrink-0 mt-0.5">·</span>
+              <span><strong>Contacto</strong> (email, teléfono, dirección): aparecen en el pie de página de los PDFs.</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-blue-400 flex-shrink-0 mt-0.5">·</span>
+              <span><strong>IVA (%)</strong>: valor por defecto al calcular totales en nuevas facturas y órdenes de compra.</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-blue-400 flex-shrink-0 mt-0.5">·</span>
+              <span>Los cambios se aplican únicamente a los documentos generados <strong>después de guardar</strong>.</span>
+            </li>
+          </ul>
+        </div>
+
         {/* Acciones */}
-        <div className="flex items-center justify-between pt-2">
-          <p className="text-xs text-gray-400">
-            Los cambios se aplicarán a los próximos documentos generados
-          </p>
+        <div className="flex justify-end pt-2">
           <SubmitButton label="Guardar Configuración" loadingLabel="Guardando..." />
         </div>
       </form>
