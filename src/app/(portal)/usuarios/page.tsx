@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import Link from "next/link";
+import InstantLink from "@/components/portal/InstantLink";
 import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow,
@@ -80,12 +80,12 @@ export default async function UsuariosPage({ searchParams }: Props) {
             {query && ` · búsqueda: "${query}"`}
           </p>
         </div>
-        <Link href="/usuarios/nuevo">
+        <InstantLink href="/usuarios/nuevo" prefetchOnMount>
           <Button className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
             <Plus className="h-4 w-4" />
             Invitar Usuario
           </Button>
-        </Link>
+        </InstantLink>
       </div>
 
       {/* Filtros */}
@@ -107,18 +107,18 @@ export default async function UsuariosPage({ searchParams }: Props) {
             const isActive = (f === "" && !filtroActivo) || filtroActivo === f;
             const label = f === "" ? "Todos" : f === "activos" ? "Activos" : "Inactivos";
             return (
-              <Link key={f} href={buildHref({ q: query || undefined, filtro: f || undefined, rol: rolFilter })}>
+              <InstantLink key={f} href={buildHref({ q: query || undefined, filtro: f || undefined, rol: rolFilter })} prefetchOnMount>
                 <span className={`${chipBase} ${isActive ? chipActive : chipInactive}`}>{label}</span>
-              </Link>
+              </InstantLink>
             );
           })}
           <span className="border-l border-gray-200 mx-0.5" />
           {ROLES.map((r) => (
-            <Link key={r} href={buildHref({ q: query || undefined, filtro: filtroActivo, rol: rolFilter === r ? undefined : r })}>
+            <InstantLink key={r} href={buildHref({ q: query || undefined, filtro: filtroActivo, rol: rolFilter === r ? undefined : r })} prefetchOnMount>
               <span className={`${chipBase} ${rolFilter === r ? chipActive : chipInactive}`}>
                 {ROL_LABELS[r]}
               </span>
-            </Link>
+            </InstantLink>
           ))}
         </div>
       </div>
@@ -163,11 +163,11 @@ export default async function UsuariosPage({ searchParams }: Props) {
                     {new Date(u.created_at).toLocaleDateString("es-CL")}
                   </TableCell>
                   <TableCell className="px-3 py-4">
-                    <Link href={`/usuarios/${u.id}`}>
+                    <InstantLink href={`/usuarios/${u.id}`}>
                       <button type="button" className="p-1.5 rounded-md text-gray-400 hover:text-[#253158] hover:bg-gray-100 transition-colors">
                         <Eye className="h-4 w-4" />
                       </button>
-                    </Link>
+                    </InstantLink>
                   </TableCell>
                 </TableRow>
               ))

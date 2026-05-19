@@ -6,7 +6,7 @@ import {
   TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Search, ShieldCheck } from "lucide-react";
-import Link from "next/link";
+import InstantLink from "@/components/portal/InstantLink";
 
 const MODULO_COLORS: Record<string, string> = {
   facturas:      "bg-blue-50 text-blue-600 border border-blue-200",
@@ -79,15 +79,15 @@ export default async function AuditoriaPage({ searchParams }: Props) {
         </form>
 
         <div className="flex flex-wrap gap-1.5">
-          <Link href={`/auditoria${query ? `?q=${encodeURIComponent(query)}` : ""}`}>
+          <InstantLink href={`/auditoria${query ? `?q=${encodeURIComponent(query)}` : ""}`} prefetchOnMount>
             <span className={`${chipBase} ${!moduloFilter ? chipActive : chipInactive}`}>Todos</span>
-          </Link>
+          </InstantLink>
           {MODULOS.map((m) => (
-            <Link key={m} href={`/auditoria?modulo=${m}${query ? `&q=${encodeURIComponent(query)}` : ""}`}>
+            <InstantLink key={m} href={`/auditoria?modulo=${m}${query ? `&q=${encodeURIComponent(query)}` : ""}`} prefetchOnMount>
               <span className={`${chipBase} ${moduloFilter === m ? chipActive : chipInactive}`}>
                 {m.charAt(0).toUpperCase() + m.slice(1).replace("-", " ")}
               </span>
-            </Link>
+            </InstantLink>
           ))}
         </div>
       </div>

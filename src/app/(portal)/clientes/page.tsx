@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { getClientCounts } from "@/lib/cache/master-lists";
 import { redirect } from "next/navigation";
-import Link from "next/link";
+import InstantLink from "@/components/portal/InstantLink";
 import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow,
@@ -64,12 +64,12 @@ export default async function ClientesPage({ searchParams }: Props) {
           </p>
         </div>
         {session.rol !== "USUARIO" && (
-          <Link href="/clientes/nuevo">
+          <InstantLink href="/clientes/nuevo" prefetchOnMount>
             <Button className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
               <Plus className="h-4 w-4" />
               Nuevo Cliente
             </Button>
-          </Link>
+          </InstantLink>
         )}
       </div>
 
@@ -91,11 +91,11 @@ export default async function ClientesPage({ searchParams }: Props) {
             const isActive = (f === "" && !filtroActivo) || filtroActivo === f;
             const label = f === "" ? "Todos" : f === "activos" ? "Activos" : "Inactivos";
             return (
-              <Link key={f} href={buildHref(f as FiltroActivo | undefined)}>
+              <InstantLink key={f} href={buildHref(f as FiltroActivo | undefined)} prefetchOnMount>
                 <span className={`px-3.5 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors border ${isActive ? "bg-[#253158] text-white border-[#253158]" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}>
                   {label}
                 </span>
-              </Link>
+              </InstantLink>
             );
           })}
         </div>
@@ -141,11 +141,11 @@ export default async function ClientesPage({ searchParams }: Props) {
                     </span>
                   </TableCell>
                   <TableCell className="px-3 py-4">
-                    <Link href={`/clientes/${c.id}`}>
+                    <InstantLink href={`/clientes/${c.id}`}>
                       <button type="button" className="p-1.5 rounded-md text-gray-400 hover:text-[#253158] hover:bg-gray-100 transition-colors">
                         <Eye className="h-4 w-4" />
                       </button>
-                    </Link>
+                    </InstantLink>
                   </TableCell>
                 </TableRow>
               ))

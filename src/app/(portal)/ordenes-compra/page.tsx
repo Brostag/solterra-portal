@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Plus, Search, Eye } from "lucide-react";
-import Link from "next/link";
+import InstantLink from "@/components/portal/InstantLink";
 import { formatCurrency } from "@/lib/currency";
 import type { EstadoOC, Moneda } from "@/types";
 
@@ -75,12 +75,12 @@ export default async function OrdenesCompraPage({ searchParams }: Props) {
           </p>
         </div>
         {session.rol !== "USUARIO" && (
-          <Link href="/ordenes-compra/nueva">
+          <InstantLink href="/ordenes-compra/nueva" prefetchOnMount>
             <Button className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
               <Plus className="h-4 w-4" />
               Nueva OC
             </Button>
-          </Link>
+          </InstantLink>
         )}
       </div>
 
@@ -98,17 +98,17 @@ export default async function OrdenesCompraPage({ searchParams }: Props) {
         </form>
 
         <div className="flex gap-1.5 flex-wrap">
-          <Link href={`/ordenes-compra${query ? `?q=${encodeURIComponent(query)}` : ""}`}>
+          <InstantLink href={`/ordenes-compra${query ? `?q=${encodeURIComponent(query)}` : ""}`} prefetchOnMount>
             <span className={`px-3.5 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors border ${!estadoFilter ? "bg-[#253158] text-white border-[#253158]" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}>
               Todos
             </span>
-          </Link>
+          </InstantLink>
           {ESTADOS_FILTER.map((e) => (
-            <Link key={e} href={`/ordenes-compra?estado=${e}${query ? `&q=${encodeURIComponent(query)}` : ""}`}>
+            <InstantLink key={e} href={`/ordenes-compra?estado=${e}${query ? `&q=${encodeURIComponent(query)}` : ""}`} prefetchOnMount>
               <span className={`px-3.5 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors border ${estadoFilter === e ? "bg-[#253158] text-white border-[#253158]" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}>
                 {ESTADO_LABELS[e]}
               </span>
-            </Link>
+            </InstantLink>
           ))}
         </div>
       </div>
@@ -151,11 +151,11 @@ export default async function OrdenesCompraPage({ searchParams }: Props) {
                     </span>
                   </TableCell>
                   <TableCell className="px-3 py-4">
-                    <Link href={`/ordenes-compra/${oc.id}`}>
+                    <InstantLink href={`/ordenes-compra/${oc.id}`}>
                       <button type="button" className="p-1.5 rounded-md text-gray-400 hover:text-[#253158] hover:bg-gray-100 transition-colors">
                         <Eye className="h-4 w-4" />
                       </button>
-                    </Link>
+                    </InstantLink>
                   </TableCell>
                 </TableRow>
               ))

@@ -6,7 +6,7 @@ import {
   TableHeader, TableRow,
 } from "@/components/ui/table";
 import { FileText } from "lucide-react";
-import Link from "next/link";
+import InstantLink from "@/components/portal/InstantLink";
 import DocumentUploadForm from "@/components/portal/DocumentUploadForm";
 import DocumentDownloadButton from "@/components/portal/DocumentDownloadButton";
 import DocumentDeleteButton from "@/components/portal/DocumentDeleteButton";
@@ -119,28 +119,28 @@ export default async function DocumentosPage({ searchParams }: Props) {
       {/* Filtros por tipo */}
       <div className="space-y-3">
         <div className="flex flex-wrap gap-1.5 items-center">
-          <Link href={`/documentos${entidad ? `?entidad=${entidad}` : ""}`}>
+          <InstantLink href={`/documentos${entidad ? `?entidad=${entidad}` : ""}`} prefetchOnMount>
             <span className={`${chipBase} ${!tipo ? chipActive : chipInactive}`}>Todos los tipos</span>
-          </Link>
+          </InstantLink>
           {tipos.map((t) => (
-            <Link key={t} href={`/documentos?tipo=${t}${entidad ? `&entidad=${entidad}` : ""}`}>
+            <InstantLink key={t} href={`/documentos?tipo=${t}${entidad ? `&entidad=${entidad}` : ""}`} prefetchOnMount>
               <span className={`${chipBase} ${tipo === t ? chipActive : chipInactive}`}>
                 {TIPO_LABELS[t]}
               </span>
-            </Link>
+            </InstantLink>
           ))}
         </div>
 
         <div className="flex flex-wrap gap-1.5 items-center">
-          <Link href={`/documentos${tipo ? `?tipo=${tipo}` : ""}`}>
+          <InstantLink href={`/documentos${tipo ? `?tipo=${tipo}` : ""}`} prefetchOnMount>
             <span className={`${chipBase} ${!entidad ? chipActive : chipInactive}`}>Todas las entidades</span>
-          </Link>
+          </InstantLink>
           {entidades.map((e) => (
-            <Link key={e.value} href={`/documentos?entidad=${e.value}${tipo ? `&tipo=${tipo}` : ""}`}>
+            <InstantLink key={e.value} href={`/documentos?entidad=${e.value}${tipo ? `&tipo=${tipo}` : ""}`} prefetchOnMount>
               <span className={`${chipBase} ${entidad === e.value ? chipActive : chipInactive}`}>
                 {e.label}
               </span>
-            </Link>
+            </InstantLink>
           ))}
         </div>
       </div>
@@ -197,9 +197,9 @@ export default async function DocumentosPage({ searchParams }: Props) {
                     </TableCell>
                     <TableCell className="px-5 py-4 text-sm">
                       {asociado ? (
-                        <Link href={asociado.href} className="text-[#253158] hover:underline font-medium">
+                        <InstantLink href={asociado.href} className="text-[#253158] hover:underline font-medium">
                           {asociado.label}
-                        </Link>
+                        </InstantLink>
                       ) : (
                         <span className="text-gray-300">—</span>
                       )}

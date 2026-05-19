@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import Link from "next/link";
+import InstantLink from "@/components/portal/InstantLink";
 import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow,
@@ -81,12 +81,12 @@ export default async function FacturasPage({ searchParams }: Props) {
           </p>
         </div>
         {session.rol !== "USUARIO" && (
-          <Link href="/facturas/nueva">
+          <InstantLink href="/facturas/nueva" prefetchOnMount>
             <Button className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
               <Plus className="h-4 w-4" />
               Nueva Factura
             </Button>
-          </Link>
+          </InstantLink>
         )}
       </div>
 
@@ -104,17 +104,17 @@ export default async function FacturasPage({ searchParams }: Props) {
         </form>
 
         <div className="flex gap-1.5 flex-wrap">
-          <Link href={`/facturas${query ? `?q=${encodeURIComponent(query)}` : ""}`}>
+          <InstantLink href={`/facturas${query ? `?q=${encodeURIComponent(query)}` : ""}`} prefetchOnMount>
             <span className={`px-3.5 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors border ${!estadoFilter ? "bg-[#253158] text-white border-[#253158]" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}>
               Todos
             </span>
-          </Link>
+          </InstantLink>
           {ESTADOS_FILTER.map((e) => (
-            <Link key={e} href={`/facturas?estado=${e}${query ? `&q=${encodeURIComponent(query)}` : ""}`}>
+            <InstantLink key={e} href={`/facturas?estado=${e}${query ? `&q=${encodeURIComponent(query)}` : ""}`} prefetchOnMount>
               <span className={`px-3.5 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors border ${estadoFilter === e ? "bg-[#253158] text-white border-[#253158]" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}>
                 {ESTADO_LABELS[e]}
               </span>
-            </Link>
+            </InstantLink>
           ))}
         </div>
       </div>
@@ -151,12 +151,12 @@ export default async function FacturasPage({ searchParams }: Props) {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Link href={`/facturas/${inv.id}`} className="flex-1">
+                  <InstantLink href={`/facturas/${inv.id}`} className="flex-1">
                     <button type="button" className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#253158] border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
                       <Eye className="h-3.5 w-3.5" />
                       Ver
                     </button>
-                  </Link>
+                  </InstantLink>
                   <a
                     href={`/api/facturas/${inv.id}/pdf`}
                     download={`factura-${inv.numero_factura}.pdf`}
@@ -215,11 +215,11 @@ export default async function FacturasPage({ searchParams }: Props) {
                   <TableCell className="px-5 py-4 text-gray-400 text-sm">{abbreviateName(inv.user.nombre)}</TableCell>
                   <TableCell className="px-3 py-4">
                     <div className="flex items-center gap-1">
-                      <Link href={`/facturas/${inv.id}`}>
+                      <InstantLink href={`/facturas/${inv.id}`}>
                         <button type="button" className="p-1.5 rounded-md text-gray-400 hover:text-[#253158] hover:bg-gray-100 transition-colors" title="Ver factura">
                           <Eye className="h-4 w-4" />
                         </button>
-                      </Link>
+                      </InstantLink>
                       <a href={`/api/facturas/${inv.id}/pdf`} download={`factura-${inv.numero_factura}.pdf`}>
                         <button type="button" className="p-1.5 rounded-md text-gray-400 hover:text-[#253158] hover:bg-gray-100 transition-colors" title="Descargar PDF">
                           <Download className="h-4 w-4" />
