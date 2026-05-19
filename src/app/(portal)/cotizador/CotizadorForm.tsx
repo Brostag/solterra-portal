@@ -292,16 +292,17 @@ export default function CotizadorForm({ ivaPorcentaje }: Props) {
                         id={`horasMin-${it.id}`}
                         type="number"
                         inputMode="numeric"
-                        min={1}
+                        min={0}
                         max={24}
                         step={1}
-                        value={it.horasMinimasDiarias}
+                        value={it.horasMinimasDiarias || ""}
                         onChange={(e) => {
                           const n = Number(e.target.value);
                           updateItem(it.id, {
-                            horasMinimasDiarias: Math.max(1, Math.min(24, Number.isFinite(n) ? n : 1)),
+                            horasMinimasDiarias: Math.max(0, Math.min(24, Number.isFinite(n) ? n : 0)),
                           });
                         }}
+                        placeholder="Ej: 8"
                         disabled={it.tipo === "horas"}
                         className={inputClass}
                       />

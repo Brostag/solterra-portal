@@ -26,7 +26,7 @@ const itemSchema = z.object({
   equipo:              z.string().max(200).default(""),
   tipo:                z.enum(["horas", "dias"]),
   valorHora:           z.number().min(0).max(1_000_000_000),
-  horasMinimasDiarias: z.number().int().min(1).max(24),
+  horasMinimasDiarias: z.number().int().min(0).max(24),
   cantidadHoras:       z.number().min(0).max(100_000),
   cantidadDias:        z.number().min(0).max(10_000),
 });

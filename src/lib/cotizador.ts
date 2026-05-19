@@ -92,7 +92,7 @@ export function nuevoItem(): CotizadorItem {
     id,
     equipo:              "",
     valorHora:           0,
-    horasMinimasDiarias: 8,
+    horasMinimasDiarias: 0,
     tipo:                "horas",
     cantidadHoras:       0,
     cantidadDias:        0,
@@ -109,13 +109,12 @@ export function calcularSubtotalItem(item: CotizadorItem): number {
 
 export function calcularCotizacion(i: CotizadorInput): CotizadorResult {
   const items: CotizadorItemResult[] = i.items.map((item) => {
-    const horasMin = item.horasMinimasDiarias > 0 ? item.horasMinimasDiarias : 1;
     return {
       id:                  item.id,
       equipo:              item.equipo.trim() || "Equipo o servicio no especificado",
       tipo:                item.tipo,
       valorHora:           safe(item.valorHora),
-      horasMinimasDiarias: horasMin,
+      horasMinimasDiarias: safe(item.horasMinimasDiarias),
       cantidad:            item.tipo === "horas" ? safe(item.cantidadHoras) : safe(item.cantidadDias),
       subtotal:            calcularSubtotalItem(item),
     };
