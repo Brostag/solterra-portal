@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { getActiveClientsForSelector, getActiveProductsForSelector } from "@/lib/cache/master-lists";
 import { getCompanySettings } from "@/lib/company-settings";
 import NuevaFacturaForm from "./NuevaFacturaForm";
 import Link from "next/link";
@@ -7,16 +7,8 @@ import { ArrowLeft } from "lucide-react";
 
 export default async function NuevaFacturaPage() {
   const [clients, products, config] = await Promise.all([
-    prisma.client.findMany({
-      where: { activo: true },
-      orderBy: { nombre: "asc" },
-      select: { id: true, nombre: true, rut: true },
-    }),
-    prisma.product.findMany({
-      where: { activo: true },
-      orderBy: { nombre: "asc" },
-      select: { id: true, nombre: true, precio_unitario: true },
-    }),
+    getActiveClientsForSelector(),
+    getActiveProductsForSelector(),
     getCompanySettings(),
   ]);
 
@@ -44,7 +36,7 @@ export default async function NuevaFacturaPage() {
       </div>
       <NuevaFacturaForm
         clients={clients}
-        products={products.map((p) => ({ ...p, precio_unitario: Number(p.precio_unitario) }))}
+        products={products}
         ivaPercent={config ? Number(config.iva_porcentaje) : 19}
         defaultMoneda={(config?.moneda_principal as "CLP" | "USD" | "UF") ?? "CLP"}
         configWarnings={configWarnings}

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getPortalSessionFast } from "@/lib/auth/session";
+import { getProductCounts } from "@/lib/cache/master-lists";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
@@ -22,7 +23,7 @@ export default async function ProductosPage({ searchParams }: Props) {
   const filtroActivo: FiltroActivo | undefined =
     filtro === "activos" || filtro === "inactivos" ? filtro : undefined;
 
-  const [session, products, totalActivos, totalInactivos] = await Promise.all([
+  const [session, products, counts] = await Promise.all([
     getPortalSessionFast(),
     prisma.product.findMany({
       where: {
@@ -40,8 +41,7 @@ export default async function ProductosPage({ searchParams }: Props) {
       orderBy: { created_at: "desc" },
       take: 200,
     }),
-    prisma.product.count({ where: { activo: true } }),
-    prisma.product.count({ where: { activo: false } }),
+    getProductCounts(),
   ]);
   if (!session) redirect("/login");
 
@@ -60,8 +60,8 @@ export default async function ProductosPage({ searchParams }: Props) {
         <div>
           <h1 className="text-2xl font-bold text-[#253158]">Productos y Servicios</h1>
           <p className="text-gray-500 text-sm mt-1">
-            {totalActivos} activos
-            {totalInactivos > 0 && ` · ${totalInactivos} inactivos`}
+            {counts.activos} activos
+            {counts.inactivos > 0 && ` · ${counts.inactivos} inactivos`}
             {query && ` · búsqueda: "${query}"`}
           </p>
         </div>

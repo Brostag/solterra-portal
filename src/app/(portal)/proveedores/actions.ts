@@ -4,8 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { supplierSchema } from "@/lib/validations/supplier";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
+import { ACTIVE_SUPPLIERS_TAG, SUPPLIER_COUNTS_TAG } from "@/lib/cache/master-lists";
 
 export async function createSupplier(formData: FormData) {
   const session = await getSession();
@@ -28,6 +29,8 @@ export async function createSupplier(formData: FormData) {
   await logAudit(session.id, "proveedor_creado", "proveedores", `ID: ${supplier.id} Nombre: ${supplier.nombre}`);
 
   revalidatePath("/proveedores");
+  revalidateTag(ACTIVE_SUPPLIERS_TAG);
+  revalidateTag(SUPPLIER_COUNTS_TAG);
   redirect("/proveedores");
 }
 
@@ -53,6 +56,7 @@ export async function updateSupplier(id: string, formData: FormData) {
 
   revalidatePath(`/proveedores/${id}`);
   revalidatePath("/proveedores");
+  revalidateTag(ACTIVE_SUPPLIERS_TAG);
   redirect(`/proveedores/${id}`);
 }
 
@@ -68,4 +72,6 @@ export async function deactivateSupplier(id: string) {
   await logAudit(session.id, "proveedor_desactivado", "proveedores", `ID: ${id} Nombre: ${supplier.nombre}`);
 
   revalidatePath("/proveedores");
+  revalidateTag(ACTIVE_SUPPLIERS_TAG);
+  revalidateTag(SUPPLIER_COUNTS_TAG);
 }

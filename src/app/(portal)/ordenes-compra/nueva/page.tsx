@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { getActiveSuppliersForSelector, getActiveProductsForSelector } from "@/lib/cache/master-lists";
 import { getCompanySettings } from "@/lib/company-settings";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
@@ -10,16 +10,8 @@ export default async function NuevaOrdenCompraPage() {
   if (session.rol === "USUARIO") redirect("/ordenes-compra");
 
   const [suppliers, products, config] = await Promise.all([
-    prisma.supplier.findMany({
-      where: { activo: true },
-      select: { id: true, nombre: true, rut: true },
-      orderBy: { nombre: "asc" },
-    }),
-    prisma.product.findMany({
-      where: { activo: true },
-      select: { id: true, nombre: true, precio_unitario: true },
-      orderBy: { nombre: "asc" },
-    }),
+    getActiveSuppliersForSelector(),
+    getActiveProductsForSelector(),
     getCompanySettings(),
   ]);
 
@@ -28,7 +20,7 @@ export default async function NuevaOrdenCompraPage() {
   return (
     <NuevoOCForm
       suppliers={suppliers.map((s) => ({ ...s, rut: s.rut ?? null }))}
-      products={products.map((p) => ({ ...p, precio_unitario: Number(p.precio_unitario) }))}
+      products={products}
       ivaPercent={ivaPercent}
       mode="create"
     />

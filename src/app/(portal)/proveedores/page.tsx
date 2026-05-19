@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getPortalSessionFast } from "@/lib/auth/session";
+import { getSupplierCounts } from "@/lib/cache/master-lists";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
@@ -21,7 +22,7 @@ export default async function ProveedoresPage({ searchParams }: Props) {
   const filtroActivo: FiltroActivo | undefined =
     filtro === "activos" || filtro === "inactivos" ? filtro : undefined;
 
-  const [session, suppliers, totalActivos, totalInactivos] = await Promise.all([
+  const [session, suppliers, counts] = await Promise.all([
     getPortalSessionFast(),
     prisma.supplier.findMany({
       where: {
@@ -40,8 +41,7 @@ export default async function ProveedoresPage({ searchParams }: Props) {
       take: 200,
       include: { _count: { select: { purchaseOrders: true } } },
     }),
-    prisma.supplier.count({ where: { activo: true } }),
-    prisma.supplier.count({ where: { activo: false } }),
+    getSupplierCounts(),
   ]);
   if (!session) redirect("/login");
 
@@ -60,8 +60,8 @@ export default async function ProveedoresPage({ searchParams }: Props) {
         <div>
           <h1 className="text-2xl font-bold text-[#253158]">Proveedores</h1>
           <p className="text-gray-500 text-sm mt-1">
-            {totalActivos} proveedores activos
-            {totalInactivos > 0 && ` · ${totalInactivos} inactivos`}
+            {counts.activos} proveedores activos
+            {counts.inactivos > 0 && ` · ${counts.inactivos} inactivos`}
             {query && ` · búsqueda: "${query}"`}
           </p>
         </div>

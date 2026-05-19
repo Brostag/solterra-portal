@@ -7,6 +7,7 @@ import { clientSchema } from "@/lib/validations/client";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { DASHBOARD_STATS_TAG } from "@/app/(portal)/dashboard/page";
+import { ACTIVE_CLIENTS_TAG, CLIENT_COUNTS_TAG } from "@/lib/cache/master-lists";
 
 export async function createClient(formData: FormData) {
   const session = await getSession();
@@ -26,6 +27,8 @@ export async function createClient(formData: FormData) {
 
   revalidatePath("/clientes");
   revalidateTag(DASHBOARD_STATS_TAG);
+  revalidateTag(ACTIVE_CLIENTS_TAG);
+  revalidateTag(CLIENT_COUNTS_TAG);
   redirect("/clientes");
 }
 
@@ -47,6 +50,7 @@ export async function updateClient(id: string, formData: FormData) {
 
   revalidatePath("/clientes");
   revalidateTag(DASHBOARD_STATS_TAG);
+  revalidateTag(ACTIVE_CLIENTS_TAG);
   redirect("/clientes");
 }
 
@@ -62,4 +66,6 @@ export async function deactivateClient(id: string) {
 
   revalidatePath("/clientes");
   revalidateTag(DASHBOARD_STATS_TAG);
+  revalidateTag(ACTIVE_CLIENTS_TAG);
+  revalidateTag(CLIENT_COUNTS_TAG);
 }

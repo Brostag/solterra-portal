@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getPortalSessionFast } from "@/lib/auth/session";
+import { getClientCounts } from "@/lib/cache/master-lists";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
@@ -21,7 +22,7 @@ export default async function ClientesPage({ searchParams }: Props) {
   const filtroActivo: FiltroActivo | undefined =
     filtro === "activos" || filtro === "inactivos" ? filtro : undefined;
 
-  const [session, clients, totalActivos, totalInactivos] = await Promise.all([
+  const [session, clients, counts] = await Promise.all([
     getPortalSessionFast(),
     prisma.client.findMany({
       where: {
@@ -39,8 +40,7 @@ export default async function ClientesPage({ searchParams }: Props) {
       take: 200,
       include: { _count: { select: { invoices: true } } },
     }),
-    prisma.client.count({ where: { activo: true } }),
-    prisma.client.count({ where: { activo: false } }),
+    getClientCounts(),
   ]);
   if (!session) redirect("/login");
 
@@ -59,7 +59,7 @@ export default async function ClientesPage({ searchParams }: Props) {
         <div>
           <h1 className="text-2xl font-bold text-[#253158]">Clientes</h1>
           <p className="text-gray-500 text-sm mt-1">
-            {totalActivos} clientes activos · {totalInactivos} inactivos
+            {counts.activos} clientes activos · {counts.inactivos} inactivos
             {query && ` · búsqueda: "${query}"`}
           </p>
         </div>
