@@ -21,25 +21,42 @@ export interface GastosGenerales {
   otros:       number;
 }
 
+export interface CotizadorItem {
+  id:                  string;
+  equipo:              string;
+  valorHora:           number;
+  horasMinimasDiarias: number;  // usado solo si tipo === "dias"
+  tipo:                TipoCotizacion;
+  cantidadHoras:       number;  // usado solo si tipo === "horas"
+  cantidadDias:        number;  // usado solo si tipo === "dias"
+}
+
+export interface CotizadorItemResult {
+  id:                  string;
+  equipo:              string;   // label normalizado
+  tipo:                TipoCotizacion;
+  valorHora:           number;
+  horasMinimasDiarias: number;
+  cantidad:            number;   // cantidadHoras o cantidadDias según tipo
+  subtotal:            number;
+}
+
 export interface CotizadorInput {
-  tipo:                 TipoCotizacion;
-  valorHora:            number;
-  horasMinimasDiarias:  number;  // usado solo si tipo === "dias"
-  cantidadHoras:        number;  // usado solo si tipo === "horas"
-  cantidadDias:         number;  // usado solo si tipo === "dias"
-  gastos:               GastosGenerales;
-  porcentajeDescuento:  number;  // 0–100
-  ivaPorcentaje:        number;  // ej: 19
+  items:               CotizadorItem[];
+  gastos:              GastosGenerales;
+  porcentajeDescuento: number;   // 0–100
+  ivaPorcentaje:       number;   // ej: 19
 }
 
 export interface CotizadorResult {
-  subtotalEquipo:        number;
-  gastosGeneralesTotal:  number;
-  subtotal:              number;
-  descuentoMonto:        number;
-  neto:                  number;
-  iva:                   number;
-  total:                 number;
+  items:                CotizadorItemResult[];
+  subtotalEquipos:      number;
+  gastosGeneralesTotal: number;
+  subtotal:             number;
+  descuentoMonto:       number;
+  neto:                 number;
+  iva:                  number;
+  total:                number;
 }
 
 export const GASTOS_INICIALES: GastosGenerales = {
@@ -65,23 +82,63 @@ export function sumarGastos(g: GastosGenerales): number {
   );
 }
 
+export function nuevoItem(): CotizadorItem {
+  const c = (globalThis as { crypto?: { randomUUID?: () => string } }).crypto;
+  const id =
+    typeof c?.randomUUID === "function"
+      ? c.randomUUID()
+      : `item-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+  return {
+    id,
+    equipo:              "",
+    valorHora:           0,
+    horasMinimasDiarias: 8,
+    tipo:                "horas",
+    cantidadHoras:       0,
+    cantidadDias:        0,
+  };
+}
+
+export function calcularSubtotalItem(item: CotizadorItem): number {
+  const valorHora = safe(item.valorHora);
+  if (item.tipo === "horas") {
+    return round2(valorHora * safe(item.cantidadHoras));
+  }
+  return round2(valorHora * safe(item.horasMinimasDiarias) * safe(item.cantidadDias));
+}
+
 export function calcularCotizacion(i: CotizadorInput): CotizadorResult {
-  const valorHora = safe(i.valorHora);
+  const items: CotizadorItemResult[] = i.items.map((item) => {
+    const horasMin = item.horasMinimasDiarias > 0 ? item.horasMinimasDiarias : 1;
+    return {
+      id:                  item.id,
+      equipo:              item.equipo.trim() || "Equipo o servicio no especificado",
+      tipo:                item.tipo,
+      valorHora:           safe(item.valorHora),
+      horasMinimasDiarias: horasMin,
+      cantidad:            item.tipo === "horas" ? safe(item.cantidadHoras) : safe(item.cantidadDias),
+      subtotal:            calcularSubtotalItem(item),
+    };
+  });
 
-  const subtotalEquipo =
-    i.tipo === "horas"
-      ? round2(valorHora * safe(i.cantidadHoras))
-      : round2(valorHora * safe(i.horasMinimasDiarias) * safe(i.cantidadDias));
-
+  const subtotalEquipos      = round2(items.reduce((acc, it) => acc + it.subtotal, 0));
   const gastosGeneralesTotal = sumarGastos(i.gastos);
+  const subtotal             = round2(subtotalEquipos + gastosGeneralesTotal);
+  const descuentoPct         = Math.max(0, Math.min(100, i.porcentajeDescuento || 0));
+  const descuentoMonto       = round2(subtotal * (descuentoPct / 100));
+  const neto                 = round2(subtotal - descuentoMonto);
+  const ivaPct               = Math.max(0, i.ivaPorcentaje || 0);
+  const iva                  = round2(neto * (ivaPct / 100));
+  const total                = round2(neto + iva);
 
-  const subtotal       = round2(subtotalEquipo + gastosGeneralesTotal);
-  const descuentoPct   = Math.max(0, Math.min(100, i.porcentajeDescuento || 0));
-  const descuentoMonto = round2(subtotal * (descuentoPct / 100));
-  const neto           = round2(subtotal - descuentoMonto);
-  const ivaPct         = Math.max(0, i.ivaPorcentaje || 0);
-  const iva            = round2(neto * (ivaPct / 100));
-  const total          = round2(neto + iva);
-
-  return { subtotalEquipo, gastosGeneralesTotal, subtotal, descuentoMonto, neto, iva, total };
+  return {
+    items,
+    subtotalEquipos,
+    gastosGeneralesTotal,
+    subtotal,
+    descuentoMonto,
+    neto,
+    iva,
+    total,
+  };
 }
