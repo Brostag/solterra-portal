@@ -145,72 +145,75 @@ export default async function DashboardPage() {
   if (!session) redirect("/login");
 
   return (
-    <div className="space-y-5 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Saludo */}
       <div>
-        <p className="text-xs text-gray-400 mb-1">{getFechaHoy()}</p>
-        <h1 className="text-xl sm:text-2xl font-bold text-[#253158]">
+        <p className="text-[11px] sm:text-xs text-gray-400 mb-0.5 sm:mb-1">{getFechaHoy()}</p>
+        <h1 className="text-lg sm:text-2xl font-bold text-[#253158] leading-tight">
           {getGreeting()}, {session.nombre}
         </h1>
       </div>
 
       {/* Accesos principales */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         <Link href="/facturas" className="group block">
-          <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 hover:border-[#253158] hover:shadow-md transition-all duration-200 h-full">
-            <div className="flex items-start justify-between mb-3 sm:mb-4">
-              <div className="p-2 sm:p-2.5 bg-[#253158]/10 rounded-lg">
-                <FileText className="h-6 w-6 sm:h-7 sm:w-7 text-[#253158]" />
+          <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-5 hover:border-[#253158] hover:shadow-md transition-all duration-200 h-full">
+            <div className="flex items-start justify-between mb-2 sm:mb-4">
+              <div className="p-1.5 sm:p-2.5 bg-[#253158]/10 rounded-lg">
+                <FileText className="h-4 w-4 sm:h-7 sm:w-7 text-[#253158]" />
               </div>
-              <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-[#253158] group-hover:translate-x-0.5 transition-all" />
+              <ArrowRight className="hidden sm:block h-4 w-4 text-gray-300 group-hover:text-[#253158] group-hover:translate-x-0.5 transition-all" />
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-[#253158]">{stats.totalFacturas}</p>
-            <p className="text-sm font-semibold text-gray-700 mt-0.5">Facturas</p>
+            <p className="text-xl sm:text-3xl font-bold text-[#253158] tabular-nums leading-none">{stats.totalFacturas}</p>
+            <p className="text-[11px] sm:text-sm font-semibold text-gray-700 mt-1 sm:mt-0.5 leading-tight">Facturas</p>
             {(stats.facturasCreadas + stats.facturasEnviadas) > 0 ? (
-              <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
+              <p className="hidden sm:flex text-xs text-amber-600 mt-2 items-center gap-1">
                 <Clock className="h-3 w-3" />
                 {stats.facturasCreadas + stats.facturasEnviadas} pendientes
               </p>
             ) : (
-              <p className="text-xs text-gray-400 mt-2">Sin pendientes</p>
+              <p className="hidden sm:block text-xs text-gray-400 mt-2">Sin pendientes</p>
             )}
           </div>
         </Link>
 
         <Link href="/ordenes-compra" className="group block">
-          <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 hover:border-[#253158] hover:shadow-md transition-all duration-200 h-full">
-            <div className="flex items-start justify-between mb-3 sm:mb-4">
-              <div className="p-2 sm:p-2.5 bg-[#253158]/10 rounded-lg">
-                <ShoppingCart className="h-6 w-6 sm:h-7 sm:w-7 text-[#253158]" />
+          <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-5 hover:border-[#253158] hover:shadow-md transition-all duration-200 h-full">
+            <div className="flex items-start justify-between mb-2 sm:mb-4">
+              <div className="p-1.5 sm:p-2.5 bg-[#253158]/10 rounded-lg">
+                <ShoppingCart className="h-4 w-4 sm:h-7 sm:w-7 text-[#253158]" />
               </div>
-              <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-[#253158] group-hover:translate-x-0.5 transition-all" />
+              <ArrowRight className="hidden sm:block h-4 w-4 text-gray-300 group-hover:text-[#253158] group-hover:translate-x-0.5 transition-all" />
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-[#253158]">{stats.totalOC}</p>
-            <p className="text-sm font-semibold text-gray-700 mt-0.5">Órdenes de Compra</p>
+            <p className="text-xl sm:text-3xl font-bold text-[#253158] tabular-nums leading-none">{stats.totalOC}</p>
+            <p className="text-[11px] sm:text-sm font-semibold text-gray-700 mt-1 sm:mt-0.5 leading-tight">
+              <span className="sm:hidden">OC</span>
+              <span className="hidden sm:inline">Órdenes de Compra</span>
+            </p>
             {stats.ocPendientes > 0 ? (
-              <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
+              <p className="hidden sm:flex text-xs text-amber-600 mt-2 items-center gap-1">
                 <Clock className="h-3 w-3" />
                 {stats.ocPendientes} en curso
               </p>
             ) : stats.ocAprobadas > 0 ? (
-              <p className="text-xs text-green-600 mt-2">{stats.ocAprobadas} aprobadas</p>
+              <p className="hidden sm:block text-xs text-green-600 mt-2">{stats.ocAprobadas} aprobadas</p>
             ) : (
-              <p className="text-xs text-gray-400 mt-2">Sin órdenes activas</p>
+              <p className="hidden sm:block text-xs text-gray-400 mt-2">Sin órdenes activas</p>
             )}
           </div>
         </Link>
 
         <Link href="/documentos" className="group block">
-          <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 hover:border-[#253158] hover:shadow-md transition-all duration-200 h-full">
-            <div className="flex items-start justify-between mb-3 sm:mb-4">
-              <div className="p-2 sm:p-2.5 bg-[#253158]/10 rounded-lg">
-                <FolderOpen className="h-6 w-6 sm:h-7 sm:w-7 text-[#253158]" />
+          <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-5 hover:border-[#253158] hover:shadow-md transition-all duration-200 h-full">
+            <div className="flex items-start justify-between mb-2 sm:mb-4">
+              <div className="p-1.5 sm:p-2.5 bg-[#253158]/10 rounded-lg">
+                <FolderOpen className="h-4 w-4 sm:h-7 sm:w-7 text-[#253158]" />
               </div>
-              <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-[#253158] group-hover:translate-x-0.5 transition-all" />
+              <ArrowRight className="hidden sm:block h-4 w-4 text-gray-300 group-hover:text-[#253158] group-hover:translate-x-0.5 transition-all" />
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-[#253158]">{stats.totalDocumentos}</p>
-            <p className="text-sm font-semibold text-gray-700 mt-0.5">Documentos</p>
-            <p className="text-xs text-gray-400 mt-2">
+            <p className="text-xl sm:text-3xl font-bold text-[#253158] tabular-nums leading-none">{stats.totalDocumentos}</p>
+            <p className="text-[11px] sm:text-sm font-semibold text-gray-700 mt-1 sm:mt-0.5 leading-tight">Documentos</p>
+            <p className="hidden sm:block text-xs text-gray-400 mt-2">
               {stats.totalDocumentos === 1 ? "archivo registrado" : "archivos registrados"}
             </p>
           </div>
@@ -218,79 +221,82 @@ export default async function DashboardPage() {
       </div>
 
       {/* Acciones rápidas */}
-      <div className="bg-white rounded-xl p-4 sm:p-5 border border-gray-100">
-        <p className="text-xs font-semibold tracking-widest uppercase text-gray-400 mb-3 sm:mb-4">
+      <div className="bg-white rounded-xl p-3 sm:p-5 border border-gray-100">
+        <p className="text-[10px] sm:text-xs font-semibold tracking-widest uppercase text-gray-400 mb-2.5 sm:mb-4">
           Acciones rápidas
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           {/* CTA primario */}
           <Link
             href="/facturas/nueva"
-            className="flex items-center gap-2 sm:gap-3 bg-[#253158] hover:bg-[#1d2a4f] rounded-lg px-3 sm:px-4 py-3 transition-colors"
+            className="flex items-center gap-2 sm:gap-3 bg-[#253158] hover:bg-[#1d2a4f] active:bg-[#1d2a4f] rounded-lg px-2.5 sm:px-4 py-2.5 sm:py-3 transition-colors min-h-[48px]"
           >
-            <div className="p-1.5 bg-white/20 rounded-md flex-shrink-0">
+            <div className="p-1 sm:p-1.5 bg-white/20 rounded-md flex-shrink-0">
               <Plus className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-white leading-tight">Crear factura</p>
-              <p className="text-xs text-white/70 leading-tight mt-0.5 hidden xs:block sm:block">Asistente paso a paso</p>
+              <p className="text-[13px] sm:text-sm font-semibold text-white leading-tight truncate">Crear factura</p>
+              <p className="hidden sm:block text-xs text-white/70 leading-tight mt-0.5">Asistente paso a paso</p>
             </div>
           </Link>
 
           {/* Acciones secundarias */}
           <Link
             href="/ordenes-compra/nueva"
-            className="group flex items-center gap-2 sm:gap-3 bg-white border border-gray-200 hover:bg-[#253158] hover:border-[#253158] rounded-lg px-3 sm:px-4 py-3 transition-colors"
+            className="group flex items-center gap-2 sm:gap-3 bg-white border border-gray-200 hover:bg-[#253158] hover:border-[#253158] active:bg-[#253158] rounded-lg px-2.5 sm:px-4 py-2.5 sm:py-3 transition-colors min-h-[48px]"
           >
-            <div className="p-1.5 bg-gray-100 group-hover:bg-white/20 rounded-md flex-shrink-0 transition-colors">
+            <div className="p-1 sm:p-1.5 bg-gray-100 group-hover:bg-white/20 rounded-md flex-shrink-0 transition-colors">
               <ShoppingCart className="h-4 w-4 text-[#253158] group-hover:text-white transition-colors" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-700 group-hover:text-white leading-tight transition-colors">Nueva OC</p>
-              <p className="text-xs text-gray-400 group-hover:text-white/70 leading-tight mt-0.5 hidden sm:block transition-colors">Para tus proveedores</p>
+              <p className="text-[13px] sm:text-sm font-semibold text-gray-700 group-hover:text-white leading-tight truncate transition-colors">Nueva OC</p>
+              <p className="hidden sm:block text-xs text-gray-400 group-hover:text-white/70 leading-tight mt-0.5 transition-colors">Para tus proveedores</p>
             </div>
           </Link>
 
           <Link
             href="/documentos"
-            className="group flex items-center gap-2 sm:gap-3 bg-white border border-gray-200 hover:bg-[#253158] hover:border-[#253158] rounded-lg px-3 sm:px-4 py-3 transition-colors"
+            className="group flex items-center gap-2 sm:gap-3 bg-white border border-gray-200 hover:bg-[#253158] hover:border-[#253158] active:bg-[#253158] rounded-lg px-2.5 sm:px-4 py-2.5 sm:py-3 transition-colors min-h-[48px]"
           >
-            <div className="p-1.5 bg-gray-100 group-hover:bg-white/20 rounded-md flex-shrink-0 transition-colors">
+            <div className="p-1 sm:p-1.5 bg-gray-100 group-hover:bg-white/20 rounded-md flex-shrink-0 transition-colors">
               <Upload className="h-4 w-4 text-[#253158] group-hover:text-white transition-colors" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-700 group-hover:text-white leading-tight transition-colors">Subir documento</p>
-              <p className="text-xs text-gray-400 group-hover:text-white/70 leading-tight mt-0.5 hidden sm:block transition-colors">Contrato, guía…</p>
+              <p className="text-[13px] sm:text-sm font-semibold text-gray-700 group-hover:text-white leading-tight truncate transition-colors">
+                <span className="sm:hidden">Subir doc.</span>
+                <span className="hidden sm:inline">Subir documento</span>
+              </p>
+              <p className="hidden sm:block text-xs text-gray-400 group-hover:text-white/70 leading-tight mt-0.5 transition-colors">Contrato, guía…</p>
             </div>
           </Link>
 
           <Link
             href="/clientes/nuevo"
-            className="group flex items-center gap-2 sm:gap-3 bg-white border border-gray-200 hover:bg-[#253158] hover:border-[#253158] rounded-lg px-3 sm:px-4 py-3 transition-colors"
+            className="group flex items-center gap-2 sm:gap-3 bg-white border border-gray-200 hover:bg-[#253158] hover:border-[#253158] active:bg-[#253158] rounded-lg px-2.5 sm:px-4 py-2.5 sm:py-3 transition-colors min-h-[48px]"
           >
-            <div className="p-1.5 bg-gray-100 group-hover:bg-white/20 rounded-md flex-shrink-0 transition-colors">
+            <div className="p-1 sm:p-1.5 bg-gray-100 group-hover:bg-white/20 rounded-md flex-shrink-0 transition-colors">
               <UserPlus className="h-4 w-4 text-[#253158] group-hover:text-white transition-colors" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-700 group-hover:text-white leading-tight transition-colors">Nuevo cliente</p>
-              <p className="text-xs text-gray-400 group-hover:text-white/70 leading-tight mt-0.5 hidden sm:block transition-colors">Empresa o persona</p>
+              <p className="text-[13px] sm:text-sm font-semibold text-gray-700 group-hover:text-white leading-tight truncate transition-colors">Nuevo cliente</p>
+              <p className="hidden sm:block text-xs text-gray-400 group-hover:text-white/70 leading-tight mt-0.5 transition-colors">Empresa o persona</p>
             </div>
           </Link>
         </div>
       </div>
 
       {/* KPIs principales */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-400 mb-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
+          <p className="text-[9px] sm:text-[10px] font-semibold tracking-widest uppercase text-gray-400 mb-2 sm:mb-3 leading-tight">
             Facturado este mes
           </p>
-          <p className="text-xl sm:text-2xl font-bold text-[#253158] break-all">
+          <p className="text-base sm:text-2xl font-bold text-[#253158] tabular-nums break-all">
             {formatCurrency(stats.montoFacturadoEsteMes, "CLP")}
           </p>
           {stats.pctCambioFacturado !== null && (
             <p
-              className={`text-xs mt-1.5 ${
+              className={`text-[10px] sm:text-xs mt-1 sm:mt-1.5 ${
                 stats.pctCambioFacturado >= 0 ? "text-green-600" : "text-red-500"
               }`}
             >
@@ -300,39 +306,39 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-400 mb-3">
-            Pendientes de pago
+        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
+          <p className="text-[9px] sm:text-[10px] font-semibold tracking-widest uppercase text-gray-400 mb-2 sm:mb-3 leading-tight">
+            Pendientes
           </p>
-          <p className={`text-2xl sm:text-3xl font-bold ${(stats.facturasCreadas + stats.facturasEnviadas) > 0 ? "text-amber-600" : "text-[#253158]"}`}>
+          <p className={`text-xl sm:text-3xl font-bold tabular-nums leading-none ${(stats.facturasCreadas + stats.facturasEnviadas) > 0 ? "text-amber-600" : "text-[#253158]"}`}>
             {stats.facturasCreadas + stats.facturasEnviadas}
           </p>
-          <p className="text-xs text-gray-400 mt-1.5">
-            {stats.facturasCreadas} creadas · {stats.facturasEnviadas} enviadas
+          <p className="text-[10px] sm:text-xs text-gray-400 mt-1 sm:mt-1.5 leading-tight">
+            {stats.facturasCreadas} creadas · {stats.facturasEnviadas} env.
           </p>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-400 mb-3">
+        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
+          <p className="text-[9px] sm:text-[10px] font-semibold tracking-widest uppercase text-gray-400 mb-2 sm:mb-3 leading-tight">
             Clientes activos
           </p>
-          <p className="text-2xl sm:text-3xl font-bold text-[#253158]">{stats.totalClientes}</p>
-          <p className="text-xs text-gray-400 mt-1.5">
+          <p className="text-xl sm:text-3xl font-bold text-[#253158] tabular-nums leading-none">{stats.totalClientes}</p>
+          <p className="text-[10px] sm:text-xs text-gray-400 mt-1 sm:mt-1.5 leading-tight">
             de {stats.totalClientesRegistrados} registrados
           </p>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-400 mb-3">
+        <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
+          <p className="text-[9px] sm:text-[10px] font-semibold tracking-widest uppercase text-gray-400 mb-2 sm:mb-3 leading-tight">
             Productos activos
           </p>
-          <p className="text-2xl sm:text-3xl font-bold text-[#253158]">{stats.totalProductos}</p>
-          <p className="text-xs text-gray-400 mt-1.5">en catálogo</p>
+          <p className="text-xl sm:text-3xl font-bold text-[#253158] tabular-nums leading-none">{stats.totalProductos}</p>
+          <p className="text-[10px] sm:text-xs text-gray-400 mt-1 sm:mt-1.5 leading-tight">en catálogo</p>
         </div>
       </div>
 
       {/* Estado de facturas */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
+      <div className="grid grid-cols-4 md:grid-cols-4 gap-1.5 sm:gap-3">
         {[
           { label: "Creadas",  value: stats.facturasCreadas,  bg: "bg-blue-50",   text: "text-blue-700"   },
           { label: "Enviadas", value: stats.facturasEnviadas, bg: "bg-amber-50",  text: "text-amber-600"  },
@@ -341,21 +347,21 @@ export default async function DashboardPage() {
         ].map((item) => (
           <div
             key={item.label}
-            className={`rounded-xl p-4 sm:p-5 ${item.bg}`}
+            className={`rounded-lg sm:rounded-xl p-2.5 sm:p-5 ${item.bg}`}
           >
-            <p className={`text-2xl sm:text-3xl font-bold ${item.text}`}>{item.value}</p>
-            <p className={`text-sm font-semibold mt-1.5 ${item.text}`}>{item.label}</p>
+            <p className={`text-lg sm:text-3xl font-bold tabular-nums leading-none ${item.text}`}>{item.value}</p>
+            <p className={`text-[11px] sm:text-sm font-semibold mt-1 sm:mt-1.5 leading-tight ${item.text}`}>{item.label}</p>
           </div>
         ))}
       </div>
 
       {/* Últimas facturas */}
       <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-gray-100">
-          <h3 className="text-base font-semibold text-[#253158]">Últimas facturas</h3>
+        <div className="flex items-center justify-between px-3.5 sm:px-6 py-3 sm:py-4 border-b border-gray-100">
+          <h3 className="text-sm sm:text-base font-semibold text-[#253158]">Últimas facturas</h3>
           <Link
             href="/facturas"
-            className="text-sm text-[#253158]/70 hover:text-[#253158] font-medium transition-colors"
+            className="text-[11px] sm:text-sm text-[#253158]/70 hover:text-[#253158] font-medium transition-colors"
           >
             Ver todas →
           </Link>
@@ -371,27 +377,29 @@ export default async function DashboardPage() {
                 <Link
                   key={inv.id}
                   href={`/facturas/${inv.id}`}
-                  className="flex items-center justify-between px-4 py-3.5 hover:bg-gray-50 transition-colors"
+                  className="flex items-center justify-between gap-3 px-3.5 py-3 hover:bg-gray-50 active:bg-gray-100 transition-colors"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-mono text-xs font-bold text-gray-500">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="font-mono text-[11px] font-bold text-gray-500">
                         #{inv.numero_factura}
                       </span>
                       <span
-                        className={`inline-flex items-center text-[10px] px-2 py-0.5 rounded-full font-semibold ${estadoBadge[inv.estado] ?? "bg-gray-100 text-gray-600 border border-gray-200"}`}
+                        className={`inline-flex items-center text-[9px] px-1.5 py-0.5 rounded-full font-semibold leading-none ${estadoBadge[inv.estado] ?? "bg-gray-100 text-gray-600 border border-gray-200"}`}
                       >
                         {inv.estado}
                       </span>
                     </div>
-                    <p className="text-sm font-medium text-[#253158] truncate">
+                    <p className="text-[13px] font-medium text-[#253158] truncate leading-tight">
                       {inv.client.nombre}
                     </p>
-                    <p className="text-xs font-semibold text-gray-700 font-mono tabular-nums mt-0.5">
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <p className="text-[13px] font-semibold text-gray-800 font-mono tabular-nums whitespace-nowrap">
                       {formatCurrency(Number(inv.total), inv.moneda as "CLP" | "USD" | "UF")}
                     </p>
+                    <ChevronRight className="h-4 w-4 text-gray-300" />
                   </div>
-                  <ChevronRight className="h-4 w-4 text-gray-300 flex-shrink-0 ml-3" />
                 </Link>
               ))}
             </div>
