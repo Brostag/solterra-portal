@@ -9,7 +9,7 @@ import {
 import path from "path";
 import type { CotizadorInput, CotizadorResult } from "@/lib/cotizador";
 
-const LOCAL_LOGO = path.join(process.cwd(), "public", "solterra-logo.png");
+const LOGO_URL = "https://ext.same-assets.com/2134444905/2150008532.png";
 
 Font.register({
   family: "Inter",
@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
 
   // Encabezado
   topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 },
-  emisorLogo: { width: 140, height: 56, objectFit: "contain", marginBottom: 8 },
+  emisorLogo: { width: 150, height: 50, objectFit: "contain", marginBottom: 8 },
   emisorName: { fontSize: 13, fontWeight: 700, color: BLUE, marginBottom: 2 },
   emisorLine: { fontSize: 9, color: GRAY, marginBottom: 1 },
 
@@ -167,7 +167,7 @@ export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
       // ── ENCABEZADO ──
       ce(View, { style: styles.topRow },
         ce(View, { style: { flex: 1, paddingRight: 14 } },
-          ce(Image, { src: LOCAL_LOGO, style: styles.emisorLogo }),
+          ce(Image, { src: LOGO_URL, style: styles.emisorLogo }),
           ce(Text, { style: styles.emisorName }, company.razon_social),
           ce(Text, { style: styles.emisorLine }, `RUT: ${company.rut}`),
           company.giro      ? ce(Text, { style: styles.emisorLine }, `Giro: ${company.giro}`) : null,
