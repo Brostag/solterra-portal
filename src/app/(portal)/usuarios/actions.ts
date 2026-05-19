@@ -31,7 +31,9 @@ export async function inviteUser(formData: FormData) {
     rol: formData.get("rol"),
   });
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
   const supabase = createAdminClient();
   const { data, error } = await supabase.auth.admin.inviteUserByEmail(validated.email, {
     data: { nombre: validated.nombre, rol: validated.rol },
