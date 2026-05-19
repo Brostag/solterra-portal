@@ -29,8 +29,8 @@ const styles = StyleSheet.create({
   page: { fontFamily: "Inter", fontSize: 10, color: "#1a1a1a", padding: 40 },
 
   // Encabezado
-  topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 },
-  emisorLogo: { width: 150, height: 50, objectFit: "contain", marginBottom: 8 },
+  topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
+  emisorLogo: { width: 150, height: 50, objectFit: "contain", marginBottom: 6 },
   emisorName: { fontSize: 13, fontWeight: 700, color: BLUE, marginBottom: 2 },
   emisorLine: { fontSize: 9, color: GRAY, marginBottom: 1 },
 
@@ -45,8 +45,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#fef2f2",
     border: `1px solid #fca5a5`,
     borderRadius: 3,
-    padding: "8 12",
-    marginBottom: 14,
+    padding: "6 12",
+    marginBottom: 10,
     flexDirection: "row",
     alignItems: "center",
   },
@@ -59,13 +59,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  divider: { borderBottom: `1px solid ${BORDER}`, marginVertical: 10 },
+  divider: { borderBottom: `1px solid ${BORDER}`, marginVertical: 7 },
 
   // Tabla genérica
-  tableHeader: { flexDirection: "row", backgroundColor: BLUE, paddingVertical: 6, paddingHorizontal: 8 },
-  tableRow:    { flexDirection: "row", borderBottom: `1px solid #f3f4f6`, paddingVertical: 5, paddingHorizontal: 8 },
-  tableRowAlt: { flexDirection: "row", borderBottom: `1px solid #f3f4f6`, paddingVertical: 5, paddingHorizontal: 8, backgroundColor: "#f9fafb" },
-  tableRowTotal: { flexDirection: "row", paddingVertical: 6, paddingHorizontal: 8, borderTop: `1px solid ${BORDER}`, backgroundColor: "#f3f4f6" },
+  tableHeader: { flexDirection: "row", backgroundColor: BLUE, paddingVertical: 5, paddingHorizontal: 8 },
+  tableRow:    { flexDirection: "row", borderBottom: `1px solid #f3f4f6`, paddingVertical: 4, paddingHorizontal: 8 },
+  tableRowAlt: { flexDirection: "row", borderBottom: `1px solid #f3f4f6`, paddingVertical: 4, paddingHorizontal: 8, backgroundColor: "#f9fafb" },
+  tableRowTotal: { flexDirection: "row", paddingVertical: 5, paddingHorizontal: 8, borderTop: `1px solid ${BORDER}`, backgroundColor: "#f3f4f6" },
   thText:      { fontSize: 8, color: "#ffffff", fontWeight: 700 },
   tdText:      { fontSize: 9, color: "#374151" },
   tdTextBold:  { fontSize: 9, color: "#1a1a1a", fontWeight: 700 },
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 8, fontWeight: 700, color: BLUE, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6, marginTop: 4 },
 
   // Resumen totales
-  bottomRow: { flexDirection: "row", justifyContent: "flex-end", marginTop: 14 },
+  bottomRow: { flexDirection: "row", justifyContent: "flex-end", marginTop: 10 },
   resumeBox:    { width: "55%", border: `1px solid ${BORDER}`, borderRadius: 3, overflow: "hidden" },
   resumeHeader: { backgroundColor: BLUE, paddingVertical: 4, paddingHorizontal: 8 },
   resumeHeaderText: { fontSize: 8, color: "#ffffff", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8 },
@@ -97,20 +97,16 @@ const styles = StyleSheet.create({
   grandLabel:   { fontSize: 11, fontWeight: 700, color: "#ffffff" },
   grandValue:   { fontSize: 11, fontWeight: 700, color: "#ffffff" },
 
-  // Watermark de fondo
-  watermarkWrap: { position: "absolute", top: 260, left: 0, right: 0, alignItems: "center" },
-  watermarkText: { fontSize: 70, fontWeight: 700, color: "#fde68a" },
-
   // Nota legal
   legalNote: {
-    marginTop: 18,
-    padding: "10 12",
+    marginTop: 10,
+    padding: "7 10",
     borderRadius: 3,
     backgroundColor: "#fffbeb",
     border: `1px solid #fcd34d`,
   },
-  legalLabel: { fontSize: 8, fontWeight: 700, color: "#92400e", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 },
-  legalText:  { fontSize: 9, color: "#374151", lineHeight: 1.5 },
+  legalLabel: { fontSize: 8, fontWeight: 700, color: "#92400e", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 3 },
+  legalText:  { fontSize: 9, color: "#374151", lineHeight: 1.4 },
 
   // Footer
   footer: { position: "absolute", bottom: 24, left: 40, right: 40, borderTop: `1px solid ${BORDER}`, paddingTop: 6 },
@@ -155,14 +151,10 @@ export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
     { key: "seguro",      label: "Seguro",      value: input.gastos.seguro },
     { key: "otros",       label: "Otros",       value: input.gastos.otros },
   ];
+  const gastoRowsVisibles = gastoRows.filter((g) => g.value > 0);
 
   return ce(Document, null,
     ce(Page, { size: "A4", style: styles.page },
-
-      // Watermark "PRESUPUESTO" de fondo
-      ce(View, { style: styles.watermarkWrap, fixed: true },
-        ce(Text, { style: styles.watermarkText }, "PRESUPUESTO"),
-      ),
 
       // ── ENCABEZADO ──
       ce(View, { style: styles.topRow },
@@ -231,12 +223,18 @@ export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
         ce(Text, { style: [styles.thText, styles.colDesc] }, "Concepto"),
         ce(Text, { style: [styles.thText, styles.colAmount] }, "Monto CLP"),
       ),
-      ...gastoRows.map((g, i) =>
-        ce(View, { key: g.key, style: i % 2 === 0 ? styles.tableRow : styles.tableRowAlt },
-          ce(Text, { style: [styles.tdText, styles.colDesc] }, g.label),
-          ce(Text, { style: [styles.tdText, styles.colAmount] }, fmtCLP(g.value)),
-        )
-      ),
+      ...(gastoRowsVisibles.length > 0
+        ? gastoRowsVisibles.map((g, i) =>
+            ce(View, { key: g.key, style: i % 2 === 0 ? styles.tableRow : styles.tableRowAlt },
+              ce(Text, { style: [styles.tdText, styles.colDesc] }, g.label),
+              ce(Text, { style: [styles.tdText, styles.colAmount] }, fmtCLP(g.value)),
+            )
+          )
+        : [
+            ce(View, { key: "sin-gastos", style: styles.tableRow },
+              ce(Text, { style: [styles.tdText, styles.colDesc, { color: LGRAY }] }, "Sin gastos generales"),
+            ),
+          ]),
       ce(View, { style: styles.tableRowTotal },
         ce(Text, { style: [styles.tdTextBold, styles.colDesc] }, "Total gastos generales"),
         ce(Text, { style: [styles.tdTextBold, styles.colAmount] }, fmtCLP(result.gastosGeneralesTotal)),
@@ -287,8 +285,9 @@ export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
       ce(View, { style: styles.legalNote },
         ce(Text, { style: styles.legalLabel }, "Importante"),
         ce(Text, { style: styles.legalText },
-          "Este documento corresponde a un presupuesto referencial generado por el cotizador interno de Solterra. " +
-          "No constituye factura, boleta ni documento tributario.",
+          "Este presupuesto es referencial y válido a la fecha de emisión. Los valores pueden variar " +
+          "según disponibilidad, condiciones del servicio y fecha de contratación. No constituye factura " +
+          "ni documento tributario.",
         ),
       ),
 
