@@ -303,7 +303,6 @@ export default function CotizadorForm({ ivaPorcentaje }: Props) {
                           });
                         }}
                         placeholder="Ej: 8"
-                        disabled={it.tipo === "horas"}
                         className={inputClass}
                       />
                     </div>
