@@ -26,79 +26,85 @@ const RED = "#c6352e";
 const GRAY = "#6b7280";
 const LGRAY = "#9ca3af";
 const BORDER = "#d1d5db";
+const HEADDIV = "#454f73";
+
+// Filas mínimas del cuerpo de la tabla: con pocos ítems se rellena con filas
+// vacías para que el documento conserve el aspecto de una factura tradicional.
+const MIN_FILAS = 6;
 
 const styles = StyleSheet.create({
-  page: { fontFamily: "Inter", fontSize: 10, color: "#1a1a1a", padding: 40, paddingBottom: 72 },
+  page: { fontFamily: "Inter", fontSize: 10, color: "#1a1a1a", padding: 36, paddingBottom: 70 },
 
   // ── Encabezado: emisor izquierda + recuadro fiscal derecha ──
-  topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 },
+  topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
   emisorCol: { flex: 1, paddingRight: 16 },
-  emisorLogo: { width: 150, height: 50, objectFit: "contain", marginBottom: 8 },
-  emisorName: { fontSize: 13, fontWeight: 700, color: BLUE, marginBottom: 3 },
-  emisorLine: { fontSize: 9, color: GRAY, marginBottom: 1.5 },
+  emisorLogo: { width: 135, height: 44, objectFit: "contain", marginBottom: 6 },
+  emisorName: { fontSize: 12.5, fontWeight: 700, color: BLUE, marginBottom: 2 },
+  emisorLine: { fontSize: 8.5, color: GRAY, marginBottom: 1 },
 
-  // Recuadro fiscal rojo (estilo factura chilena)
-  dteBox: { border: `2px solid ${RED}`, borderRadius: 4, width: 192 },
-  dteBoxInner: { padding: "9 12", alignItems: "center" },
-  dteRut: { fontSize: 9, fontWeight: 700, color: BLUE, textAlign: "center", marginBottom: 4 },
-  dteTipo: { fontSize: 11, fontWeight: 700, color: RED, textAlign: "center", marginBottom: 6 },
-  dteNumLabel: { fontSize: 8, color: LGRAY, textAlign: "center", marginBottom: 1 },
-  dteNum: { fontSize: 17, fontWeight: 700, color: BLUE, textAlign: "center" },
-  dteAdmin: { fontSize: 7, color: LGRAY, textAlign: "center", borderTop: `1px solid ${BORDER}`, padding: "5 8", lineHeight: 1.4 },
+  // Recuadro fiscal rojo (estilo factura administrativa)
+  dteBox: { border: `2px solid ${RED}`, width: 200 },
+  dteBoxTop: { padding: "7 10", alignItems: "center" },
+  dteRut: { fontSize: 8.5, fontWeight: 700, color: BLUE, textAlign: "center" },
+  dteTipo: { fontSize: 10.5, fontWeight: 700, color: RED, textAlign: "center", marginVertical: 3 },
+  dteNumLabel: { fontSize: 8, color: LGRAY, textAlign: "center" },
+  dteNum: { fontSize: 15, fontWeight: 700, color: BLUE, textAlign: "center" },
+  dteFootWrap: { borderTop: `1px solid ${BORDER}`, padding: "4 8" },
+  dteFootText: { fontSize: 7, color: LGRAY, textAlign: "center", lineHeight: 1.35 },
 
-  divider: { borderBottom: `1px solid ${BORDER}`, marginBottom: 12 },
-
-  // ── Caja cliente / documento ──
-  infoBox: { flexDirection: "row", border: `1px solid ${BORDER}`, borderRadius: 4, marginBottom: 12 },
-  infoLeft: { flex: 1, padding: "9 11", borderRight: `1px solid ${BORDER}` },
-  infoRight: { width: 215, padding: "9 11" },
-  sectionLabel: { fontSize: 7.5, color: LGRAY, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 5, fontWeight: 700 },
-  clientName: { fontSize: 11, fontWeight: 700, color: BLUE, marginBottom: 2 },
-  clientLine: { fontSize: 9, color: GRAY, marginBottom: 1.5 },
-  metaRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
-  metaLabel: { fontSize: 9, color: LGRAY },
-  metaValue: { fontSize: 9, color: "#1a1a1a", fontWeight: 700 },
-  badge: { fontSize: 7.5, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 3, textTransform: "uppercase", letterSpacing: 0.5, color: "#ffffff", fontWeight: 700 },
+  // ── Caja datos cliente / documento ──
+  infoBox: { flexDirection: "row", border: `1px solid ${BORDER}`, marginBottom: 10 },
+  infoLeft: { flex: 1, padding: "8 10", borderRight: `1px solid ${BORDER}` },
+  infoRight: { width: 212, padding: "8 10" },
+  infoTitle: { fontSize: 7.5, fontWeight: 700, color: LGRAY, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 5 },
+  infoRow: { flexDirection: "row", alignItems: "center", marginBottom: 3 },
+  infoLabel: { fontSize: 8.5, color: GRAY, width: 58 },
+  infoLabelR: { fontSize: 8.5, color: GRAY, width: 78 },
+  infoValue: { fontSize: 8.5, color: "#1a1a1a", fontWeight: 700, flex: 1 },
+  infoClientName: { fontSize: 8.5, color: BLUE, fontWeight: 700, flex: 1 },
+  badge: { fontSize: 7, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 3, textTransform: "uppercase", letterSpacing: 0.4, color: "#ffffff", fontWeight: 700 },
 
   // ── Nota tipo de cambio ──
-  currencyNote: { backgroundColor: "#eff6ff", borderRadius: 3, padding: "5 8", marginBottom: 10, fontSize: 9, color: "#1d4ed8" },
+  currencyNote: { backgroundColor: "#eff6ff", borderRadius: 3, padding: "5 8", marginBottom: 8, fontSize: 8.5, color: "#1d4ed8" },
 
-  // ── Tabla de detalle ──
-  tableHeader: { flexDirection: "row", backgroundColor: BLUE, paddingVertical: 6, paddingHorizontal: 6 },
-  tableRow: { flexDirection: "row", borderBottom: `1px solid #eef0f2`, paddingVertical: 6, paddingHorizontal: 6 },
-  tableRowAlt: { flexDirection: "row", borderBottom: `1px solid #eef0f2`, paddingVertical: 6, paddingHorizontal: 6, backgroundColor: "#f9fafb" },
-  colNum: { width: 26, textAlign: "center" },
-  colCod: { width: 62, textAlign: "left" },
-  colQty: { width: 46, textAlign: "right" },
-  colDesc: { flex: 1, paddingHorizontal: 4 },
+  // ── Tabla de detalle (bordes completos) ──
+  tableBox: { borderTopWidth: 1, borderLeftWidth: 1, borderRightWidth: 1, borderColor: BORDER, borderStyle: "solid" },
+  tableHeadRow: { flexDirection: "row", backgroundColor: BLUE, borderBottom: `1px solid ${BORDER}` },
+  tableRow: { flexDirection: "row", borderBottom: `1px solid ${BORDER}`, minHeight: 24 },
+  thCell: { fontSize: 8, color: "#ffffff", fontWeight: 700, paddingVertical: 6, paddingHorizontal: 5 },
+  tdCell: { fontSize: 9, color: "#374151", paddingVertical: 6, paddingHorizontal: 5 },
+  tdCellBold: { fontSize: 9, color: "#1a1a1a", fontWeight: 700, paddingVertical: 6, paddingHorizontal: 5 },
+  cellDiv: { borderRight: `1px solid ${BORDER}` },
+  cellDivH: { borderRight: `1px solid ${HEADDIV}` },
+  colNum: { width: 30, textAlign: "center" },
+  colQty: { width: 54, textAlign: "center" },
+  colCod: { width: 66, textAlign: "left" },
+  colDesc: { flex: 1, textAlign: "left" },
   colPrice: { width: 80, textAlign: "right" },
-  colTotal: { width: 82, textAlign: "right" },
-  thText: { fontSize: 8, color: "#ffffff", fontWeight: 700 },
-  tdText: { fontSize: 9, color: "#374151" },
-  tdTextBold: { fontSize: 9, color: "#1a1a1a", fontWeight: 700 },
+  colTotal: { width: 84, textAlign: "right" },
 
   // ── Totales ──
-  totalsArea: { flexDirection: "row", justifyContent: "flex-end", marginTop: 12 },
-  totalsBox: { width: 240, border: `1px solid ${BORDER}`, borderRadius: 4, overflow: "hidden" },
-  totalRow: { flexDirection: "row", justifyContent: "space-between", padding: "5 11" },
+  totalsArea: { flexDirection: "row", justifyContent: "flex-end", marginTop: 10 },
+  totalsBox: { width: 238, border: `1px solid ${BORDER}` },
+  totalRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 5, paddingHorizontal: 10, borderBottom: `1px solid ${BORDER}` },
   totalLabel: { fontSize: 9, color: GRAY },
   totalValue: { fontSize: 9, color: "#1a1a1a", fontWeight: 700 },
-  grandRow: { flexDirection: "row", justifyContent: "space-between", padding: "7 11", backgroundColor: BLUE },
-  grandLabel: { fontSize: 11, fontWeight: 700, color: "#ffffff" },
-  grandValue: { fontSize: 11, fontWeight: 700, color: "#ffffff" },
+  grandRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 7, paddingHorizontal: 10, backgroundColor: BLUE },
+  grandLabel: { fontSize: 10.5, fontWeight: 700, color: "#ffffff" },
+  grandValue: { fontSize: 12.5, fontWeight: 700, color: "#ffffff" },
 
   // ── ANULADA watermark ──
-  watermarkWrap: { position: "absolute", top: 280, left: 0, right: 0, alignItems: "center" },
-  watermarkText: { fontSize: 68, fontWeight: 700, color: "#fca5a5" },
+  watermarkWrap: { position: "absolute", top: 290, left: 0, right: 0, alignItems: "center" },
+  watermarkText: { fontSize: 66, fontWeight: 700, color: "#fca5a5" },
 
   // ── Anulación box ──
-  anulBox: { backgroundColor: "#fef2f2", border: `1px solid #fca5a5`, borderRadius: 3, padding: "8 10", marginTop: 12 },
-  anulLabel: { fontSize: 8, color: "#dc2626", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
+  anulBox: { backgroundColor: "#fef2f2", border: `1px solid #fca5a5`, borderRadius: 3, padding: "7 10", marginTop: 10 },
+  anulLabel: { fontSize: 8, color: "#dc2626", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 },
   anulText: { fontSize: 9, color: "#374151" },
 
   // ── Footer ──
-  footer: { position: "absolute", bottom: 24, left: 40, right: 40, borderTop: `1px solid ${BORDER}`, paddingTop: 6 },
-  footerLine: { fontSize: 7, color: LGRAY, textAlign: "center", marginBottom: 2 },
+  footer: { position: "absolute", bottom: 22, left: 36, right: 36, borderTop: `1px solid ${BORDER}`, paddingTop: 5 },
+  footerLine: { fontSize: 7, color: GRAY, textAlign: "center", marginBottom: 1.5 },
   footerLegal: { fontSize: 7, color: LGRAY, textAlign: "center", fontStyle: "italic" },
 });
 
@@ -123,6 +129,10 @@ function estadoLabel(estado: string): string {
     CREADA: "Creada", ENVIADA: "Enviada", PAGADA: "Pagada", ANULADA: "Anulada",
   };
   return map[estado] ?? estado;
+}
+
+function dash(value?: string | null): string {
+  return value && value.trim() !== "" ? value : "—";
 }
 
 export interface InvoiceItem {
@@ -172,9 +182,46 @@ export interface InvoiceData {
 
 const ce = React.createElement;
 
+function headerRow() {
+  return ce(View, { style: styles.tableHeadRow, wrap: false },
+    ce(Text, { style: [styles.thCell, styles.colNum, styles.cellDivH] }, "N°"),
+    ce(Text, { style: [styles.thCell, styles.colQty, styles.cellDivH] }, "Cantidad"),
+    ce(Text, { style: [styles.thCell, styles.colCod, styles.cellDivH] }, "Código"),
+    ce(Text, { style: [styles.thCell, styles.colDesc, styles.cellDivH] }, "Descripción"),
+    ce(Text, { style: [styles.thCell, styles.colPrice, styles.cellDivH] }, "Precio Unit."),
+    ce(Text, { style: [styles.thCell, styles.colTotal] }, "Total"),
+  );
+}
+
+function dataRow(item: InvoiceItem, index: number, moneda: string) {
+  return ce(View, { key: `d${index}`, style: styles.tableRow, wrap: false },
+    ce(Text, { style: [styles.tdCell, styles.colNum, styles.cellDiv] }, String(index + 1)),
+    ce(Text, { style: [styles.tdCell, styles.colQty, styles.cellDiv] }, String(Number(item.cantidad))),
+    ce(Text, { style: [styles.tdCell, styles.colCod, styles.cellDiv] }, dash(item.codigo_interno)),
+    ce(Text, { style: [styles.tdCell, styles.colDesc, styles.cellDiv] }, item.descripcion),
+    ce(Text, { style: [styles.tdCell, styles.colPrice, styles.cellDiv] }, fmt(Number(item.precio_unitario), moneda)),
+    ce(Text, { style: [styles.tdCellBold, styles.colTotal] }, fmt(Number(item.subtotal), moneda)),
+  );
+}
+
+function emptyRow(index: number) {
+  return ce(View, { key: `e${index}`, style: styles.tableRow, wrap: false },
+    ce(View, { style: [styles.colNum, styles.cellDiv] }),
+    ce(View, { style: [styles.colQty, styles.cellDiv] }),
+    ce(View, { style: [styles.colCod, styles.cellDiv] }),
+    ce(View, { style: [styles.colDesc, styles.cellDiv] }),
+    ce(View, { style: [styles.colPrice, styles.cellDiv] }),
+    ce(View, { style: [styles.colTotal] }),
+  );
+}
+
 export function InvoiceDocument({ invoice }: { invoice: InvoiceData }) {
   const isAnulada = invoice.estado === "ANULADA";
-  const hasCod = invoice.items.some((i) => i.codigo_interno);
+
+  const emptyRows: React.ReactElement[] = [];
+  for (let k = invoice.items.length; k < MIN_FILAS; k++) {
+    emptyRows.push(emptyRow(k));
+  }
 
   return ce(Document, null,
     ce(Page, { size: "A4", style: styles.page },
@@ -209,55 +256,60 @@ export function InvoiceDocument({ invoice }: { invoice: InvoiceData }) {
 
         // Recuadro fiscal rojo
         ce(View, { style: styles.dteBox },
-          ce(View, { style: styles.dteBoxInner },
-            ce(Text, { style: styles.dteRut }, `RUT: ${invoice.company.rut}`),
+          ce(View, { style: styles.dteBoxTop },
+            ce(Text, { style: styles.dteRut }, `R.U.T.: ${invoice.company.rut}`),
             ce(Text, { style: styles.dteTipo }, "FACTURA ADMINISTRATIVA"),
             ce(Text, { style: styles.dteNumLabel }, "N°"),
             ce(Text, { style: styles.dteNum }, invoice.numero_factura),
           ),
-          ce(Text, { style: styles.dteAdmin },
-            "Documento administrativo interno. No constituye DTE válido ante el SII.",
+          ce(View, { style: styles.dteFootWrap },
+            ce(Text, { style: styles.dteFootText }, "Documento interno"),
+            ce(Text, { style: styles.dteFootText }, "No constituye DTE válido ante el SII"),
           ),
         ),
       ),
-
-      ce(View, { style: styles.divider }),
 
       // ── CAJA RECEPTOR + DATOS DEL DOCUMENTO ──────────────────────────────
       ce(View, { style: styles.infoBox },
 
         ce(View, { style: styles.infoLeft },
-          ce(Text, { style: styles.sectionLabel }, "Señor(es) / Razón Social"),
-          ce(Text, { style: styles.clientName }, invoice.client.nombre),
-          invoice.client.rut
-            ? ce(Text, { style: styles.clientLine }, `RUT: ${invoice.client.rut}`)
-            : null,
-          invoice.client.direccion
-            ? ce(Text, { style: styles.clientLine }, invoice.client.direccion)
-            : null,
-          invoice.client.email
-            ? ce(Text, { style: styles.clientLine }, invoice.client.email)
-            : null,
+          ce(Text, { style: styles.infoTitle }, "Datos del cliente"),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabel }, "Señor(es):"),
+            ce(Text, { style: styles.infoClientName }, invoice.client.nombre),
+          ),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabel }, "RUT:"),
+            ce(Text, { style: styles.infoValue }, dash(invoice.client.rut)),
+          ),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabel }, "Dirección:"),
+            ce(Text, { style: styles.infoValue }, dash(invoice.client.direccion)),
+          ),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabel }, "Email:"),
+            ce(Text, { style: styles.infoValue }, dash(invoice.client.email)),
+          ),
         ),
 
         ce(View, { style: styles.infoRight },
-          ce(Text, { style: styles.sectionLabel }, "Datos del documento"),
-          ce(View, { style: styles.metaRow },
-            ce(Text, { style: styles.metaLabel }, "Fecha emisión"),
-            ce(Text, { style: styles.metaValue },
+          ce(Text, { style: styles.infoTitle }, "Datos del documento"),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabelR }, "Fecha emisión:"),
+            ce(Text, { style: styles.infoValue },
               new Date(invoice.fecha_emision).toLocaleDateString("es-CL"),
             ),
           ),
-          ce(View, { style: styles.metaRow },
-            ce(Text, { style: styles.metaLabel }, "Moneda"),
-            ce(Text, { style: styles.metaValue }, invoice.moneda),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabelR }, "Moneda:"),
+            ce(Text, { style: styles.infoValue }, invoice.moneda),
           ),
-          ce(View, { style: styles.metaRow },
-            ce(Text, { style: styles.metaLabel }, "IVA"),
-            ce(Text, { style: styles.metaValue }, `${invoice.ivaPercent}%`),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabelR }, "IVA:"),
+            ce(Text, { style: styles.infoValue }, `${invoice.ivaPercent}%`),
           ),
-          ce(View, { style: styles.metaRow },
-            ce(Text, { style: styles.metaLabel }, "Estado"),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabelR }, "Estado:"),
             ce(Text, { style: [styles.badge, { backgroundColor: badgeColor(invoice.estado) }] },
               estadoLabel(invoice.estado),
             ),
@@ -275,34 +327,18 @@ export function InvoiceDocument({ invoice }: { invoice: InvoiceData }) {
           )
         : null,
 
-      // ── TABLA DE DETALLE ─────────────────────────────────────────────────
-      ce(View, { style: styles.tableHeader },
-        ce(Text, { style: [styles.thText, styles.colNum] }, "N°"),
-        hasCod ? ce(Text, { style: [styles.thText, styles.colCod] }, "Código") : null,
-        ce(Text, { style: [styles.thText, styles.colQty] }, "Cantidad"),
-        ce(Text, { style: [styles.thText, styles.colDesc] }, "Descripción"),
-        ce(Text, { style: [styles.thText, styles.colPrice] }, "Precio Unit."),
-        ce(Text, { style: [styles.thText, styles.colTotal] }, "Total"),
-      ),
-
-      ...invoice.items.map((item, i) =>
-        ce(View, { key: i, style: i % 2 === 0 ? styles.tableRow : styles.tableRowAlt },
-          ce(Text, { style: [styles.tdText, styles.colNum] }, String(i + 1)),
-          hasCod
-            ? ce(Text, { style: [styles.tdText, styles.colCod] }, item.codigo_interno ?? "—")
-            : null,
-          ce(Text, { style: [styles.tdText, styles.colQty] }, String(Number(item.cantidad))),
-          ce(Text, { style: [styles.tdText, styles.colDesc] }, item.descripcion),
-          ce(Text, { style: [styles.tdText, styles.colPrice] }, fmt(Number(item.precio_unitario), invoice.moneda)),
-          ce(Text, { style: [styles.tdTextBold, styles.colTotal] }, fmt(Number(item.subtotal), invoice.moneda)),
-        )
+      // ── TABLA DE DETALLE (bordes completos) ──────────────────────────────
+      ce(View, { style: styles.tableBox },
+        headerRow(),
+        ...invoice.items.map((item, i) => dataRow(item, i, invoice.moneda)),
+        ...emptyRows,
       ),
 
       // ── TOTALES ──────────────────────────────────────────────────────────
       ce(View, { style: styles.totalsArea },
         ce(View, { style: styles.totalsBox },
           ce(View, { style: styles.totalRow },
-            ce(Text, { style: styles.totalLabel }, "Monto neto"),
+            ce(Text, { style: styles.totalLabel }, "Neto"),
             ce(Text, { style: styles.totalValue }, fmt(Number(invoice.subtotal), invoice.moneda)),
           ),
           ce(View, { style: styles.totalRow },
@@ -327,15 +363,10 @@ export function InvoiceDocument({ invoice }: { invoice: InvoiceData }) {
       // ── PIE DE PÁGINA ────────────────────────────────────────────────────
       ce(View, { style: styles.footer, fixed: true },
         ce(Text, { style: styles.footerLine },
-          invoice.company.razon_social +
-          ` · RUT ${invoice.company.rut}` +
-          (invoice.company.giro ? ` · ${invoice.company.giro}` : "") +
-          (invoice.company.direccion ? ` · ${invoice.company.direccion}` : "") +
-          (invoice.company.telefono ? ` · Tel: ${invoice.company.telefono}` : "") +
-          (invoice.company.email ? ` · ${invoice.company.email}` : ""),
+          `${invoice.company.razon_social} · RUT ${invoice.company.rut} · ` +
+          "Documento generado por SOLTERRA AppWeb.",
         ),
         ce(Text, { style: styles.footerLegal },
-          "Documento generado por SOLTERRA AppWeb. " +
           "No constituye DTE válido ante el SII mientras no exista integración tributaria electrónica.",
         ),
       ),
