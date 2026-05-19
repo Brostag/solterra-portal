@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Building2,
   ShoppingCart,
+  Calculator,
   ChevronLeft,
   ChevronRight,
   X,
@@ -30,6 +31,7 @@ const navItems = [
   { href: "/documentos",     label: "Documentos",        icon: FolderOpen },
   { href: "/proveedores",    label: "Proveedores",       icon: Building2 },
   { href: "/ordenes-compra", label: "Órdenes de Compra", icon: ShoppingCart },
+  { href: "/cotizador",      label: "Cotizador",         icon: Calculator },
 ];
 
 const adminItems = [
