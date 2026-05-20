@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     parsed.clienteId
       ? prisma.client.findUnique({
           where:  { id: parsed.clienteId },
-          select: { nombre: true, rut: true, direccion: true, email: true },
+          select: { nombre: true, rut: true, direccion: true, email: true, telefono: true },
         })
       : Promise.resolve(null),
     getCompanySettings(),
