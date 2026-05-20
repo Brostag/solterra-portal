@@ -10,6 +10,7 @@ import InstantLink from "@/components/portal/InstantLink";
 import DocumentUploadForm from "@/components/portal/DocumentUploadForm";
 import DocumentDownloadButton from "@/components/portal/DocumentDownloadButton";
 import DocumentDeleteButton from "@/components/portal/DocumentDeleteButton";
+import DocumentosFiltrosMobile from "./DocumentosFiltrosMobile";
 
 const TIPO_LABELS: Record<string, string> = {
   CONTRATO:          "Contrato",
@@ -116,32 +117,43 @@ export default async function DocumentosPage({ searchParams }: Props) {
         </div>
       )}
 
-      {/* Filtros por tipo */}
-      <div className="space-y-3">
-        <div className="flex flex-wrap gap-1.5 items-center">
-          <InstantLink href={`/documentos${entidad ? `?entidad=${entidad}` : ""}`} prefetchOnMount>
-            <span className={`${chipBase} ${!tipo ? chipActive : chipInactive}`}>Todos los tipos</span>
-          </InstantLink>
-          {tipos.map((t) => (
-            <InstantLink key={t} href={`/documentos?tipo=${t}${entidad ? `&entidad=${entidad}` : ""}`} prefetchOnMount>
-              <span className={`${chipBase} ${tipo === t ? chipActive : chipInactive}`}>
-                {TIPO_LABELS[t]}
-              </span>
-            </InstantLink>
-          ))}
-        </div>
+      {/* Filtros */}
+      <div>
+        {/* Móvil: tarjeta compacta con selects */}
+        <DocumentosFiltrosMobile
+          tipo={tipo ?? ""}
+          entidad={entidad ?? ""}
+          tipos={tipos.map((t) => ({ value: t, label: TIPO_LABELS[t] }))}
+          entidades={entidades}
+        />
 
-        <div className="flex flex-wrap gap-1.5 items-center">
-          <InstantLink href={`/documentos${tipo ? `?tipo=${tipo}` : ""}`} prefetchOnMount>
-            <span className={`${chipBase} ${!entidad ? chipActive : chipInactive}`}>Todas las entidades</span>
-          </InstantLink>
-          {entidades.map((e) => (
-            <InstantLink key={e.value} href={`/documentos?entidad=${e.value}${tipo ? `&tipo=${tipo}` : ""}`} prefetchOnMount>
-              <span className={`${chipBase} ${entidad === e.value ? chipActive : chipInactive}`}>
-                {e.label}
-              </span>
+        {/* Desktop: chips */}
+        <div className="hidden md:block space-y-3">
+          <div className="flex flex-wrap gap-1.5 items-center">
+            <InstantLink href={`/documentos${entidad ? `?entidad=${entidad}` : ""}`} prefetchOnMount>
+              <span className={`${chipBase} ${!tipo ? chipActive : chipInactive}`}>Todos los tipos</span>
             </InstantLink>
-          ))}
+            {tipos.map((t) => (
+              <InstantLink key={t} href={`/documentos?tipo=${t}${entidad ? `&entidad=${entidad}` : ""}`} prefetchOnMount>
+                <span className={`${chipBase} ${tipo === t ? chipActive : chipInactive}`}>
+                  {TIPO_LABELS[t]}
+                </span>
+              </InstantLink>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-1.5 items-center">
+            <InstantLink href={`/documentos${tipo ? `?tipo=${tipo}` : ""}`} prefetchOnMount>
+              <span className={`${chipBase} ${!entidad ? chipActive : chipInactive}`}>Todas las entidades</span>
+            </InstantLink>
+            {entidades.map((e) => (
+              <InstantLink key={e.value} href={`/documentos?entidad=${e.value}${tipo ? `&tipo=${tipo}` : ""}`} prefetchOnMount>
+                <span className={`${chipBase} ${entidad === e.value ? chipActive : chipInactive}`}>
+                  {e.label}
+                </span>
+              </InstantLink>
+            ))}
+          </div>
         </div>
       </div>
 
