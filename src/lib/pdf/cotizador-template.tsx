@@ -50,18 +50,6 @@ const styles = StyleSheet.create({
   docFootLabel: { fontSize: 7.5, color: LGRAY },
   docFootValue: { fontSize: 7.5, color: "#1a1a1a", fontWeight: 700 },
 
-  // ── Banner de aviso (rojo claro) ──
-  warnBanner: {
-    backgroundColor: "#fef2f2",
-    border: `1px solid #fca5a5`,
-    borderRadius: 3,
-    padding: "6 12",
-    marginBottom: 10,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  warnText: { fontSize: 10, fontWeight: 700, color: "#b91c1c", textAlign: "center", flex: 1, letterSpacing: 0.5 },
-
   // ── Caja datos presupuesto / condiciones ──
   infoBox: { flexDirection: "row", border: `1px solid ${BORDER}`, marginBottom: 10 },
   infoLeft: { flex: 1, padding: "8 10", borderRight: `1px solid ${BORDER}` },
@@ -255,11 +243,6 @@ export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
             ),
           ),
         ),
-      ),
-
-      // ── BANNER DE AVISO ──────────────────────────────────────────────────
-      ce(View, { style: styles.warnBanner },
-        ce(Text, { style: styles.warnText }, "PRESUPUESTO REFERENCIAL — NO VÁLIDO COMO FACTURA"),
       ),
 
       // ── CAJA DATOS DEL PRESUPUESTO / CONDICIONES ─────────────────────────
