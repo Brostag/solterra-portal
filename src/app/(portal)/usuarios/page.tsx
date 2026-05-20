@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import InstantLink from "@/components/portal/InstantLink";
+import EliminarUsuarioButton from "./EliminarUsuarioButton";
 import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow,
@@ -133,7 +134,7 @@ export default async function UsuariosPage({ searchParams }: Props) {
               <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Rol</TableHead>
               <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Estado</TableHead>
               <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Desde</TableHead>
-              <TableHead className="w-12" />
+              <TableHead className="w-24" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -163,11 +164,20 @@ export default async function UsuariosPage({ searchParams }: Props) {
                     {new Date(u.created_at).toLocaleDateString("es-CL")}
                   </TableCell>
                   <TableCell className="px-3 py-4">
-                    <InstantLink href={`/usuarios/${u.id}`}>
-                      <button type="button" className="p-1.5 rounded-md text-gray-400 hover:text-[#253158] hover:bg-gray-100 transition-colors">
-                        <Eye className="h-4 w-4" />
-                      </button>
-                    </InstantLink>
+                    <div className="flex items-center gap-1">
+                      <InstantLink href={`/usuarios/${u.id}`}>
+                        <button
+                          type="button"
+                          aria-label={`Ver usuario ${u.nombre}`}
+                          className="p-1.5 rounded-md text-gray-400 hover:text-[#253158] hover:bg-gray-100 transition-colors"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                      </InstantLink>
+                      {u.id !== session.id && (
+                        <EliminarUsuarioButton userId={u.id} userLabel={u.nombre} />
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
