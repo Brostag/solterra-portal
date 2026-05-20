@@ -26,97 +26,96 @@ const RED = "#c6352e";
 const GRAY = "#6b7280";
 const LGRAY = "#9ca3af";
 const BORDER = "#d1d5db";
+const HEADDIV = "#454f73";
+
+// Filas mínimas del cuerpo de la tabla: con pocos ítems se rellena con filas
+// vacías para conservar el aspecto de documento formal.
+const MIN_FILAS = 6;
 
 const styles = StyleSheet.create({
-  page: { fontFamily: "Inter", fontSize: 10, color: "#1a1a1a", padding: 40 },
+  page: { fontFamily: "Inter", fontSize: 10, color: "#1a1a1a", padding: 36, paddingBottom: 70 },
 
-  // Encabezado
-  topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 },
-  emisorLogo: { width: 150, height: 50, objectFit: "contain", marginBottom: 8 },
-  emisorName: { fontSize: 13, fontWeight: 700, color: BLUE, marginBottom: 2 },
-  emisorLine: { fontSize: 9, color: GRAY, marginBottom: 1 },
+  // ── Encabezado: emisor izquierda + recuadro OC derecha ──
+  topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
+  emisorCol: { flex: 1, paddingRight: 16 },
+  emisorLogo: { width: 135, height: 44, objectFit: "contain", marginBottom: 6 },
+  emisorName: { fontSize: 12.5, fontWeight: 700, color: BLUE, marginBottom: 2 },
+  emisorLine: { fontSize: 8.5, color: GRAY, marginBottom: 1 },
 
-  // Recuadro OC
-  ocBox: { border: `2px solid ${BLUE}`, borderRadius: 3, padding: "10 12", width: 185, alignItems: "center" },
-  ocTipo: { fontSize: 11, fontWeight: 700, color: BLUE, textAlign: "center", marginBottom: 5 },
-  ocNumLabel: { fontSize: 8, color: LGRAY, textAlign: "center", marginBottom: 1 },
-  ocNum: { fontSize: 16, fontWeight: 700, color: BLUE, textAlign: "center", marginBottom: 6 },
-  ocDate: { fontSize: 8, color: LGRAY, textAlign: "center", borderTop: `1px solid ${BORDER}`, paddingTop: 5, marginBottom: 4 },
-  ocStatus: { fontSize: 9, fontWeight: 700, textAlign: "center", marginTop: 2 },
+  // Recuadro OC (azul corporativo)
+  ocBox: { border: `2px solid ${BLUE}`, width: 200 },
+  ocBoxTop: { padding: "7 10", alignItems: "center" },
+  ocTipo: { fontSize: 11, fontWeight: 700, color: BLUE, textAlign: "center" },
+  ocNumLabel: { fontSize: 8, color: LGRAY, textAlign: "center", marginTop: 4 },
+  ocNum: { fontSize: 15, fontWeight: 700, color: BLUE, textAlign: "center" },
+  ocFootWrap: { borderTop: `1px solid ${BORDER}`, padding: "5 9" },
+  ocFootRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 1.5 },
+  ocFootLabel: { fontSize: 7.5, color: LGRAY },
+  ocFootValue: { fontSize: 7.5, color: "#1a1a1a", fontWeight: 700 },
 
-  divider: { borderBottom: `1px solid ${BORDER}`, marginVertical: 10 },
+  // ── Caja datos proveedor / orden ──
+  infoBox: { flexDirection: "row", border: `1px solid ${BORDER}`, marginBottom: 10 },
+  infoLeft: { flex: 1, padding: "8 10", borderRight: `1px solid ${BORDER}` },
+  infoRight: { width: 220, padding: "8 10" },
+  infoTitle: { fontSize: 7.5, fontWeight: 700, color: LGRAY, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 5 },
+  infoRow: { flexDirection: "row", alignItems: "center", marginBottom: 3 },
+  infoLabel: { fontSize: 8.5, color: GRAY, width: 58 },
+  infoLabelR: { fontSize: 8.5, color: GRAY, width: 96 },
+  infoValue: { fontSize: 8.5, color: "#1a1a1a", fontWeight: 700, flex: 1 },
+  infoName: { fontSize: 8.5, color: BLUE, fontWeight: 700, flex: 1 },
+  badge: { fontSize: 7, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 3, textTransform: "uppercase", letterSpacing: 0.4, color: "#ffffff", fontWeight: 700 },
 
-  // Sección proveedor con header azul
-  twoCol: { flexDirection: "row", justifyContent: "space-between", marginBottom: 12 },
-  colHalf: { width: "54%" },
-  colRight: { width: "42%" },
+  // ── Nota tipo de cambio ──
+  currencyNote: { backgroundColor: "#eff6ff", borderRadius: 3, padding: "5 8", marginBottom: 8, fontSize: 8.5, color: "#1d4ed8" },
 
-  proveedorBox: { border: `1px solid ${BORDER}`, borderRadius: 3, overflow: "hidden", marginBottom: 12 },
-  proveedorHeader: { backgroundColor: BLUE, paddingVertical: 4, paddingHorizontal: 8 },
-  proveedorHeaderText: { fontSize: 8, color: "#ffffff", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8 },
-  proveedorBody: { padding: "6 8" },
-  labelRow: { flexDirection: "row", marginBottom: 3 },
-  labelText: { fontSize: 9, color: LGRAY, width: 62 },
-  valueText: { fontSize: 9, color: "#1a1a1a", flex: 1, fontWeight: 700 },
-  valueTextNormal: { fontSize: 9, color: "#374151", flex: 1 },
+  // ── Tabla de ítems (bordes completos) ──
+  tableBox: { borderTopWidth: 1, borderLeftWidth: 1, borderRightWidth: 1, borderColor: BORDER, borderStyle: "solid" },
+  tableHeadRow: { flexDirection: "row", backgroundColor: BLUE, borderBottom: `1px solid ${BORDER}` },
+  tableRow: { flexDirection: "row", borderBottom: `1px solid ${BORDER}`, minHeight: 24 },
+  thCell: { fontSize: 8, color: "#ffffff", fontWeight: 700, paddingVertical: 6, paddingHorizontal: 5 },
+  tdCell: { fontSize: 9, color: "#374151", paddingVertical: 6, paddingHorizontal: 5 },
+  tdCellBold: { fontSize: 9, color: "#1a1a1a", fontWeight: 700, paddingVertical: 6, paddingHorizontal: 5 },
+  cellDiv: { borderRight: `1px solid ${BORDER}` },
+  cellDivH: { borderRight: `1px solid ${HEADDIV}` },
+  colNum: { width: 30, textAlign: "center" },
+  colQty: { width: 60, textAlign: "center" },
+  colDesc: { flex: 1, textAlign: "left" },
+  colValor: { width: 92, textAlign: "right" },
+  colTotal: { width: 96, textAlign: "right" },
 
-  // Datos de la orden (derecha)
-  sectionLabel: { fontSize: 8, color: LGRAY, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6, fontWeight: 700 },
-  metaBox: { border: `1px solid ${BORDER}`, borderRadius: 3, overflow: "hidden" },
-  metaHeader: { backgroundColor: BLUE, paddingVertical: 4, paddingHorizontal: 8 },
-  metaHeaderText: { fontSize: 8, color: "#ffffff", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8 },
-  metaBody: { padding: "6 8" },
-  metaRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 3 },
-  metaLabel: { fontSize: 9, color: LGRAY },
-  metaValue: { fontSize: 9, color: "#1a1a1a" },
+  // ── Condiciones + totales ──
+  bottomRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginTop: 10 },
+  condBox: { flex: 1, paddingRight: 14 },
+  condLabel: { fontSize: 7.5, fontWeight: 700, color: LGRAY, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 4 },
+  condText: { fontSize: 8.5, color: "#374151", lineHeight: 1.4 },
 
-  currencyNote: { backgroundColor: "#eff6ff", borderRadius: 3, padding: "5 8", marginBottom: 10, fontSize: 9, color: "#1d4ed8" },
-
-  // Tabla
-  tableHeader: { flexDirection: "row", backgroundColor: BLUE, paddingVertical: 6, paddingHorizontal: 6 },
-  tableRow: { flexDirection: "row", borderBottom: `1px solid #f3f4f6`, paddingVertical: 6, paddingHorizontal: 6 },
-  tableRowAlt: { flexDirection: "row", borderBottom: `1px solid #f3f4f6`, paddingVertical: 6, paddingHorizontal: 6, backgroundColor: "#f9fafb" },
-  colQtyH: { width: 44, textAlign: "center" },
-  colDesc: { flex: 1 },
-  colValor: { width: 78, textAlign: "right" },
-  colTotal: { width: 78, textAlign: "right" },
-  thText: { fontSize: 8, color: "#ffffff", fontWeight: 700 },
-  tdText: { fontSize: 9, color: "#374151" },
-
-  // Condiciones + totales fila
-  bottomRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 14 },
-  condBox: { width: "48%", fontSize: 9, color: GRAY },
-  condLabel: { fontSize: 8, color: LGRAY, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 4, fontWeight: 700 },
-  condText: { fontSize: 9, color: "#374151", marginBottom: 2 },
-
-  // Resumen (totales)
-  resumeBox: { width: "46%", border: `1px solid ${BORDER}`, borderRadius: 3, overflow: "hidden" },
-  resumeHeader: { backgroundColor: BLUE, paddingVertical: 4, paddingHorizontal: 8 },
-  resumeHeaderText: { fontSize: 8, color: "#ffffff", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8 },
-  resumeBody: { padding: "6 8" },
-  totalRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 4 },
+  totalsBox: { width: 238, border: `1px solid ${BORDER}` },
+  totalRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 5, paddingHorizontal: 10, borderBottom: `1px solid ${BORDER}` },
   totalLabel: { fontSize: 9, color: GRAY },
-  totalValue: { fontSize: 9, color: "#1a1a1a" },
-  grandRow: { flexDirection: "row", justifyContent: "space-between", backgroundColor: BLUE, padding: "6 8", marginHorizontal: -8, marginBottom: -6, borderRadius: 0 },
-  grandLabel: { fontSize: 10, fontWeight: 700, color: "#ffffff" },
-  grandValue: { fontSize: 10, fontWeight: 700, color: "#ffffff" },
+  totalValue: { fontSize: 9, color: "#1a1a1a", fontWeight: 700 },
+  grandRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 7, paddingHorizontal: 10, backgroundColor: BLUE },
+  grandLabel: { fontSize: 10.5, fontWeight: 700, color: "#ffffff" },
+  grandValue: { fontSize: 12.5, fontWeight: 700, color: "#ffffff" },
 
-  obsBox: { marginTop: 12, padding: "8 10", borderRadius: 3, border: `1px solid ${BORDER}` },
-  obsLabel: { fontSize: 8, color: LGRAY, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 4, fontWeight: 700 },
-  obsText: { fontSize: 9, color: "#374151", lineHeight: 1.5 },
+  // ── Observaciones ──
+  obsBox: { marginTop: 10, padding: "7 10", borderRadius: 3, border: `1px solid ${BORDER}` },
+  obsLabel: { fontSize: 7.5, color: LGRAY, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 3, fontWeight: 700 },
+  obsText: { fontSize: 8.5, color: "#374151", lineHeight: 1.4 },
 
-  watermarkWrap: { position: "absolute", top: 260, left: 0, right: 0, alignItems: "center" },
-  watermarkText: { fontSize: 68, fontWeight: 700, color: "#fca5a5" },
+  // ── ANULADA watermark ──
+  watermarkWrap: { position: "absolute", top: 290, left: 0, right: 0, alignItems: "center" },
+  watermarkText: { fontSize: 66, fontWeight: 700, color: "#fca5a5" },
 
-  anulBox: { backgroundColor: "#fef2f2", border: `1px solid #fca5a5`, borderRadius: 3, padding: "8 10", marginTop: 10 },
-  anulLabel: { fontSize: 8, color: "#dc2626", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
+  // ── Anulación box ──
+  anulBox: { backgroundColor: "#fef2f2", border: `1px solid #fca5a5`, borderRadius: 3, padding: "7 10", marginTop: 10 },
+  anulLabel: { fontSize: 8, color: "#dc2626", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 },
   anulText: { fontSize: 9, color: "#374151" },
 
-  // Footer 3 columnas
-  footer: { position: "absolute", bottom: 24, left: 40, right: 40, borderTop: `1px solid ${BORDER}`, paddingTop: 6 },
+  // ── Footer ──
+  footer: { position: "absolute", bottom: 22, left: 36, right: 36, borderTop: `1px solid ${BORDER}`, paddingTop: 5 },
   footerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  footerLeft: { flex: 1, fontSize: 7, color: LGRAY },
-  footerCenter: { flex: 1, fontSize: 8, fontWeight: 700, color: BLUE, textAlign: "center" },
+  footerLeft: { flex: 1, fontSize: 7, color: GRAY },
+  footerCenter: { flex: 1, fontSize: 7.5, fontWeight: 700, color: BLUE, textAlign: "center" },
   footerRight: { flex: 1, fontSize: 7, color: LGRAY, textAlign: "right" },
 });
 
@@ -144,6 +143,10 @@ function estadoLabel(estado: string): string {
     APROBADA: "Aprobada", RECHAZADA: "Rechazada", ANULADA: "Anulada",
   };
   return map[estado] ?? estado;
+}
+
+function dash(value?: string | null): string {
+  return value && value.trim() !== "" ? value : "—";
 }
 
 export interface OCItem {
@@ -194,24 +197,59 @@ export interface PurchaseOrderPDFData {
 
 const ce = React.createElement;
 
+function headerRow() {
+  return ce(View, { style: styles.tableHeadRow, wrap: false },
+    ce(Text, { style: [styles.thCell, styles.colNum, styles.cellDivH] }, "N°"),
+    ce(Text, { style: [styles.thCell, styles.colQty, styles.cellDivH] }, "Cantidad"),
+    ce(Text, { style: [styles.thCell, styles.colDesc, styles.cellDivH] }, "Detalle"),
+    ce(Text, { style: [styles.thCell, styles.colValor, styles.cellDivH] }, "Valor Unit."),
+    ce(Text, { style: [styles.thCell, styles.colTotal] }, "Total"),
+  );
+}
+
+function dataRow(item: OCItem, index: number, moneda: string) {
+  return ce(View, { key: `d${index}`, style: styles.tableRow, wrap: false },
+    ce(Text, { style: [styles.tdCell, styles.colNum, styles.cellDiv] }, String(index + 1)),
+    ce(Text, { style: [styles.tdCell, styles.colQty, styles.cellDiv] }, String(Number(item.cantidad))),
+    ce(Text, { style: [styles.tdCell, styles.colDesc, styles.cellDiv] }, item.descripcion),
+    ce(Text, { style: [styles.tdCell, styles.colValor, styles.cellDiv] }, fmt(Number(item.valor_unitario), moneda)),
+    ce(Text, { style: [styles.tdCellBold, styles.colTotal] }, fmt(Number(item.total), moneda)),
+  );
+}
+
+function emptyRow(index: number) {
+  return ce(View, { key: `e${index}`, style: styles.tableRow, wrap: false },
+    ce(View, { style: [styles.colNum, styles.cellDiv] }),
+    ce(View, { style: [styles.colQty, styles.cellDiv] }),
+    ce(View, { style: [styles.colDesc, styles.cellDiv] }),
+    ce(View, { style: [styles.colValor, styles.cellDiv] }),
+    ce(View, { style: [styles.colTotal] }),
+  );
+}
+
 export function PurchaseOrderDocument({ oc }: { oc: PurchaseOrderPDFData }) {
   const isAnulada = oc.estado === "ANULADA";
   const hasDesc = oc.descuento_pct > 0;
 
+  const emptyRows: React.ReactElement[] = [];
+  for (let k = oc.items.length; k < MIN_FILAS; k++) {
+    emptyRows.push(emptyRow(k));
+  }
+
   return ce(Document, null,
     ce(Page, { size: "A4", style: styles.page },
 
-      // Watermark ANULADA
+      // ANULADA watermark — se renderiza primero, queda detrás del contenido
       isAnulada
         ? ce(View, { style: styles.watermarkWrap, fixed: true },
             ce(Text, { style: styles.watermarkText }, "ANULADA"),
           )
         : null,
 
-      // ── ENCABEZADO ──────────────────────────────────────────────────────
+      // ── ENCABEZADO: emisor izquierda + recuadro OC derecha ───────────────
       ce(View, { style: styles.topRow },
 
-        ce(View, { style: { flex: 1, paddingRight: 14 } },
+        ce(View, { style: styles.emisorCol },
           ce(Image, { src: LOGO_URL, style: styles.emisorLogo }),
           ce(Text, { style: styles.emisorName }, oc.company.razon_social),
           ce(Text, { style: styles.emisorLine }, `RUT: ${oc.company.rut}`),
@@ -229,174 +267,156 @@ export function PurchaseOrderDocument({ oc }: { oc: PurchaseOrderPDFData }) {
             : null,
         ),
 
-        // Recuadro OC con estado integrado
+        // Recuadro OC
         ce(View, { style: styles.ocBox },
-          ce(Text, { style: styles.ocTipo }, "ORDEN DE COMPRA"),
-          ce(Text, { style: styles.ocNumLabel }, "N°"),
-          ce(Text, { style: styles.ocNum }, oc.numero),
-          ce(Text, { style: styles.ocDate },
-            `Emisión: ${new Date(oc.fecha_emision).toLocaleDateString("es-CL")}` +
-            (oc.fecha_envio ? `\nEnvío: ${new Date(oc.fecha_envio).toLocaleDateString("es-CL")}` : ""),
+          ce(View, { style: styles.ocBoxTop },
+            ce(Text, { style: styles.ocTipo }, "ORDEN DE COMPRA"),
+            ce(Text, { style: styles.ocNumLabel }, "N°"),
+            ce(Text, { style: styles.ocNum }, oc.numero),
           ),
-          ce(Text, { style: [styles.ocStatus, { color: statusColor(oc.estado) }] },
-            `● ${estadoLabel(oc.estado)}`,
+          ce(View, { style: styles.ocFootWrap },
+            ce(View, { style: styles.ocFootRow },
+              ce(Text, { style: styles.ocFootLabel }, "Emisión"),
+              ce(Text, { style: styles.ocFootValue },
+                new Date(oc.fecha_emision).toLocaleDateString("es-CL"),
+              ),
+            ),
+            ce(View, { style: styles.ocFootRow },
+              ce(Text, { style: styles.ocFootLabel }, "Estado"),
+              ce(Text, { style: [styles.ocFootValue, { color: statusColor(oc.estado) }] },
+                estadoLabel(oc.estado),
+              ),
+            ),
           ),
         ),
       ),
 
-      ce(View, { style: styles.divider }),
+      // ── CAJA PROVEEDOR + DATOS DE LA ORDEN ───────────────────────────────
+      ce(View, { style: styles.infoBox },
 
-      // ── PROVEEDOR + DATOS DOC ────────────────────────────────────────────
-      ce(View, { style: styles.twoCol },
-
-        // Proveedor con header azul y etiquetas
-        ce(View, { style: [styles.proveedorBox, styles.colHalf] },
-          ce(View, { style: styles.proveedorHeader },
-            ce(Text, { style: styles.proveedorHeaderText }, "Datos del Proveedor"),
+        ce(View, { style: styles.infoLeft },
+          ce(Text, { style: styles.infoTitle }, "Datos del proveedor"),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabel }, "Señor(es):"),
+            ce(Text, { style: styles.infoName }, oc.proveedor.nombre),
           ),
-          ce(View, { style: styles.proveedorBody },
-            ce(View, { style: styles.labelRow },
-              ce(Text, { style: styles.labelText }, "Señor(es):"),
-              ce(Text, { style: styles.valueText }, oc.proveedor.nombre),
-            ),
-            oc.proveedor.rut
-              ? ce(View, { style: styles.labelRow },
-                  ce(Text, { style: styles.labelText }, "RUT:"),
-                  ce(Text, { style: styles.valueTextNormal }, oc.proveedor.rut),
-                )
-              : null,
-            oc.proveedor.giro
-              ? ce(View, { style: styles.labelRow },
-                  ce(Text, { style: styles.labelText }, "Giro:"),
-                  ce(Text, { style: styles.valueTextNormal }, oc.proveedor.giro),
-                )
-              : null,
-            oc.proveedor.direccion
-              ? ce(View, { style: styles.labelRow },
-                  ce(Text, { style: styles.labelText }, "Dirección:"),
-                  ce(Text, { style: styles.valueTextNormal }, oc.proveedor.direccion),
-                )
-              : null,
-            oc.proveedor.ciudad
-              ? ce(View, { style: styles.labelRow },
-                  ce(Text, { style: styles.labelText }, "Ciudad:"),
-                  ce(Text, { style: styles.valueTextNormal }, oc.proveedor.ciudad),
-                )
-              : null,
-            oc.proveedor.telefono
-              ? ce(View, { style: styles.labelRow },
-                  ce(Text, { style: styles.labelText }, "Fono:"),
-                  ce(Text, { style: styles.valueTextNormal }, oc.proveedor.telefono),
-                )
-              : null,
-            oc.proveedor.email
-              ? ce(View, { style: styles.labelRow },
-                  ce(Text, { style: styles.labelText }, "E-mail:"),
-                  ce(Text, { style: styles.valueTextNormal }, oc.proveedor.email),
-                )
-              : null,
-            oc.proveedor.contacto
-              ? ce(View, { style: styles.labelRow },
-                  ce(Text, { style: styles.labelText }, "Contacto:"),
-                  ce(Text, { style: styles.valueTextNormal }, oc.proveedor.contacto),
-                )
-              : null,
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabel }, "RUT:"),
+            ce(Text, { style: styles.infoValue }, dash(oc.proveedor.rut)),
+          ),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabel }, "Giro:"),
+            ce(Text, { style: styles.infoValue }, dash(oc.proveedor.giro)),
+          ),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabel }, "Dirección:"),
+            ce(Text, { style: styles.infoValue }, dash(oc.proveedor.direccion)),
+          ),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabel }, "Ciudad:"),
+            ce(Text, { style: styles.infoValue }, dash(oc.proveedor.ciudad)),
+          ),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabel }, "Fono:"),
+            ce(Text, { style: styles.infoValue }, dash(oc.proveedor.telefono)),
+          ),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabel }, "E-mail:"),
+            ce(Text, { style: styles.infoValue }, dash(oc.proveedor.email)),
+          ),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabel }, "Contacto:"),
+            ce(Text, { style: styles.infoValue }, dash(oc.proveedor.contacto)),
           ),
         ),
 
-        // Datos de la orden con header azul
-        ce(View, { style: [styles.metaBox, styles.colRight] },
-          ce(View, { style: styles.metaHeader },
-            ce(Text, { style: styles.metaHeaderText }, "Datos de la Orden"),
+        ce(View, { style: styles.infoRight },
+          ce(Text, { style: styles.infoTitle }, "Datos de la orden"),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabelR }, "Fecha emisión:"),
+            ce(Text, { style: styles.infoValue },
+              new Date(oc.fecha_emision).toLocaleDateString("es-CL"),
+            ),
           ),
-          ce(View, { style: styles.metaBody },
-            ce(View, { style: styles.metaRow },
-              ce(Text, { style: styles.metaLabel }, "Moneda"),
-              ce(Text, { style: styles.metaValue }, oc.moneda),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabelR }, "Moneda:"),
+            ce(Text, { style: styles.infoValue }, oc.moneda),
+          ),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabelR }, "IVA:"),
+            ce(Text, { style: styles.infoValue }, `${oc.ivaPercent}%`),
+          ),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabelR }, "Condición de pago:"),
+            ce(Text, { style: styles.infoValue }, dash(oc.condiciones_pago)),
+          ),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabelR }, "Estado:"),
+            ce(Text, { style: [styles.badge, { backgroundColor: statusColor(oc.estado) }] },
+              estadoLabel(oc.estado),
             ),
-            ce(View, { style: styles.metaRow },
-              ce(Text, { style: styles.metaLabel }, "IVA"),
-              ce(Text, { style: styles.metaValue }, `${oc.ivaPercent}%`),
-            ),
-            oc.condiciones_pago
-              ? ce(View, { style: styles.metaRow },
-                  ce(Text, { style: styles.metaLabel }, "Cond. pago"),
-                  ce(Text, { style: styles.metaValue }, oc.condiciones_pago),
-                )
-              : null,
-            oc.moneda !== "CLP" && oc.tipo_cambio
-              ? ce(View, { style: styles.metaRow },
-                  ce(Text, { style: styles.metaLabel }, "Tipo cambio"),
-                  ce(Text, { style: styles.metaValue }, `$${Number(oc.tipo_cambio).toLocaleString("es-CL")}`),
-                )
-              : null,
           ),
         ),
       ),
 
-      // ── TABLA DE ÍTEMS ───────────────────────────────────────────────────
-      ce(View, { style: styles.tableHeader },
-        ce(Text, { style: [styles.thText, styles.colQtyH] }, "Cantidad"),
-        ce(Text, { style: [styles.thText, styles.colDesc] }, "Detalle"),
-        ce(Text, { style: [styles.thText, styles.colValor] }, "Valor Unit."),
-        ce(Text, { style: [styles.thText, styles.colTotal] }, "Total"),
+      // Nota de tipo de cambio si aplica
+      oc.moneda !== "CLP" && oc.tipo_cambio
+        ? ce(View, { style: styles.currencyNote },
+            ce(Text, null,
+              `Tipo de cambio: 1 ${oc.moneda} = ` +
+              `$${Number(oc.tipo_cambio).toLocaleString("es-CL")} CLP`,
+            ),
+          )
+        : null,
+
+      // ── TABLA DE ÍTEMS (bordes completos) ────────────────────────────────
+      ce(View, { style: styles.tableBox },
+        headerRow(),
+        ...oc.items.map((item, i) => dataRow(item, i, oc.moneda)),
+        ...emptyRows,
       ),
 
-      ...oc.items.map((item, i) =>
-        ce(View, { key: i, style: i % 2 === 0 ? styles.tableRow : styles.tableRowAlt },
-          ce(Text, { style: [styles.tdText, styles.colQtyH] }, String(Number(item.cantidad))),
-          ce(Text, { style: [styles.tdText, styles.colDesc] }, item.descripcion),
-          ce(Text, { style: [styles.tdText, styles.colValor] }, fmt(Number(item.valor_unitario), oc.moneda)),
-          ce(Text, { style: [styles.tdText, styles.colTotal] }, fmt(Number(item.total), oc.moneda)),
-        )
-      ),
-
-      // ── CONDICIONES + RESUMEN ────────────────────────────────────────────
+      // ── CONDICIONES DE PAGO + RESUMEN ────────────────────────────────────
       ce(View, { style: styles.bottomRow },
 
-        // Condiciones izquierda
         ce(View, { style: styles.condBox },
           oc.condiciones_pago
-            ? ce(View, { style: { marginBottom: 8 } },
+            ? ce(View, null,
                 ce(Text, { style: styles.condLabel }, "Condiciones de pago"),
                 ce(Text, { style: styles.condText }, oc.condiciones_pago),
               )
             : null,
         ),
 
-        // Resumen derecho con header azul
-        ce(View, { style: styles.resumeBox },
-          ce(View, { style: styles.resumeHeader },
-            ce(Text, { style: styles.resumeHeaderText }, "Resumen"),
+        ce(View, { style: styles.totalsBox },
+          ce(View, { style: styles.totalRow },
+            ce(Text, { style: styles.totalLabel }, "Subtotal"),
+            ce(Text, { style: styles.totalValue }, fmt(Number(oc.subtotal), oc.moneda)),
           ),
-          ce(View, { style: styles.resumeBody },
-            ce(View, { style: styles.totalRow },
-              ce(Text, { style: styles.totalLabel }, "Total"),
-              ce(Text, { style: styles.totalValue }, fmt(Number(oc.subtotal), oc.moneda)),
-            ),
-            hasDesc
-              ? ce(View, { style: styles.totalRow },
-                  ce(Text, { style: styles.totalLabel }, `% Dcto. (${oc.descuento_pct}%)`),
-                  ce(Text, { style: [styles.totalValue, { color: RED }] }, `−${fmt(Number(oc.descuento_monto), oc.moneda)}`),
-                )
-              : null,
-            ce(View, { style: styles.totalRow },
-              ce(Text, { style: styles.totalLabel }, "Neto"),
-              ce(Text, { style: styles.totalValue }, fmt(Number(oc.neto), oc.moneda)),
-            ),
-            ce(View, { style: styles.totalRow },
-              ce(Text, { style: styles.totalLabel }, `IVA ${oc.ivaPercent}%`),
-              ce(Text, { style: styles.totalValue }, fmt(Number(oc.iva_monto), oc.moneda)),
-            ),
-            ce(View, { style: styles.grandRow },
-              ce(Text, { style: styles.grandLabel }, `TOTAL ${oc.moneda}`),
-              ce(Text, { style: styles.grandValue }, fmt(Number(oc.total), oc.moneda)),
-            ),
+          hasDesc
+            ? ce(View, { style: styles.totalRow },
+                ce(Text, { style: styles.totalLabel }, `Descuento (${oc.descuento_pct}%)`),
+                ce(Text, { style: [styles.totalValue, { color: RED }] },
+                  `−${fmt(Number(oc.descuento_monto), oc.moneda)}`,
+                ),
+              )
+            : null,
+          ce(View, { style: styles.totalRow },
+            ce(Text, { style: styles.totalLabel }, "Neto"),
+            ce(Text, { style: styles.totalValue }, fmt(Number(oc.neto), oc.moneda)),
+          ),
+          ce(View, { style: styles.totalRow },
+            ce(Text, { style: styles.totalLabel }, `IVA (${oc.ivaPercent}%)`),
+            ce(Text, { style: styles.totalValue }, fmt(Number(oc.iva_monto), oc.moneda)),
+          ),
+          ce(View, { style: styles.grandRow },
+            ce(Text, { style: styles.grandLabel }, `TOTAL ${oc.moneda}`),
+            ce(Text, { style: styles.grandValue }, fmt(Number(oc.total), oc.moneda)),
           ),
         ),
       ),
 
-      // Observaciones
+      // ── OBSERVACIONES ────────────────────────────────────────────────────
       oc.observaciones
         ? ce(View, { style: styles.obsBox },
             ce(Text, { style: styles.obsLabel }, "Observaciones"),
@@ -404,7 +424,7 @@ export function PurchaseOrderDocument({ oc }: { oc: PurchaseOrderPDFData }) {
           )
         : null,
 
-      // Motivo anulación
+      // ── MOTIVO ANULACIÓN ─────────────────────────────────────────────────
       isAnulada && oc.motivo_anulacion
         ? ce(View, { style: styles.anulBox },
             ce(Text, { style: styles.anulLabel }, "Motivo de anulación"),
@@ -412,7 +432,7 @@ export function PurchaseOrderDocument({ oc }: { oc: PurchaseOrderPDFData }) {
           )
         : null,
 
-      // ── PIE DE PÁGINA 3 COLUMNAS ─────────────────────────────────────────
+      // ── PIE DE PÁGINA ────────────────────────────────────────────────────
       ce(View, { style: styles.footer, fixed: true },
         ce(View, { style: styles.footerRow },
           ce(Text, { style: styles.footerLeft },
@@ -421,13 +441,9 @@ export function PurchaseOrderDocument({ oc }: { oc: PurchaseOrderPDFData }) {
             (oc.company.email ? " · " + oc.company.email : ""),
           ),
           ce(Text, { style: styles.footerCenter }, "www.solterra.cl"),
-          ce(Text, { style: styles.footerRight },
-            oc.numero,
-          ),
+          ce(Text, { style: styles.footerRight }, oc.numero),
         ),
       ),
     ),
   );
 }
-
-
