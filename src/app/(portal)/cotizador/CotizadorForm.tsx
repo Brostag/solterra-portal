@@ -34,8 +34,15 @@ import {
   Wrench,
 } from "lucide-react";
 
+interface ClienteOption {
+  id:     string;
+  nombre: string;
+  rut:    string | null;
+}
+
 interface Props {
   ivaPorcentaje: number;
+  clientes:      ClienteOption[];
 }
 
 interface GastoConfig {
@@ -61,12 +68,15 @@ const inputClass =
 
 type ActionId = "pdf" | "print" | "whatsapp" | "mail";
 
-export default function CotizadorForm({ ivaPorcentaje }: Props) {
+export default function CotizadorForm({ ivaPorcentaje, clientes }: Props) {
   const [items, setItems]                             = useState<CotizadorItem[]>(() => [nuevoItem()]);
   const [gastos, setGastos]                           = useState<GastosGenerales>(GASTOS_INICIALES);
   const [porcentajeDescuento, setPorcentajeDescuento] = useState(0);
+  const [clienteId, setClienteId]                     = useState("");
   const [busyAction, setBusyAction]                   = useState<ActionId | null>(null);
   const [actionError, setActionError]                 = useState<string | null>(null);
+
+  const clienteSel = clientes.find((c) => c.id === clienteId) ?? null;
 
   const resumenRef = useRef<HTMLDivElement>(null);
 
@@ -107,11 +117,12 @@ export default function CotizadorForm({ ivaPorcentaje }: Props) {
     setItems([nuevoItem()]);
     setGastos(GASTOS_INICIALES);
     setPorcentajeDescuento(0);
+    setClienteId("");
     setActionError(null);
   }
 
   function buildRequestBody() {
-    return { items, gastos, porcentajeDescuento, ivaPorcentaje };
+    return { items, gastos, porcentajeDescuento, ivaPorcentaje, clienteId: clienteId || null };
   }
 
   function buildSummaryText(): string {
@@ -119,8 +130,11 @@ export default function CotizadorForm({ ivaPorcentaje }: Props) {
       const cantUnit = it.tipo === "horas" ? "h" : "d";
       return `• ${it.equipo} (${it.cantidad}${cantUnit}): ${formatCurrency(it.subtotal, "CLP")}`;
     });
+    const saludo = clienteSel
+      ? `Hola, envío presupuesto referencial de arriendo Solterra para ${clienteSel.nombre}:`
+      : "Hola, envío presupuesto referencial de arriendo Solterra:";
     return [
-      "Hola, envío presupuesto referencial de arriendo Solterra:",
+      saludo,
       "",
       "Equipos:",
       ...lineas,
@@ -196,7 +210,11 @@ export default function CotizadorForm({ ivaPorcentaje }: Props) {
 
   function enviarCorreo() {
     setActionError(null);
-    const subject = encodeURIComponent("Presupuesto de Arriendo Solterra");
+    const subject = encodeURIComponent(
+      clienteSel
+        ? `Presupuesto de Arriendo Solterra - ${clienteSel.nombre}`
+        : "Presupuesto de Arriendo Solterra",
+    );
     const body = encodeURIComponent(buildSummaryText());
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
   }
@@ -205,6 +223,34 @@ export default function CotizadorForm({ ivaPorcentaje }: Props) {
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
       {/* ── Columna izquierda: formulario ─────────────────────────── */}
       <div className="space-y-6">
+        {/* Cliente */}
+        <section className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+          <h2 className="text-xs font-semibold text-[#253158] uppercase tracking-wider">
+            Cliente
+          </h2>
+          <div className="max-w-md">
+            <label htmlFor="cliente" className="block text-xs font-medium text-gray-700 mb-1.5">
+              Cliente del presupuesto
+            </label>
+            <select
+              id="cliente"
+              value={clienteId}
+              onChange={(e) => setClienteId(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">Sin cliente seleccionado</option>
+              {clientes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.rut ? `${c.nombre} — ${c.rut}` : c.nombre}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-gray-400 mt-1.5">
+              Opcional. Si no seleccionás un cliente, el presupuesto se genera igual.
+            </p>
+          </div>
+        </section>
+
         {/* Equipos */}
         <section className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
           <div className="flex items-center justify-between">

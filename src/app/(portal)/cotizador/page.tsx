@@ -1,12 +1,14 @@
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { getCompanySettings } from "@/lib/company-settings";
+import { getActiveClientsForSelector } from "@/lib/cache/master-lists";
 import { redirect } from "next/navigation";
 import CotizadorForm from "./CotizadorForm";
 
 export default async function CotizadorPage() {
-  const [session, config] = await Promise.all([
+  const [session, config, clientes] = await Promise.all([
     getPortalSessionFast(),
     getCompanySettings(),
+    getActiveClientsForSelector(),
   ]);
   if (!session) redirect("/login");
 
@@ -20,7 +22,7 @@ export default async function CotizadorPage() {
           Calcula presupuestos rápidos para arriendo de maquinaria y servicios.
         </p>
       </div>
-      <CotizadorForm ivaPorcentaje={ivaPorcentaje} />
+      <CotizadorForm ivaPorcentaje={ivaPorcentaje} clientes={clientes} />
     </div>
   );
 }

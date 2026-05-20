@@ -59,6 +59,7 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: 8.5, color: GRAY, width: 76 },
   infoLabelR: { fontSize: 8.5, color: GRAY, width: 88 },
   infoValue: { fontSize: 8.5, color: "#1a1a1a", fontWeight: 700, flex: 1 },
+  infoName: { fontSize: 8.5, color: BLUE, fontWeight: 700, flex: 1 },
 
   // ── Títulos de sección ──
   sectionTitle: { fontSize: 8, fontWeight: 700, color: BLUE, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 5, marginTop: 4 },
@@ -122,10 +123,20 @@ function tipoCotizacionLabel(items: CotizadorItemResult[]): string {
   return tipos.has("horas") ? "Por horas" : "Por días";
 }
 
+function dash(value?: string | null): string {
+  return value && value.trim() !== "" ? value : "—";
+}
+
 export interface CotizadorPDFData {
   input:  CotizadorInput;
   result: CotizadorResult;
   fecha:  Date;
+  cliente?: {
+    nombre:     string;
+    rut?:       string | null;
+    direccion?: string | null;
+    email?:     string | null;
+  } | null;
   company: {
     razon_social: string;
     rut:          string;
@@ -192,8 +203,9 @@ function dataRowGasto(label: string, value: number, key: string) {
 }
 
 export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
-  const { input, result, fecha, company } = data;
+  const { input, result, fecha, company, cliente } = data;
   const hasDesc = input.porcentajeDescuento > 0;
+  const clienteNombre = cliente?.nombre?.trim() ? cliente.nombre : "Cliente no especificado";
 
   const gastoRows: { key: string; label: string; value: number }[] = [
     { key: "combustible", label: "Combustible", value: input.gastos.combustible },
@@ -245,33 +257,49 @@ export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
         ),
       ),
 
-      // ── CAJA DATOS DEL PRESUPUESTO / CONDICIONES ─────────────────────────
+      // ── CAJA DATOS DEL CLIENTE / DEL PRESUPUESTO ─────────────────────────
       ce(View, { style: styles.infoBox },
 
         ce(View, { style: styles.infoLeft },
+          ce(Text, { style: styles.infoTitle }, "Datos del cliente"),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabel }, "Señor(es):"),
+            ce(Text, { style: styles.infoName }, clienteNombre),
+          ),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabel }, "RUT:"),
+            ce(Text, { style: styles.infoValue }, dash(cliente?.rut)),
+          ),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabel }, "Dirección:"),
+            ce(Text, { style: styles.infoValue }, dash(cliente?.direccion)),
+          ),
+          ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabel }, "Email:"),
+            ce(Text, { style: styles.infoValue }, dash(cliente?.email)),
+          ),
+        ),
+
+        ce(View, { style: styles.infoRight },
           ce(Text, { style: styles.infoTitle }, "Datos del presupuesto"),
           ce(View, { style: styles.infoRow },
-            ce(Text, { style: styles.infoLabel }, "Equipo(s):"),
+            ce(Text, { style: styles.infoLabelR }, "Equipo(s):"),
             ce(Text, { style: styles.infoValue },
               `${result.items.length} ${result.items.length === 1 ? "equipo" : "equipos"}`,
             ),
           ),
           ce(View, { style: styles.infoRow },
-            ce(Text, { style: styles.infoLabel }, "Tipo cotización:"),
+            ce(Text, { style: styles.infoLabelR }, "Tipo cotización:"),
             ce(Text, { style: styles.infoValue }, tipoCotizacionLabel(result.items)),
           ),
           ce(View, { style: styles.infoRow },
-            ce(Text, { style: styles.infoLabel }, "Moneda:"),
+            ce(Text, { style: styles.infoLabelR }, "Moneda:"),
             ce(Text, { style: styles.infoValue }, "CLP"),
           ),
           ce(View, { style: styles.infoRow },
-            ce(Text, { style: styles.infoLabel }, "Fecha emisión:"),
+            ce(Text, { style: styles.infoLabelR }, "Fecha emisión:"),
             ce(Text, { style: styles.infoValue }, fechaStr),
           ),
-        ),
-
-        ce(View, { style: styles.infoRight },
-          ce(Text, { style: styles.infoTitle }, "Condiciones"),
           ce(View, { style: styles.infoRow },
             ce(Text, { style: styles.infoLabelR }, "IVA:"),
             ce(Text, { style: styles.infoValue }, `${input.ivaPorcentaje}%`),

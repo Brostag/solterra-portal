@@ -6,6 +6,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { z } from "zod";
 import { getSession } from "@/lib/auth/session";
 import { getCompanySettings } from "@/lib/company-settings";
+import { prisma } from "@/lib/prisma";
 import { calcularCotizacion, type CotizadorInput } from "@/lib/cotizador";
 import { CotizadorDocument } from "@/lib/pdf/cotizador-template";
 
@@ -36,6 +37,7 @@ const inputSchema = z.object({
   gastos:              gastosSchema,
   porcentajeDescuento: z.number().min(0).max(100),
   ivaPorcentaje:       z.number().min(0).max(100),
+  clienteId:           z.string().min(1).max(100).nullish(),
 });
 
 export async function POST(req: NextRequest) {
@@ -59,7 +61,17 @@ export async function POST(req: NextRequest) {
   };
   const result = calcularCotizacion(input);
 
-  const config = await getCompanySettings();
+  // El cliente se resuelve en el servidor desde la DB usando solo el id:
+  // nunca se confía en datos del cliente enviados por el navegador.
+  const [cliente, config] = await Promise.all([
+    parsed.clienteId
+      ? prisma.client.findUnique({
+          where:  { id: parsed.clienteId },
+          select: { nombre: true, rut: true, direccion: true, email: true },
+        })
+      : Promise.resolve(null),
+    getCompanySettings(),
+  ]);
 
   let buffer: Buffer;
   try {
@@ -68,6 +80,7 @@ export async function POST(req: NextRequest) {
         input,
         result,
         fecha: new Date(),
+        cliente,
         company: {
           razon_social: config?.razon_social ?? "Solterra",
           rut:          config?.rut ?? "—",
