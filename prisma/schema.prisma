@@ -36,6 +36,25 @@ enum Moneda {
   UF
 }
 
+enum EstadoContrato {
+  BORRADOR
+  VIGENTE
+  FINALIZADO
+  ANULADO
+}
+
+enum TipoFotoEquipo {
+  FRONTAL
+  LATERAL_DERECHO
+  LATERAL_IZQUIERDO
+  TRASERA
+  CABINA
+  HOROMETRO
+  RODADO
+  DANIOS
+  OTRO
+}
+
 model CompanySettings {
   id               String   @id @default(uuid())
   razon_social     String
@@ -54,18 +73,20 @@ model CompanySettings {
 }
 
 model Profile {
-  id              String          @id @default(uuid())
-  auth_user_id    String          @unique
-  nombre          String
-  email           String          @unique
-  rol             Rol             @default(USUARIO)
-  activo          Boolean         @default(true)
-  created_at      DateTime        @default(now())
-  updated_at      DateTime        @updatedAt
-  invoices        Invoice[]
-  audit_logs      AuditLog[]
-  purchaseOrders  PurchaseOrder[]
-  documents       Document[]
+  id                        String                   @id @default(uuid())
+  auth_user_id              String                   @unique
+  nombre                    String
+  email                     String                   @unique
+  rol                       Rol                      @default(USUARIO)
+  activo                    Boolean                  @default(true)
+  created_at                DateTime                 @default(now())
+  updated_at                DateTime                 @updatedAt
+  invoices                  Invoice[]
+  audit_logs                AuditLog[]
+  purchaseOrders            PurchaseOrder[]
+  documents                 Document[]
+  contracts                 Contract[]
+  contract_equipment_photos ContractEquipmentPhoto[]
 
   @@map("profiles")
 }
@@ -83,21 +104,22 @@ model Client {
   updated_at    DateTime   @updatedAt
   invoices      Invoice[]
   documents     Document[]
+  contracts     Contract[]
 
   @@map("clients")
 }
 
 model Product {
-  id                  String              @id @default(uuid())
-  codigo_interno      String?
-  nombre              String
-  descripcion         String?
-  precio_unitario     Decimal
-  activo              Boolean             @default(true)
-  created_at          DateTime            @default(now())
-  updated_at          DateTime            @updatedAt
-  invoice_items       InvoiceItem[]
-  purchaseOrderItems  PurchaseOrderItem[]
+  id                 String              @id @default(uuid())
+  codigo_interno     String?
+  nombre             String
+  descripcion        String?
+  precio_unitario    Decimal
+  activo             Boolean             @default(true)
+  created_at         DateTime            @default(now())
+  updated_at         DateTime            @updatedAt
+  invoice_items      InvoiceItem[]
+  purchaseOrderItems PurchaseOrderItem[]
 
   @@map("products")
 }
@@ -151,24 +173,27 @@ model Document {
   nombre_original   String
   tipo_documento    String
   storage_path      String
-  tamaño            Int
+  tamaño           Int
   mime_type         String
   invoice_id        String?
   purchase_order_id String?
   client_id         String?
   supplier_id       String?
+  contract_id       String?
   uploaded_by       String
   created_at        DateTime       @default(now())
   invoice           Invoice?       @relation(fields: [invoice_id], references: [id])
   purchase_order    PurchaseOrder? @relation(fields: [purchase_order_id], references: [id])
   client            Client?        @relation(fields: [client_id], references: [id])
   supplier          Supplier?      @relation(fields: [supplier_id], references: [id])
+  contract          Contract?      @relation(fields: [contract_id], references: [id])
   uploader          Profile        @relation(fields: [uploaded_by], references: [id])
 
   @@index([invoice_id])
   @@index([purchase_order_id])
   @@index([client_id])
   @@index([supplier_id])
+  @@index([contract_id])
   @@index([created_at])
   @@map("documents")
 }
@@ -227,16 +252,16 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderItem {
-  id              String         @id @default(uuid())
+  id              String        @id @default(uuid())
   orden_compra_id String
   producto_id     String?
   descripcion     String
-  cantidad        Decimal        @db.Decimal(10, 2)
-  valor_unitario  Decimal        @db.Decimal(12, 2)
-  total           Decimal        @db.Decimal(12, 2)
+  cantidad        Decimal       @db.Decimal(10, 2)
+  valor_unitario  Decimal       @db.Decimal(12, 2)
+  total           Decimal       @db.Decimal(12, 2)
   orden           Int
-  ordenCompra     PurchaseOrder  @relation(fields: [orden_compra_id], references: [id], onDelete: Cascade)
-  producto        Product?       @relation(fields: [producto_id], references: [id])
+  ordenCompra     PurchaseOrder @relation(fields: [orden_compra_id], references: [id], onDelete: Cascade)
+  producto        Product?      @relation(fields: [producto_id], references: [id])
 
   @@index([orden_compra_id])
   @@map("purchase_order_items")
@@ -254,4 +279,86 @@ model AuditLog {
   @@index([user_id])
   @@index([created_at])
   @@map("audit_logs")
+}
+
+model Contract {
+  id                         String              @id @default(uuid())
+  numero_contrato            String              @unique
+  fecha_emision              DateTime            @default(now())
+  client_id                  String
+  representante_cliente      String?
+  rut_representante          String?
+  cliente_snapshot_at        DateTime?
+  cliente_nombre_snapshot    String?
+  cliente_rut_snapshot       String?
+  cliente_direccion_snapshot String?
+  cliente_email_snapshot     String?
+  cliente_telefono_snapshot  String?
+  fecha_inicio               DateTime
+  fecha_termino              DateTime?
+  duracion_meses             Int?
+  lugar_operacion            String?
+  moneda                     Moneda              @default(CLP)
+  forma_pago                 String?
+  estado                     EstadoContrato      @default(BORRADOR)
+  motivo_anulacion           String?
+  observaciones              String?
+  user_id                    String
+  pdf_url                    String?
+  created_at                 DateTime            @default(now())
+  updated_at                 DateTime            @updatedAt
+  client                     Client              @relation(fields: [client_id], references: [id])
+  user                       Profile             @relation(fields: [user_id], references: [id])
+  equipos                    ContractEquipment[]
+  documents                  Document[]
+
+  @@index([client_id])
+  @@index([estado])
+  @@index([created_at])
+  @@map("contracts")
+}
+
+model ContractEquipment {
+  id                      String                   @id @default(uuid())
+  contract_id             String
+  orden                   Int
+  descripcion             String
+  marca                   String?
+  modelo                  String?
+  patente                 String?
+  anio                    Int?
+  chasis                  String?
+  motor                   String?
+  color                   String?
+  valor_hora              Decimal                  @db.Decimal(12, 2)
+  horas_minimas_diarias   Int?
+  horas_minimas_mensuales Int?
+  valor_mensual_estimado  Decimal?                 @db.Decimal(14, 2)
+  observaciones           String?
+  created_at              DateTime                 @default(now())
+  updated_at              DateTime                 @updatedAt
+  contract                Contract                 @relation(fields: [contract_id], references: [id], onDelete: Cascade)
+  photos                  ContractEquipmentPhoto[]
+
+  @@index([contract_id])
+  @@map("contract_equipments")
+}
+
+model ContractEquipmentPhoto {
+  id                    String            @id @default(uuid())
+  contract_equipment_id String
+  tipo                  TipoFotoEquipo
+  storage_path          String
+  nombre_original       String
+  mime_type             String
+  tamano                Int
+  observacion           String?
+  uploaded_by           String
+  created_at            DateTime          @default(now())
+  contract_equipment    ContractEquipment @relation(fields: [contract_equipment_id], references: [id], onDelete: Cascade)
+  uploader              Profile           @relation(fields: [uploaded_by], references: [id])
+
+  @@index([contract_equipment_id])
+  @@index([tipo])
+  @@map("contract_equipment_photos")
 }
