@@ -100,12 +100,15 @@ model Client {
   direccion     String?
   observaciones String?
   activo        Boolean    @default(true)
+  company_id    String?
   created_at    DateTime   @default(now())
   updated_at    DateTime   @updatedAt
+  company       Company?   @relation(fields: [company_id], references: [id])
   invoices      Invoice[]
   documents     Document[]
   contracts     Contract[]
 
+  @@index([company_id])
   @@map("clients")
 }
 
@@ -210,12 +213,57 @@ model Supplier {
   contacto       String?
   observaciones  String?
   activo         Boolean         @default(true)
+  company_id     String?
   created_at     DateTime        @default(now())
   updated_at     DateTime        @updatedAt
+  company        Company?        @relation(fields: [company_id], references: [id])
   purchaseOrders PurchaseOrder[]
   documents      Document[]
 
+  @@index([company_id])
   @@map("suppliers")
+}
+
+model Company {
+  id                     String     @id @default(uuid())
+  nombre_razon_social    String
+  rut                    String?
+  giro                   String?
+  email                  String?
+  telefono               String?
+  direccion              String?
+  comuna                 String?
+  ciudad                 String?
+  region                 String?
+  pais                   String?    @default("Chile")
+  observaciones          String?
+  activo                 Boolean    @default(true)
+  es_cliente             Boolean    @default(false)
+  es_proveedor           Boolean    @default(false)
+  es_arrendataria        Boolean    @default(false)
+  es_otro                Boolean    @default(false)
+  representante_legal    String?
+  rut_representante      String?
+  cargo_representante    String?
+  email_representante    String?
+  telefono_representante String?
+  contacto_nombre        String?
+  contacto_cargo         String?
+  contacto_email         String?
+  contacto_telefono      String?
+  condicion_pago         String?
+  correo_notificaciones  String?
+  banco                  String?
+  tipo_cuenta            String?
+  numero_cuenta          String?
+  titular_cuenta         String?
+  rut_titular_cuenta     String?
+  created_at             DateTime   @default(now())
+  updated_at             DateTime   @updatedAt
+  clients                Client[]
+  suppliers              Supplier[]
+
+  @@map("companies")
 }
 
 model PurchaseOrder {
