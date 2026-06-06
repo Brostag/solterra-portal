@@ -132,6 +132,14 @@ export default async function ContratoDetallePage({ params }: Props) {
               <dd className="text-gray-800">{cli.rut ?? "—"}</dd>
             </div>
             <div>
+              <dt className="text-xs text-gray-400 uppercase tracking-wide">Representante legal</dt>
+              <dd className="text-gray-800">{contrato.representante_cliente ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-400 uppercase tracking-wide">Cédula representante</dt>
+              <dd className="text-gray-800">{contrato.rut_representante ?? "—"}</dd>
+            </div>
+            <div>
               <dt className="text-xs text-gray-400 uppercase tracking-wide">Email</dt>
               <dd className="text-gray-800 break-words">{cli.email ?? "—"}</dd>
             </div>
@@ -163,8 +171,16 @@ export default async function ContratoDetallePage({ params }: Props) {
               <dd className="text-gray-800">{contrato.duracion_meses ? `${contrato.duracion_meses} meses` : "—"}</dd>
             </div>
             <div>
+              <dt className="text-xs text-gray-400 uppercase tracking-wide">Vigencia</dt>
+              <dd className="text-gray-800">{contrato.vigencia_contrato ?? "—"}</dd>
+            </div>
+            <div>
               <dt className="text-xs text-gray-400 uppercase tracking-wide">Lugar de operación</dt>
               <dd className="text-gray-800">{contrato.lugar_operacion ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-400 uppercase tracking-wide">Ciudad de celebración</dt>
+              <dd className="text-gray-800">{contrato.ciudad_celebracion ?? "—"}</dd>
             </div>
             <div>
               <dt className="text-xs text-gray-400 uppercase tracking-wide">Condición de pago</dt>
@@ -184,6 +200,29 @@ export default async function ContratoDetallePage({ params }: Props) {
         </div>
       </div>
 
+      {/* Condiciones particulares / Anexo */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+        <h2 className="font-semibold text-[#253158]">Condiciones particulares (Anexo)</h2>
+        <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-2 text-sm">
+          <div>
+            <dt className="text-xs text-gray-400 uppercase tracking-wide">N° de anexo</dt>
+            <dd className="text-gray-800">{contrato.numero_anexo ?? "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-gray-400 uppercase tracking-wide">Fecha del anexo</dt>
+            <dd className="text-gray-800">{fmtDate(contrato.fecha_anexo)}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-gray-400 uppercase tracking-wide">N° cotización Solterra</dt>
+            <dd className="text-gray-800">{contrato.numero_cotizacion ?? "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-gray-400 uppercase tracking-wide">Correo notificaciones</dt>
+            <dd className="text-gray-800 break-words">{contrato.correo_notificaciones ?? "—"}</dd>
+          </div>
+        </dl>
+      </div>
+
       {/* Equipos */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-100">
@@ -200,19 +239,30 @@ export default async function ContratoDetallePage({ params }: Props) {
                 <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Patente</TableHead>
                 <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Valor hora</TableHead>
                 <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Hrs. mín.</TableHead>
+                <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Tarifa h. extra</TableHead>
                 <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Valor mensual est.</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {contrato.equipos.map((eq) => (
                 <TableRow key={eq.id} className="border-b border-gray-100 last:border-0">
-                  <TableCell className="px-5 py-4 font-medium text-gray-800 text-sm">{eq.descripcion}</TableCell>
+                  <TableCell className="px-5 py-4 font-medium text-gray-800 text-sm">
+                    {eq.descripcion}
+                    {(eq.horometro_inicial || eq.mantenimiento_horas) && (
+                      <span className="block text-[11px] text-gray-400 font-normal mt-0.5">
+                        {eq.horometro_inicial && `Horómetro: ${eq.horometro_inicial}`}
+                        {eq.horometro_inicial && eq.mantenimiento_horas && " · "}
+                        {eq.mantenimiento_horas && `Mantención: ${eq.mantenimiento_horas}`}
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell className="px-5 py-4 text-gray-600 text-sm">
                     {[eq.marca, eq.modelo].filter(Boolean).join(" / ") || "—"}
                   </TableCell>
                   <TableCell className="px-5 py-4 text-gray-600 text-sm">{eq.patente ?? "—"}</TableCell>
                   <TableCell className="px-5 py-4 text-right text-gray-800 text-sm tabular-nums">{formatCurrency(Number(eq.valor_hora), "CLP")}</TableCell>
                   <TableCell className="px-5 py-4 text-right text-gray-600 text-sm tabular-nums">{eq.horas_minimas_mensuales ?? "—"}</TableCell>
+                  <TableCell className="px-5 py-4 text-right text-gray-600 text-sm tabular-nums">{eq.tarifa_hora_extra != null ? formatCurrency(Number(eq.tarifa_hora_extra), "CLP") : "—"}</TableCell>
                   <TableCell className="px-5 py-4 text-right font-semibold text-[#253158] text-sm tabular-nums">
                     {eq.valor_mensual_estimado != null ? formatCurrency(Number(eq.valor_mensual_estimado), "CLP") : "—"}
                   </TableCell>
@@ -228,12 +278,22 @@ export default async function ContratoDetallePage({ params }: Props) {
             <div key={eq.id} className="px-4 py-3.5 space-y-1">
               <p className="text-sm font-semibold text-gray-800">{eq.descripcion}</p>
               <p className="text-xs text-gray-500">{[eq.marca, eq.modelo, eq.patente].filter(Boolean).join(" · ") || "Sin datos adicionales"}</p>
-              <div className="flex items-center gap-3 text-xs text-gray-600 pt-1">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-600 pt-1">
                 <span>Valor hora: <span className="font-medium tabular-nums">{formatCurrency(Number(eq.valor_hora), "CLP")}</span></span>
+                {eq.tarifa_hora_extra != null && (
+                  <span>· H. extra: <span className="font-medium tabular-nums">{formatCurrency(Number(eq.tarifa_hora_extra), "CLP")}</span></span>
+                )}
                 {eq.valor_mensual_estimado != null && (
                   <span>· Mensual est.: <span className="font-semibold text-[#253158] tabular-nums">{formatCurrency(Number(eq.valor_mensual_estimado), "CLP")}</span></span>
                 )}
               </div>
+              {(eq.horometro_inicial || eq.mantenimiento_horas) && (
+                <p className="text-[11px] text-gray-400">
+                  {eq.horometro_inicial && `Horómetro: ${eq.horometro_inicial}`}
+                  {eq.horometro_inicial && eq.mantenimiento_horas && " · "}
+                  {eq.mantenimiento_horas && `Mantención: ${eq.mantenimiento_horas}`}
+                </p>
+              )}
             </div>
           ))}
         </div>

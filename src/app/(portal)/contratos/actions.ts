@@ -20,6 +20,9 @@ const equipoSchema = z.object({
   valor_hora: z.number().min(0, "El valor hora no puede ser negativo."),
   horas_minimas_mensuales: z.number().int().min(0).optional().nullable(),
   valor_mensual_estimado: z.number().min(0).optional().nullable(),
+  tarifa_hora_extra: z.number().min(0).optional().nullable(),
+  horometro_inicial: z.string().trim().optional().nullable(),
+  mantenimiento_horas: z.string().trim().optional().nullable(),
   observaciones: z.string().trim().optional().nullable(),
 });
 
@@ -31,6 +34,14 @@ const contractSchema = z.object({
   lugar_operacion: z.string().trim().optional().nullable(),
   forma_pago: z.string().trim().optional().nullable(),
   observaciones: z.string().trim().optional().nullable(),
+  ciudad_celebracion: z.string().trim().optional().nullable(),
+  vigencia_contrato: z.string().trim().optional().nullable(),
+  numero_anexo: z.string().trim().optional().nullable(),
+  fecha_anexo: z.string().optional().nullable(),
+  numero_cotizacion: z.string().trim().optional().nullable(),
+  correo_notificaciones: z.string().trim().optional().nullable(),
+  representante_cliente: z.string().trim().optional().nullable(),
+  rut_representante: z.string().trim().optional().nullable(),
   equipos: z.array(equipoSchema).min(1, "Agrega al menos un equipo."),
 });
 
@@ -80,6 +91,10 @@ export async function createContract(
   if (fechaTermino && fechaTermino < fechaInicio) {
     throw new Error("La fecha de término no puede ser anterior a la de inicio.");
   }
+  const fechaAnexo = data.fecha_anexo ? new Date(`${data.fecha_anexo}T12:00:00`) : null;
+  if (fechaAnexo && Number.isNaN(fechaAnexo.getTime())) {
+    throw new Error("La fecha del anexo no es válida.");
+  }
 
   const numero = await getNextContractNumber();
 
@@ -97,6 +112,14 @@ export async function createContract(
         lugar_operacion: data.lugar_operacion || null,
         forma_pago: data.forma_pago || null,
         observaciones: data.observaciones || null,
+        ciudad_celebracion: data.ciudad_celebracion || null,
+        vigencia_contrato: data.vigencia_contrato || null,
+        numero_anexo: data.numero_anexo || null,
+        fecha_anexo: fechaAnexo,
+        numero_cotizacion: data.numero_cotizacion || null,
+        correo_notificaciones: data.correo_notificaciones || null,
+        representante_cliente: data.representante_cliente || null,
+        rut_representante: data.rut_representante || null,
         // Snapshot al crear (ver reporte: el modelo preveía snapshot al pasar a VIGENTE).
         cliente_snapshot_at: new Date(),
         cliente_nombre_snapshot: cliente.nombre,
@@ -118,6 +141,9 @@ export async function createContract(
             valor_hora: eq.valor_hora,
             horas_minimas_mensuales: eq.horas_minimas_mensuales ?? null,
             valor_mensual_estimado: eq.valor_mensual_estimado ?? null,
+            tarifa_hora_extra: eq.tarifa_hora_extra ?? null,
+            horometro_inicial: eq.horometro_inicial || null,
+            mantenimiento_horas: eq.mantenimiento_horas || null,
             observaciones: eq.observaciones || null,
           })),
         },
