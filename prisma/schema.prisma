@@ -303,6 +303,12 @@ model Contract {
   estado                     EstadoContrato      @default(BORRADOR)
   motivo_anulacion           String?
   observaciones              String?
+  ciudad_celebracion         String?
+  vigencia_contrato          String?
+  numero_anexo               String?
+  fecha_anexo                DateTime?
+  numero_cotizacion          String?
+  correo_notificaciones      String?
   user_id                    String
   pdf_url                    String?
   created_at                 DateTime            @default(now())
@@ -334,6 +340,9 @@ model ContractEquipment {
   horas_minimas_diarias   Int?
   horas_minimas_mensuales Int?
   valor_mensual_estimado  Decimal?                 @db.Decimal(14, 2)
+  tarifa_hora_extra       Decimal?                 @db.Decimal(12, 2)
+  horometro_inicial       String?
+  mantenimiento_horas     String?
   observaciones           String?
   created_at              DateTime                 @default(now())
   updated_at              DateTime                 @updatedAt
