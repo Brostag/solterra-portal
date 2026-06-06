@@ -228,15 +228,15 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           {/* CTA primario */}
           <Link
-            href="/facturas/nueva"
+            href="/contratos/nuevo"
             className="flex items-center gap-2 sm:gap-3 bg-[#253158] hover:bg-[#1d2a4f] active:bg-[#1d2a4f] rounded-lg px-2.5 sm:px-4 py-2.5 sm:py-3 transition-colors min-h-[48px]"
           >
             <div className="p-1 sm:p-1.5 bg-white/20 rounded-md flex-shrink-0">
               <Plus className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
             </div>
             <div className="min-w-0">
-              <p className="text-[13px] sm:text-sm font-semibold text-white leading-tight truncate">Crear factura</p>
-              <p className="hidden sm:block text-xs text-white/70 leading-tight mt-0.5">Asistente paso a paso</p>
+              <p className="text-[13px] sm:text-sm font-semibold text-white leading-tight truncate">Crear contrato</p>
+              <p className="hidden sm:block text-xs text-white/70 leading-tight mt-0.5">Arriendo de maquinaria</p>
             </div>
           </Link>
 

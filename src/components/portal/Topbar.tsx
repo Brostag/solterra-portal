@@ -16,6 +16,7 @@ const rolLabels: Record<Rol, string> = {
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
+  "/contratos": "Contratos",
   "/facturas": "Facturas",
   "/clientes": "Clientes",
   "/productos": "Productos",

@@ -25,7 +25,7 @@ import type { Rol } from "@/types";
 
 const navItems = [
   { href: "/dashboard",      label: "Dashboard",         icon: LayoutDashboard },
-  { href: "/facturas",       label: "Facturas",          icon: FileText },
+  { href: "/contratos",      label: "Contratos",         icon: FileText },
   { href: "/clientes",       label: "Clientes",          icon: Users },
   { href: "/productos",      label: "Productos",         icon: Package },
   { href: "/documentos",     label: "Documentos",        icon: FolderOpen },
