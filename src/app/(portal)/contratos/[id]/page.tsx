@@ -7,7 +7,7 @@ import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, FileDown } from "lucide-react";
+import { ArrowLeft, FileDown, MessageCircle, Mail } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { getSignedUrls } from "@/lib/supabase/storage";
 import FotosEquipoSection, { type EquipoConFotos } from "./FotosEquipoSection";
@@ -88,6 +88,18 @@ export default async function ContratoDetallePage({ params }: Props) {
   }));
   const canManage = session.rol === "ADMINISTRADOR" || session.rol === "SUPERVISOR";
 
+  // Compartir: wa.me y mailto no pueden adjuntar el PDF automáticamente,
+  // por eso abren un mensaje/correo preparado y el PDF se adjunta a mano.
+  const pdfUrl = `/api/contratos/${contrato.id}/pdf`;
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(
+    `Hola, comparto contrato de arriendo ${contrato.numero_contrato} de Solterra SpA para revisión. Descarga el PDF desde el sistema y adjúntalo si corresponde.`
+  )}`;
+  const mailUrl = `mailto:?subject=${encodeURIComponent(
+    `Contrato de arriendo ${contrato.numero_contrato} - Solterra SpA`
+  )}&body=${encodeURIComponent(
+    `Estimados,\nComparto para revisión el contrato de arriendo ${contrato.numero_contrato}.\nSaludos,\nSolterra SpA`
+  )}`;
+
   return (
     <div className="max-w-5xl space-y-6">
       {/* Encabezado */}
@@ -107,14 +119,13 @@ export default async function ContratoDetallePage({ params }: Props) {
           <span className={`text-xs font-semibold px-2.5 py-1 rounded-md ${ESTADO_COLORS[contrato.estado as EstadoContrato]}`}>
             {ESTADO_LABELS[contrato.estado as EstadoContrato].toUpperCase()}
           </span>
-          <Button
-            type="button" disabled
-            title="La generación de PDF se habilitará en una fase próxima"
-            className="hidden sm:flex bg-white border border-gray-200 text-gray-400 gap-2 cursor-not-allowed"
-          >
-            <FileDown className="h-4 w-4" />
-            PDF pendiente
-          </Button>
+          <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
+            <Button className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
+              <FileDown className="h-4 w-4" />
+              <span className="hidden sm:inline">Descargar contrato</span>
+              <span className="sm:hidden">PDF</span>
+            </Button>
+          </a>
         </div>
       </div>
 
@@ -301,6 +312,31 @@ export default async function ContratoDetallePage({ params }: Props) {
 
       {/* Respaldo fotográfico de los equipos (C2.2) */}
       <FotosEquipoSection equipos={equiposConFotos} canManage={canManage} />
+
+      {/* Compartir contrato */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <h2 className="font-semibold text-[#253158] mb-1">Compartir contrato</h2>
+        <p className="text-sm text-gray-500 mb-3">
+          Descarga el PDF y adjúntalo al enviarlo por WhatsApp o correo (no se adjunta automáticamente).
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
+            <Button className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
+              <FileDown className="h-4 w-4" /> Descargar PDF
+            </Button>
+          </a>
+          <a href={waUrl} target="_blank" rel="noopener noreferrer">
+            <Button className="bg-white border border-green-600 text-green-700 hover:bg-green-50 gap-2">
+              <MessageCircle className="h-4 w-4" /> WhatsApp
+            </Button>
+          </a>
+          <a href={mailUrl}>
+            <Button className="bg-white border border-gray-300 text-[#253158] hover:bg-gray-50 gap-2">
+              <Mail className="h-4 w-4" /> Correo
+            </Button>
+          </a>
+        </div>
+      </div>
 
       <div className="flex justify-start">
         <Link href="/contratos">
