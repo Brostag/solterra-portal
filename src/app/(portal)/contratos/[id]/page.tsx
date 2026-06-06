@@ -7,8 +7,10 @@ import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, FileDown, Camera } from "lucide-react";
+import { ArrowLeft, FileDown } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { getSignedUrls } from "@/lib/supabase/storage";
+import FotosEquipoSection, { type EquipoConFotos } from "./FotosEquipoSection";
 
 type EstadoContrato = "BORRADOR" | "VIGENTE" | "FINALIZADO" | "ANULADO";
 
@@ -42,7 +44,10 @@ export default async function ContratoDetallePage({ params }: Props) {
       where: { id },
       include: {
         client: true,
-        equipos: { orderBy: { orden: "asc" } },
+        equipos: {
+          orderBy: { orden: "asc" },
+          include: { photos: { orderBy: { created_at: "asc" } } },
+        },
         _count: { select: { documents: true } },
       },
     }),
@@ -58,6 +63,30 @@ export default async function ContratoDetallePage({ params }: Props) {
     telefono:  contrato.cliente_telefono_snapshot  ?? contrato.client.telefono,
     direccion: contrato.cliente_direccion_snapshot ?? contrato.client.direccion,
   };
+
+  // Firmar en un solo batch las URLs de todas las fotos (bucket privado).
+  const allPaths = contrato.equipos.flatMap((e) => e.photos.map((p) => p.storage_path));
+  let signed: Record<string, string> = {};
+  if (allPaths.length > 0) {
+    try {
+      signed = await getSignedUrls(allPaths);
+    } catch {
+      signed = {};
+    }
+  }
+  const equiposConFotos: EquipoConFotos[] = contrato.equipos.map((e) => ({
+    id: e.id,
+    descripcion: e.descripcion,
+    photos: e.photos.map((p) => ({
+      id: p.id,
+      tipo: p.tipo,
+      nombre_original: p.nombre_original,
+      observacion: p.observacion,
+      created_at: p.created_at.toISOString(),
+      signedUrl: signed[p.storage_path] ?? null,
+    })),
+  }));
+  const canManage = session.rol === "ADMINISTRADOR" || session.rol === "SUPERVISOR";
 
   return (
     <div className="max-w-5xl space-y-6">
@@ -210,20 +239,8 @@ export default async function ContratoDetallePage({ params }: Props) {
         </div>
       </div>
 
-      {/* Respaldo fotográfico — pendiente C2.2 */}
-      <div className="bg-white rounded-xl border border-dashed border-gray-200 p-5">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-gray-50 rounded-md flex-shrink-0">
-            <Camera className="h-5 w-5 text-gray-400" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-[#253158]">Fotos del equipo</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Pendiente de carga. El respaldo fotográfico del equipo arrendado se habilitará en la próxima fase (C2.2).
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* Respaldo fotográfico de los equipos (C2.2) */}
+      <FotosEquipoSection equipos={equiposConFotos} canManage={canManage} />
 
       <div className="flex justify-start">
         <Link href="/contratos">
