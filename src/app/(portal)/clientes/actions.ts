@@ -12,6 +12,7 @@ import { ACTIVE_CLIENTS_TAG, CLIENT_COUNTS_TAG } from "@/lib/cache/master-lists"
 export async function createClient(formData: FormData) {
   const session = await getSession();
   if (!session) redirect("/login");
+  if (session.rol === "USUARIO") throw new Error("Sin permisos para crear clientes");
 
   const data = clientSchema.parse({
     nombre: formData.get("nombre"),
@@ -35,6 +36,7 @@ export async function createClient(formData: FormData) {
 export async function updateClient(id: string, formData: FormData) {
   const session = await getSession();
   if (!session) redirect("/login");
+  if (session.rol === "USUARIO") throw new Error("Sin permisos para editar clientes");
 
   const data = clientSchema.parse({
     nombre: formData.get("nombre"),
@@ -57,6 +59,8 @@ export async function updateClient(id: string, formData: FormData) {
 export async function deactivateClient(id: string) {
   const session = await getSession();
   if (!session) redirect("/login");
+  if (session.rol !== "ADMINISTRADOR")
+    throw new Error("Solo el Administrador puede desactivar clientes");
 
   await prisma.client.update({
     where: { id },

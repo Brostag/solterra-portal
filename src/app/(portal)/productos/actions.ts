@@ -12,6 +12,7 @@ import { ACTIVE_PRODUCTS_TAG, PRODUCT_COUNTS_TAG } from "@/lib/cache/master-list
 export async function createProduct(formData: FormData) {
   const session = await getSession();
   if (!session) redirect("/login");
+  if (session.rol === "USUARIO") throw new Error("Sin permisos para crear servicios");
 
   const data = productSchema.parse({
     nombre: formData.get("nombre"),
@@ -33,6 +34,7 @@ export async function createProduct(formData: FormData) {
 export async function updateProduct(id: string, formData: FormData) {
   const session = await getSession();
   if (!session) redirect("/login");
+  if (session.rol === "USUARIO") throw new Error("Sin permisos para editar servicios");
 
   const data = productSchema.parse({
     nombre: formData.get("nombre"),
@@ -53,6 +55,8 @@ export async function updateProduct(id: string, formData: FormData) {
 export async function deactivateProduct(id: string) {
   const session = await getSession();
   if (!session) redirect("/login");
+  if (session.rol !== "ADMINISTRADOR")
+    throw new Error("Solo el Administrador puede desactivar servicios");
 
   await prisma.product.update({ where: { id }, data: { activo: false } });
   await logAudit(session.id, "producto_desactivado", "productos", `ID: ${id}`);

@@ -32,6 +32,7 @@ export async function createInvoice(rawData: {
 }): Promise<{ id: string }> {
   const session = await getSession();
   if (!session) redirect("/login");
+  if (session.rol === "USUARIO") throw new Error("Sin permisos para crear facturas");
 
   const validated = invoiceSchema.parse(rawData);
 
