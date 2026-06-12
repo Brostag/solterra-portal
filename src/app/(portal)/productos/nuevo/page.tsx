@@ -9,7 +9,7 @@ import { ArrowLeft } from "lucide-react";
 
 export default function NuevoProductoPage() {
   return (
-    <div className="max-w-xl space-y-6">
+    <div className="max-w-xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
         <Link href="/productos">
           <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4" /></Button>
@@ -17,7 +17,7 @@ export default function NuevoProductoPage() {
         <h1 className="text-2xl font-bold text-[#253158]">Nuevo Producto / Servicio</h1>
       </div>
 
-      <div className="bg-white rounded-lg border p-6">
+      <div className="bg-white rounded-lg shadow-sm p-6">
         <form action={createProduct} className="space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 space-y-2">

@@ -66,7 +66,7 @@ export default async function ClienteDetailPage({ params }: Props) {
         {client.activo && <ClienteActions clientId={id} deactivate={deactivateClient} />}
       </div>
 
-      <div className="bg-white rounded-lg border p-6">
+      <div className="bg-white rounded-lg shadow-sm p-6">
         <form action={updateWithId} className="space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 space-y-2">
@@ -101,7 +101,7 @@ export default async function ClienteDetailPage({ params }: Props) {
       </div>
 
       {client.invoices.length > 0 && (
-        <div className="bg-white rounded-lg border p-6">
+        <div className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="font-semibold text-[#253158] mb-4">Últimas Facturas</h2>
           <div className="space-y-2">
             {client.invoices.map((inv) => (

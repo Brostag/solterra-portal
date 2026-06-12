@@ -23,7 +23,7 @@ export default async function NuevoProveedorPage() {
         <h1 className="text-2xl font-bold text-[#253158]">Nuevo Proveedor</h1>
       </div>
 
-      <form action={createSupplier} className="bg-white rounded-lg border p-6 space-y-5">
+      <form action={createSupplier} className="bg-white rounded-lg shadow-sm p-6 space-y-5">
         {/* Fila 1: Nombre + RUT */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">

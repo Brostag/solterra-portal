@@ -118,7 +118,7 @@ export default function NuevaFacturaForm({
           </div>
         )}
         {/* Cabecera */}
-        <div className="bg-white rounded-lg border p-4 sm:p-6 flex flex-col sm:grid sm:grid-cols-3 gap-4">
+        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 flex flex-col sm:grid sm:grid-cols-3 gap-4">
           <div className="sm:col-span-2 space-y-2">
             <Label>Cliente <span className="text-[#c6352e]">*</span></Label>
             <Select value={clientId} onValueChange={(v) => setClientId(v ?? "")}>
@@ -168,7 +168,7 @@ export default function NuevaFacturaForm({
         </div>
 
         {/* Líneas de factura */}
-        <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-4">
+        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 space-y-4">
           <h2 className="font-semibold text-[#253158]">Productos / Servicios</h2>
 
           {/* Móvil: tarjetas verticales — sm:hidden */}
@@ -318,7 +318,7 @@ export default function NuevaFacturaForm({
         </div>
 
         {/* Totales */}
-        <div className="bg-white rounded-lg border p-6">
+        <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="space-y-2 sm:max-w-xs sm:ml-auto">
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Subtotal</span>

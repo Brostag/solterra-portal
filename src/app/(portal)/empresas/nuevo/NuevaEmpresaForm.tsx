@@ -7,6 +7,12 @@ import { createCompany, type CreateCompanyInput } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Check } from "lucide-react";
+import { cn } from "@/lib/utils";
+import Stepper from "@/components/portal/Stepper";
+
+// Pasos del asistente: solo el paso 1 es obligatorio (razón social + roles).
+const WIZARD_STEPS = ["Datos generales y roles", "Representante y contacto", "Comercial y bancario"];
 
 type RoleKey = "es_cliente" | "es_proveedor" | "es_arrendataria" | "es_otro";
 
@@ -37,6 +43,8 @@ export default function NuevaEmpresaForm() {
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  // Paso visible del asistente (presentación pura: no afecta el payload).
+  const [step, setStep] = useState(1);
 
   function set(name: FormKey, value: string) {
     setForm((f) => ({ ...f, [name]: value }));
@@ -114,8 +122,11 @@ export default function NuevaEmpresaForm() {
 
   return (
     <div className="space-y-6">
+      <Stepper steps={WIZARD_STEPS} current={step} />
+
+      {step === 1 && (<>
       {/* A — Datos generales */}
-      <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-4">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 space-y-4">
         <h2 className="font-semibold text-[#253158]">Datos generales</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">{fld("nombre_razon_social", "Nombre / Razón social", { required: true })}</div>
@@ -136,23 +147,36 @@ export default function NuevaEmpresaForm() {
         </div>
       </div>
 
-      {/* B — Roles */}
-      <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-3">
+      {/* B — Roles (chips toggle: mismo estado `roles`, mismo toggleRole) */}
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 space-y-3">
         <h2 className="font-semibold text-[#253158]">Roles <span className="text-[#c6352e]">*</span></h2>
         <p className="text-xs text-gray-400 -mt-1">Selecciona al menos uno. Una empresa puede tener varios roles.</p>
-        <div className="flex flex-wrap gap-x-6 gap-y-3">
+        <div className="flex flex-wrap gap-2">
           {ROLES.map((r) => (
-            <label key={r.key} className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={roles[r.key]} onChange={() => toggleRole(r.key)}
-                className="h-4 w-4 rounded border-gray-300 text-[#253158] focus:ring-2 focus:ring-[#253158]/30 cursor-pointer" />
-              <span className="text-sm text-gray-700">{r.label}</span>
-            </label>
+            <button
+              key={r.key}
+              type="button"
+              onClick={() => toggleRole(r.key)}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-[10px] border-[1.5px] px-4 py-2.5 text-sm font-medium transition-colors",
+                roles[r.key]
+                  ? "border-[#253158] bg-[#253158]/5 font-semibold text-[#253158]"
+                  : "border-gray-200 bg-white text-gray-700 hover:border-[#253158]"
+              )}
+            >
+              <span className={cn("flex h-[18px] w-[18px] items-center justify-center rounded-full border-[1.5px]", roles[r.key] ? "border-[#253158] bg-[#253158] text-white" : "border-gray-300 text-transparent")}>
+                <Check className="h-3 w-3" />
+              </span>
+              {r.label}
+            </button>
           ))}
         </div>
       </div>
+      </>)}
 
+      {step === 2 && (<>
       {/* C — Representante legal */}
-      <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-4">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 space-y-4">
         <h2 className="font-semibold text-[#253158]">Representante legal</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {fld("representante_legal", "Nombre completo")}
@@ -164,7 +188,7 @@ export default function NuevaEmpresaForm() {
       </div>
 
       {/* D — Contacto comercial */}
-      <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-4">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 space-y-4">
         <h2 className="font-semibold text-[#253158]">Contacto comercial</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {fld("contacto_nombre", "Nombre")}
@@ -173,9 +197,11 @@ export default function NuevaEmpresaForm() {
           {fld("contacto_telefono", "Teléfono")}
         </div>
       </div>
+      </>)}
 
+      {step === 3 && (<>
       {/* E — Datos comerciales */}
-      <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-4">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 space-y-4">
         <h2 className="font-semibold text-[#253158]">Datos comerciales</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {fld("condicion_pago", "Condición de pago", { placeholder: "30 días, anticipado..." })}
@@ -184,7 +210,7 @@ export default function NuevaEmpresaForm() {
       </div>
 
       {/* F — Datos bancarios */}
-      <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-4">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 space-y-4">
         <h2 className="font-semibold text-[#253158]">Datos bancarios</h2>
         <p className="text-xs text-gray-400 -mt-2">Principalmente para empresas proveedoras.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -195,6 +221,7 @@ export default function NuevaEmpresaForm() {
           {fld("rut_titular_cuenta", "RUT del titular")}
         </div>
       </div>
+      </>)}
 
       {errors.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded p-3 space-y-0.5">
@@ -202,13 +229,36 @@ export default function NuevaEmpresaForm() {
         </div>
       )}
 
-      <div className="flex justify-end gap-2">
-        <Link href="/empresas">
-          <Button className="bg-white border border-gray-300 text-[#253158] hover:bg-gray-50">Cancelar</Button>
-        </Link>
-        <Button onClick={handleSubmit} disabled={loading} className="bg-[#253158] hover:bg-[#1e305e] text-white">
-          {loading ? "Guardando..." : "Guardar Empresa"}
+      {/* Footer del asistente. La validación del paso 1 es la validate()
+          existente (razón social + rol); C–F son opcionales, por eso
+          "Guardar Empresa" está disponible desde el paso 2. */}
+      <div className="flex justify-between gap-2 bg-white rounded-xl shadow-sm px-5 py-4">
+        <Button type="button" variant="outline" disabled={step === 1} onClick={() => setStep(step - 1)}>
+          ← Atrás
         </Button>
+        <div className="flex gap-2">
+          <Link href="/empresas">
+            <Button type="button" className="bg-white border border-gray-300 text-[#253158] hover:bg-gray-50">Cancelar</Button>
+          </Link>
+          {step < 3 && (
+            <Button
+              type="button"
+              className="bg-[#253158] hover:bg-[#1e305e] text-white"
+              onClick={() => { if (step !== 1 || validate()) setStep(step + 1); }}
+            >
+              Siguiente →
+            </Button>
+          )}
+          {step >= 2 && (
+            <Button
+              onClick={handleSubmit}
+              disabled={loading}
+              className={step === 3 ? "bg-[#253158] hover:bg-[#1e305e] text-white" : "bg-white border border-gray-300 text-[#253158] hover:bg-gray-50"}
+            >
+              {loading ? "Guardando..." : "Guardar Empresa"}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

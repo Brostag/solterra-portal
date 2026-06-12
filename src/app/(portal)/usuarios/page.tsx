@@ -12,10 +12,11 @@ import { Button } from "@/components/ui/button";
 
 type Rol = "ADMINISTRADOR" | "SUPERVISOR" | "USUARIO";
 
+// Jerarquía = intensidad del azul corporativo (sin colores ajenos a la marca).
 const ROL_COLORS: Record<Rol, string> = {
-  ADMINISTRADOR: "bg-purple-50 text-purple-600 border border-purple-200",
-  SUPERVISOR:    "bg-blue-50 text-blue-600 border border-blue-200",
-  USUARIO:       "bg-gray-50 text-gray-500 border border-gray-200",
+  ADMINISTRADOR: "bg-[#253158] text-white border border-[#253158]",
+  SUPERVISOR:    "bg-[#253158]/10 text-[#253158] border border-transparent",
+  USUARIO:       "bg-white text-[#253158] border border-[#253158]/35",
 };
 
 const ROL_LABELS: Record<Rol, string> = {
@@ -177,11 +178,11 @@ export default async function UsuariosPage({ searchParams }: Props) {
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50 hover:bg-gray-50 border-b border-gray-200">
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Rol</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Estado</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Desde</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Rol</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Estado</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Desde</TableHead>
               <TableHead className="w-24" />
             </TableRow>
           </TableHeader>
@@ -196,27 +197,27 @@ export default async function UsuariosPage({ searchParams }: Props) {
             ) : (
               users.map((u) => (
                 <TableRow key={u.id} className="relative cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-0">
-                  <TableCell className="px-5 py-4 font-semibold text-gray-800 text-sm">
+                  <TableCell className="px-4 py-3 font-semibold text-gray-800 text-sm">
                     <InstantLink href={`/usuarios/${u.id}`} aria-label={`Ver usuario ${u.nombre}`} className="absolute inset-0">
                       <span className="sr-only">Ver detalle</span>
                     </InstantLink>
                     {u.nombre}
                   </TableCell>
-                  <TableCell className="px-5 py-4 text-[#253158] text-sm">{u.email}</TableCell>
-                  <TableCell className="px-5 py-4">
+                  <TableCell className="px-4 py-3 text-[#253158] text-sm">{u.email}</TableCell>
+                  <TableCell className="px-4 py-3">
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-md ${ROL_COLORS[u.rol as Rol]}`}>
                       {ROL_LABELS[u.rol as Rol]}
                     </span>
                   </TableCell>
-                  <TableCell className="px-5 py-4">
+                  <TableCell className="px-4 py-3">
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-md ${u.activo ? "bg-green-50 text-green-600 border border-green-200" : "bg-red-50 text-red-500 border border-red-200"}`}>
                       {u.activo ? "Activo" : "Inactivo"}
                     </span>
                   </TableCell>
-                  <TableCell className="px-5 py-4 text-gray-400 text-sm">
+                  <TableCell className="px-4 py-3 text-gray-400 text-sm">
                     {new Date(u.created_at).toLocaleDateString("es-CL")}
                   </TableCell>
-                  <TableCell className="px-3 py-4 relative z-10">
+                  <TableCell className="px-3 py-3 relative z-10">
                     <div className="flex items-center gap-1">
                       <InstantLink href={`/usuarios/${u.id}`}>
                         <button

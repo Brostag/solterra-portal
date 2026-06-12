@@ -188,7 +188,7 @@ export default function EditarEmpresaForm({ initial }: Props) {
   return (
     <div className="space-y-6">
       {/* A — Datos generales */}
-      <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-4">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 space-y-4">
         <h2 className="font-semibold text-[#253158]">Datos generales</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">{fld("nombre_razon_social", "Nombre / Razón social", { required: true })}</div>
@@ -218,7 +218,7 @@ export default function EditarEmpresaForm({ initial }: Props) {
       </div>
 
       {/* B — Roles */}
-      <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-3">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 space-y-3">
         <h2 className="font-semibold text-[#253158]">Roles <span className="text-[#c6352e]">*</span></h2>
         <p className="text-xs text-gray-400 -mt-1">Selecciona al menos uno. Una empresa puede tener varios roles.</p>
         <div className="flex flex-wrap gap-x-6 gap-y-3">
@@ -233,7 +233,7 @@ export default function EditarEmpresaForm({ initial }: Props) {
       </div>
 
       {/* C — Representante legal */}
-      <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-4">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 space-y-4">
         <h2 className="font-semibold text-[#253158]">Representante legal</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {fld("representante_legal", "Nombre completo")}
@@ -245,7 +245,7 @@ export default function EditarEmpresaForm({ initial }: Props) {
       </div>
 
       {/* D — Contacto comercial */}
-      <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-4">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 space-y-4">
         <h2 className="font-semibold text-[#253158]">Contacto comercial</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {fld("contacto_nombre", "Nombre")}
@@ -256,7 +256,7 @@ export default function EditarEmpresaForm({ initial }: Props) {
       </div>
 
       {/* E — Datos comerciales */}
-      <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-4">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 space-y-4">
         <h2 className="font-semibold text-[#253158]">Datos comerciales</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {fld("condicion_pago", "Condición de pago", { placeholder: "30 días, anticipado..." })}
@@ -265,7 +265,7 @@ export default function EditarEmpresaForm({ initial }: Props) {
       </div>
 
       {/* F — Datos bancarios */}
-      <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-4">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 space-y-4">
         <h2 className="font-semibold text-[#253158]">Datos bancarios</h2>
         <p className="text-xs text-gray-400 -mt-2">Principalmente para empresas proveedoras.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

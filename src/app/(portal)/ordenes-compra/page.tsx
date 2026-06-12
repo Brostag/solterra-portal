@@ -169,11 +169,11 @@ export default async function OrdenesCompraPage({ searchParams }: Props) {
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50 hover:bg-gray-50 border-b border-gray-200">
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">N° OC</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Proveedor</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Fecha Emisión</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Total</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Estado</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">N° OC</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Proveedor</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Fecha Emisión</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Total</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Estado</TableHead>
               <TableHead className="w-20" />
             </TableRow>
           </TableHeader>
@@ -188,25 +188,25 @@ export default async function OrdenesCompraPage({ searchParams }: Props) {
             ) : (
               ordenes.map((oc) => (
                 <TableRow key={oc.id} className="relative cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-0">
-                  <TableCell className="px-5 py-4 font-mono font-bold text-[#253158] text-sm">
+                  <TableCell className="px-4 py-3 font-mono font-bold text-[#253158] text-sm">
                     <InstantLink href={`/ordenes-compra/${oc.id}`} aria-label={`Ver ${oc.numero}`} className="absolute inset-0">
                       <span className="sr-only">Ver detalle</span>
                     </InstantLink>
                     {oc.numero}
                   </TableCell>
-                  <TableCell className="px-5 py-4 font-medium text-[#253158] text-sm">{oc.proveedor.nombre}</TableCell>
-                  <TableCell className="px-5 py-4 text-gray-400 text-sm">
+                  <TableCell className="px-4 py-3 font-medium text-[#253158] text-sm">{oc.proveedor.nombre}</TableCell>
+                  <TableCell className="px-4 py-3 text-gray-400 text-sm">
                     {new Date(oc.fecha_emision).toLocaleDateString("es-CL")}
                   </TableCell>
-                  <TableCell className="px-5 py-4 text-right font-semibold text-gray-800 text-sm">
+                  <TableCell className="px-4 py-3 text-right font-semibold text-gray-800 text-sm">
                     {formatCurrency(Number(oc.total), oc.moneda as Moneda)}
                   </TableCell>
-                  <TableCell className="px-5 py-4">
+                  <TableCell className="px-4 py-3">
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-md ${ESTADO_COLORS[oc.estado as EstadoOC]}`}>
                       {ESTADO_LABELS[oc.estado as EstadoOC].toUpperCase()}
                     </span>
                   </TableCell>
-                  <TableCell className="px-3 py-4 relative z-10">
+                  <TableCell className="px-3 py-3 relative z-10">
                     <div className="flex items-center gap-1">
                       <InstantLink href={`/ordenes-compra/${oc.id}`}>
                         <button type="button" className="p-1.5 rounded-md text-gray-400 hover:text-[#253158] hover:bg-gray-100 transition-colors" title="Ver orden">

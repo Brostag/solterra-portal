@@ -7,8 +7,8 @@ import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, Eye, Package } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Search, Eye, Package } from "lucide-react";
+import NuevoServicioDialog from "./NuevoServicioDialog";
 import { formatCurrency } from "@/lib/currency";
 
 type FiltroActivo = "activos" | "inactivos";
@@ -60,19 +60,12 @@ export default async function ProductosPage({ searchParams }: Props) {
         <div>
           <h1 className="text-2xl font-bold text-[#253158]">Servicios</h1>
           <p className="text-gray-500 text-sm mt-1">
-            {counts.activos} activos
-            {counts.inactivos > 0 && ` · ${counts.inactivos} inactivos`}
+            {counts.activos} {counts.activos === 1 ? "activo" : "activos"}
+            {counts.inactivos > 0 && ` · ${counts.inactivos} ${counts.inactivos === 1 ? "inactivo" : "inactivos"}`}
             {query && ` · búsqueda: "${query}"`}
           </p>
         </div>
-        {session.rol !== "USUARIO" && (
-          <InstantLink href="/productos/nuevo" prefetchOnMount>
-            <Button className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
-              <Plus className="h-4 w-4" />
-              Nuevo
-            </Button>
-          </InstantLink>
-        )}
+        {session.rol !== "USUARIO" && <NuevoServicioDialog />}
       </div>
 
       {/* Filtros */}
@@ -135,11 +128,11 @@ export default async function ProductosPage({ searchParams }: Props) {
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50 hover:bg-gray-50 border-b border-gray-200">
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Código</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Descripción</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Precio Unit.</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Estado</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Código</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Descripción</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Precio Unit.</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Estado</TableHead>
               <TableHead className="w-12" />
             </TableRow>
           </TableHeader>
@@ -154,23 +147,23 @@ export default async function ProductosPage({ searchParams }: Props) {
             ) : (
               products.map((p) => (
                 <TableRow key={p.id} className="relative cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-0">
-                  <TableCell className="px-5 py-4 font-mono text-[#253158] font-semibold text-sm">
+                  <TableCell className="px-4 py-3 font-mono text-[#253158] font-semibold text-sm">
                     <InstantLink href={`/productos/${p.id}`} aria-label={`Ver ${p.nombre}`} className="absolute inset-0">
                       <span className="sr-only">Ver detalle</span>
                     </InstantLink>
                     {p.codigo_interno ?? "—"}
                   </TableCell>
-                  <TableCell className="px-5 py-4 font-semibold text-gray-800 text-sm">{p.nombre}</TableCell>
-                  <TableCell className="px-5 py-4 text-gray-400 text-sm">{p.descripcion ?? "—"}</TableCell>
-                  <TableCell className="px-5 py-4 text-right font-semibold text-gray-800 text-sm">
+                  <TableCell className="px-4 py-3 font-semibold text-gray-800 text-sm">{p.nombre}</TableCell>
+                  <TableCell className="px-4 py-3 text-gray-400 text-sm">{p.descripcion ?? "—"}</TableCell>
+                  <TableCell className="px-4 py-3 text-right font-semibold text-gray-800 text-sm">
                     {formatCurrency(Number(p.precio_unitario), "CLP")}
                   </TableCell>
-                  <TableCell className="px-5 py-4">
+                  <TableCell className="px-4 py-3">
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-md ${p.activo ? "bg-green-50 text-green-600 border border-green-200" : "bg-gray-50 text-gray-500 border border-gray-200"}`}>
                       {p.activo ? "Activo" : "Inactivo"}
                     </span>
                   </TableCell>
-                  <TableCell className="px-3 py-4 relative z-10">
+                  <TableCell className="px-3 py-3 relative z-10">
                     <InstantLink href={`/productos/${p.id}`}>
                       <button type="button" className="p-1.5 rounded-md text-gray-400 hover:text-[#253158] hover:bg-gray-100 transition-colors">
                         <Eye className="h-4 w-4" />

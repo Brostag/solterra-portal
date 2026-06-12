@@ -49,7 +49,7 @@ export default async function ProveedorDetailPage({ params }: Props) {
         )}
       </div>
 
-      <form action={updateWithId} className="bg-white rounded-lg border p-6 space-y-5">
+      <form action={updateWithId} className="bg-white rounded-lg shadow-sm p-6 space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="nombre">Nombre / Razón Social <span className="text-[#c6352e]">*</span></Label>

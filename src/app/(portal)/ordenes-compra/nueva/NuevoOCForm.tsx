@@ -12,7 +12,8 @@ import {
   Select, SelectContent, SelectItem,
   SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
+import Stepper from "@/components/portal/Stepper";
 import Link from "next/link";
 import type { Moneda } from "@/types";
 import type { PurchaseOrderData } from "@/lib/validations/purchase-order";
@@ -47,6 +48,9 @@ interface Props {
   defaultValues?: Partial<DefaultValues>;
 }
 
+// Pasos del asistente de creación (la edición mantiene la vista completa).
+const WIZARD_STEPS = ["Proveedor y condiciones", "Productos / Servicios", "Revisar y emitir"];
+
 export default function NuevoOCForm({
   suppliers, products, ivaPercent,
   mode = "create", ocId, defaultValues,
@@ -65,6 +69,9 @@ export default function NuevoOCForm({
   );
   const [errors, setErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  // Asistente por pasos solo al crear (presentación pura, mismo payload).
+  const wizard = mode === "create";
+  const [step, setStep] = useState(1);
 
   const totals = calculateOCTotals(items, descuentoPct, ivaPercent);
 
@@ -95,12 +102,31 @@ export default function NuevoOCForm({
     );
   }
 
-  function validate(): boolean {
+  // Condiciones del paso 1 del asistente (proveedor + moneda). Reutilizadas por validate().
+  function proveedorErrors(): string[] {
     const errs: string[] = [];
     if (!proveedorId) errs.push("Selecciona un proveedor");
     if (moneda === "USD" && (!tipoCambio || tipoCambio <= 0)) errs.push("El tipo de cambio es requerido para moneda USD");
+    return errs;
+  }
+
+  // Condiciones del paso 2 (ítems). Reutilizadas por validate().
+  function itemsErrors(): string[] {
+    const errs: string[] = [];
     if (items.some((it) => !it.descripcion.trim())) errs.push("Todos los ítems deben tener descripción");
     if (items.some((it) => it.cantidad <= 0)) errs.push("La cantidad de cada ítem debe ser mayor a 0");
+    return errs;
+  }
+
+  // Validación parcial al avanzar de paso en el asistente (solo modo create).
+  function validateStep(s: number): boolean {
+    const errs = s === 1 ? proveedorErrors() : s === 2 ? itemsErrors() : [];
+    setErrors(errs);
+    return errs.length === 0;
+  }
+
+  function validate(): boolean {
+    const errs: string[] = [...proveedorErrors(), ...itemsErrors()];
     setErrors(errs);
     return errs.length === 0;
   }
@@ -141,15 +167,23 @@ export default function NuevoOCForm({
   const fmtAmt = (n: number) => formatCurrency(n, moneda as Moneda);
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       {mode === "create" && (
-        <div className="flex items-center gap-3">
-          <Link href="/ordenes-compra">
-            <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4" /></Button>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-[#253158]">Nueva Orden de Compra</h1>
+            <p className="text-gray-500 text-sm mt-0.5">Asistente paso a paso · Borrador editable hasta que se emita.</p>
+          </div>
+          <Link href="/ordenes-compra" className="flex-shrink-0">
+            <Button variant="ghost" size="sm" className="gap-1.5 text-gray-500 hover:text-[#253158]">
+              <X className="h-4 w-4" />
+              Cancelar
+            </Button>
           </Link>
-          <h1 className="text-2xl font-bold text-[#253158]">Nueva Orden de Compra</h1>
         </div>
       )}
+
+      {wizard && <Stepper steps={WIZARD_STEPS} current={step} />}
 
       {errors.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-md p-4 space-y-1">
@@ -159,7 +193,8 @@ export default function NuevoOCForm({
         </div>
       )}
 
-      <div className="bg-white rounded-lg border p-6 space-y-5">
+      <div className="bg-white rounded-lg shadow-sm p-6 space-y-5">
+        {(!wizard || step === 1) && (<>
         {/* ── Fila 1: Proveedor + Fecha envío ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -235,6 +270,20 @@ export default function NuevoOCForm({
           />
         </div>
 
+        {/* ── Observaciones ── */}
+        <div className="space-y-2">
+          <Label htmlFor="observaciones">Observaciones</Label>
+          <Textarea
+            id="observaciones"
+            rows={3}
+            value={observaciones}
+            onChange={(e) => setObs(e.target.value)}
+            placeholder="Notas adicionales que aparecerán en el PDF..."
+          />
+        </div>
+        </>)}
+
+        {(!wizard || step === 2) && (<>
         {/* ── Tabla de ítems ── */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -244,15 +293,15 @@ export default function NuevoOCForm({
             </Button>
           </div>
 
-          <div className="border rounded-md overflow-hidden">
+          <div className="border border-gray-200 rounded-md overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-[#253158] text-white">
-                  <th className="text-left py-2.5 px-3 font-semibold w-44">Producto (opcional)</th>
-                  <th className="text-left py-2.5 px-3 font-semibold">Detalle</th>
-                  <th className="text-right py-2.5 px-3 font-semibold w-24">Cantidad</th>
-                  <th className="text-right py-2.5 px-3 font-semibold w-28">Valor Hr</th>
-                  <th className="text-right py-2.5 px-3 font-semibold w-28">Total</th>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 w-44">Producto (opcional)</th>
+                  <th className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Detalle</th>
+                  <th className="text-right py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 w-24">Cantidad</th>
+                  <th className="text-right py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 w-28">Valor Hr</th>
+                  <th className="text-right py-2.5 px-3 text-xs font-semibold uppercase tracking-wide text-gray-500 w-28">Total</th>
                   <th className="w-10" />
                 </tr>
               </thead>
@@ -331,19 +380,9 @@ export default function NuevoOCForm({
             </table>
           </div>
         </div>
+        </>)}
 
-        {/* ── Observaciones ── */}
-        <div className="space-y-2">
-          <Label htmlFor="observaciones">Observaciones</Label>
-          <Textarea
-            id="observaciones"
-            rows={3}
-            value={observaciones}
-            onChange={(e) => setObs(e.target.value)}
-            placeholder="Notas adicionales que aparecerán en el PDF..."
-          />
-        </div>
-
+        {(!wizard || step === 3) && (<>
         {/* ── Descuento + Totales ── */}
         <div className="flex flex-col sm:flex-row justify-between gap-6 pt-2 border-t">
           <div className="space-y-2 w-48">
@@ -379,20 +418,49 @@ export default function NuevoOCForm({
           </div>
         </div>
 
+        {/* Cierre paso 3 (Descuento + Totales) */}
+        </>)}
+
         {/* ── Acciones ── */}
-        <div className="flex gap-3 pt-2">
-          <Button
-            type="button"
-            disabled={loading}
-            onClick={handleSubmit}
-            className="bg-[#253158] hover:bg-[#1e305e] text-white"
-          >
-            {loading ? "Guardando..." : mode === "create" ? "Crear Orden de Compra" : "Guardar Cambios"}
-          </Button>
-          <Link href={mode === "edit" && ocId ? `/ordenes-compra/${ocId}` : "/ordenes-compra"}>
-            <Button type="button" variant="outline">Cancelar</Button>
-          </Link>
-        </div>
+        {wizard ? (
+          <div className="flex justify-between gap-2 pt-2 border-t">
+            <Button type="button" variant="outline" disabled={step === 1 || loading} onClick={() => setStep(step - 1)}>
+              ← Atrás
+            </Button>
+            <div className="flex gap-2">
+              <Link href="/ordenes-compra">
+                <Button type="button" variant="outline">Cancelar</Button>
+              </Link>
+              {step < 3 ? (
+                <Button
+                  type="button"
+                  className="bg-[#253158] hover:bg-[#1e305e] text-white"
+                  onClick={() => { if (validateStep(step)) setStep(step + 1); }}
+                >
+                  Siguiente →
+                </Button>
+              ) : (
+                <Button type="button" disabled={loading} onClick={handleSubmit} className="bg-[#253158] hover:bg-[#1e305e] text-white">
+                  {loading ? "Guardando..." : "Crear Orden de Compra"}
+                </Button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-3 pt-2">
+            <Button
+              type="button"
+              disabled={loading}
+              onClick={handleSubmit}
+              className="bg-[#253158] hover:bg-[#1e305e] text-white"
+            >
+              {loading ? "Guardando..." : "Guardar Cambios"}
+            </Button>
+            <Link href={ocId ? `/ordenes-compra/${ocId}` : "/ordenes-compra"}>
+              <Button type="button" variant="outline">Cancelar</Button>
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

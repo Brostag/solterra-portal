@@ -17,6 +17,7 @@ const rolLabels: Record<Rol, string> = {
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/contratos": "Contratos",
+  "/empresas": "Empresas",
   "/facturas": "Facturas",
   "/clientes": "Clientes",
   "/productos": "Servicios",
@@ -91,7 +92,8 @@ export default function Topbar({ nombre, email, rol, onOpenMenu }: TopbarProps) 
           <Menu className="h-5 w-5" />
         </button>
 
-        <h2 className="text-base font-semibold text-[#253158] dark:text-blue-300 truncate">{pageTitle}</h2>
+        {/* Breadcrumb discreto: el h1 real vive en cada página */}
+        <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 truncate">{pageTitle}</h2>
         <span className="hidden sm:inline text-xs font-medium px-2 py-0.5 rounded-full bg-[#253158]/10 dark:bg-blue-500/20 text-[#253158] dark:text-blue-300 flex-shrink-0">
           {rolLabels[rol]}
         </span>
@@ -103,8 +105,8 @@ export default function Topbar({ nombre, email, rol, onOpenMenu }: TopbarProps) 
           className="relative h-9 w-9 flex items-center justify-center rounded-md text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           aria-label="Notificaciones"
         >
+          {/* Dot de notificación removido: se reactiva cuando exista un sistema real de notificaciones */}
           <Bell className="h-[18px] w-[18px]" />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#c6352e]" />
         </button>
         <button
           type="button"

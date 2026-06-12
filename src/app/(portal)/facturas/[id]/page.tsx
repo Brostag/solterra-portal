@@ -87,7 +87,7 @@ export default async function FacturaDetailPage({ params }: Props) {
       </div>
 
       {/* Datos empresa y cliente */}
-      <div className="bg-white rounded-lg border p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <div>
           <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Emisor</p>
           <p className="font-semibold text-[#253158]">{config?.razon_social ?? "Solterra"}</p>
@@ -111,7 +111,7 @@ export default async function FacturaDetailPage({ params }: Props) {
       )}
 
       {/* Items */}
-      <div className="bg-white rounded-lg border overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         {/* Móvil: filas expandidas — sm:hidden */}
         <div className="sm:hidden">
           <div className="divide-y divide-gray-100">

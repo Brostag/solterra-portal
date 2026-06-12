@@ -53,7 +53,7 @@ export default async function DocumentsSection({
   const canDelete  = sessionRol !== "USUARIO";
 
   return (
-    <div className="bg-white rounded-lg border p-6 space-y-4">
+    <div className="bg-white rounded-lg shadow-sm p-6 space-y-4">
       <h2 className="font-semibold text-[#253158]">
         Documentos adjuntos{" "}
         <span className="text-gray-400 font-normal text-sm">({documents.length})</span>
@@ -74,7 +74,7 @@ export default async function DocumentsSection({
           <p className="text-sm">Sin documentos adjuntos</p>
         </div>
       ) : (
-        <div className="divide-y rounded-md border overflow-hidden">
+        <div className="divide-y rounded-md border border-gray-200 overflow-hidden">
           {documents.map((doc) => {
             const canDeleteThis =
               canDelete &&

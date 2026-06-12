@@ -142,7 +142,7 @@ export default async function OCDetailPage({ params, searchParams }: Props) {
       </div>
 
       {/* Proveedor + datos */}
-      <div className="bg-white rounded-lg border p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div className="bg-white rounded-lg shadow-sm p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
           <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Proveedor</p>
           <p className="font-semibold text-[#253158]">{oc.proveedor.nombre}</p>
@@ -181,7 +181,7 @@ export default async function OCDetailPage({ params, searchParams }: Props) {
       )}
 
       {/* Tabla de ítems */}
-      <div className="bg-white rounded-lg border overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         {/* Móvil: filas expandidas — sm:hidden */}
         <div className="sm:hidden">
           <div className="divide-y divide-gray-100">
@@ -294,7 +294,7 @@ export default async function OCDetailPage({ params, searchParams }: Props) {
 
       {/* Observaciones */}
       {oc.observaciones && (
-        <div className="bg-gray-50 rounded-lg border p-4">
+        <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
           <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Observaciones</p>
           <p className="text-sm text-gray-700 whitespace-pre-wrap">{oc.observaciones}</p>
         </div>

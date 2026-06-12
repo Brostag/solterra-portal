@@ -11,6 +11,10 @@ import {
   SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Plus, Trash2, Camera, ImagePlus, X } from "lucide-react";
+import Stepper from "@/components/portal/Stepper";
+
+// Pasos del asistente de creación (presentación pura, mismo payload).
+const WIZARD_STEPS = ["Datos del contrato", "Condiciones particulares", "Equipos arrendados"];
 
 type Moneda = "CLP" | "UF" | "USD";
 
@@ -113,6 +117,8 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
   // en vez de permitir un segundo submit (evita contratos duplicados).
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
+  // Paso visible del asistente (presentación pura: no afecta el payload).
+  const [step, setStep] = useState(1);
 
   const selectedClient = clients.find((c) => c.id === clientId);
 
@@ -163,12 +169,25 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
     return parseNum(eq.valor_hora) * parseNum(eq.horas_minimas_mensuales);
   }
 
-  function validate(): boolean {
+  // Condiciones mínimas del paso 1 (cliente + fechas). Las reutiliza validate().
+  function datosErrors(): string[] {
     const errs: string[] = [];
     if (!clientId) errs.push("Selecciona un cliente / arrendatario.");
     if (!fechaInicio) errs.push("Ingresa la fecha de inicio.");
     if (fechaTermino && fechaInicio && fechaTermino < fechaInicio)
       errs.push("La fecha de término no puede ser anterior a la de inicio.");
+    return errs;
+  }
+
+  // Validación parcial al avanzar del paso 1 del asistente.
+  function validateDatos(): boolean {
+    const errs = datosErrors();
+    setErrors(errs);
+    return errs.length === 0;
+  }
+
+  function validate(): boolean {
+    const errs: string[] = [...datosErrors()];
     if (equipos.length === 0) errs.push("Agrega al menos un equipo.");
     equipos.forEach((eq, i) => {
       if (!eq.descripcion.trim()) errs.push(`Equipo ${i + 1}: falta la descripción del equipo.`);
@@ -281,8 +300,11 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
 
   return (
     <div className="space-y-6">
+      <Stepper steps={WIZARD_STEPS} current={step} />
+
+      {step === 1 && (<>
       {/* Bloque 1 — Datos del contrato */}
-      <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-4">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 space-y-4">
         <h2 className="font-semibold text-[#253158]">Datos del contrato</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2 space-y-2">
@@ -350,7 +372,7 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
       </div>
 
       {/* Bloque 2 — Cliente / representante */}
-      <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-4">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 space-y-4">
         <h2 className="font-semibold text-[#253158]">Representante del cliente</h2>
         <p className="text-xs text-gray-400 -mt-2">La razón social, RUT y dirección se toman del cliente seleccionado (snapshot al crear).</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -365,8 +387,12 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
         </div>
       </div>
 
+      {/* Cierre paso 1 (Bloques 1 y 2) */}
+      </>)}
+
+      {step === 2 && (<>
       {/* Bloque 3 — Condiciones particulares / Anexo */}
-      <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-4">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 space-y-4">
         <h2 className="font-semibold text-[#253158]">Condiciones particulares (Anexo)</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -435,8 +461,12 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
         </div>
       </div>
 
+      {/* Cierre paso 2 (Bloque 3) */}
+      </>)}
+
+      {step === 3 && (<>
       {/* Bloque 4 — Equipos arrendados */}
-      <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-4">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-[#253158]">Equipos arrendados</h2>
           <span className="text-xs text-gray-400">{equipos.length} equipo(s)</span>
@@ -546,7 +576,7 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
       </div>
 
       {/* Bloque 5 — Nota sobre el respaldo fotográfico */}
-      <div className="bg-white rounded-lg border border-dashed p-4 sm:p-6">
+      <div className="bg-white rounded-lg border border-dashed border-gray-300 p-4 sm:p-6">
         <div className="flex items-start gap-3">
           <div className="p-2 bg-gray-50 rounded-md flex-shrink-0"><Camera className="h-5 w-5 text-gray-400" /></div>
           <div>
@@ -558,6 +588,8 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
           </div>
         </div>
       </div>
+      {/* Cierre paso 3 (Bloques 4 y 5) */}
+      </>)}
 
       {errors.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded p-3 space-y-0.5">
@@ -565,16 +597,31 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
         </div>
       )}
 
-      <div className="flex justify-end">
-        {createdId ? (
-          <Button onClick={() => router.push(`/contratos/${createdId}`)} className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
-            Ir al contrato creado
-          </Button>
-        ) : (
-          <Button onClick={handleSubmit} disabled={loading} className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
-            {loading ? (uploadMsg ?? "Guardando...") : "Crear contrato"}
-          </Button>
-        )}
+      {/* Footer del asistente. El submit (handleSubmit) y la subida de fotos
+          no cambian: solo se reparte el formulario en pasos visuales. */}
+      <div className="flex justify-between gap-2 bg-white rounded-xl shadow-sm px-5 py-4">
+        <Button type="button" variant="outline" disabled={step === 1 || loading} onClick={() => setStep(step - 1)}>
+          ← Atrás
+        </Button>
+        <div className="flex gap-2">
+          {createdId ? (
+            <Button onClick={() => router.push(`/contratos/${createdId}`)} className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
+              Ir al contrato creado
+            </Button>
+          ) : step < 3 ? (
+            <Button
+              type="button"
+              className="bg-[#253158] hover:bg-[#1e305e] text-white"
+              onClick={() => { if (step !== 1 || validateDatos()) setStep(step + 1); }}
+            >
+              Siguiente →
+            </Button>
+          ) : (
+            <Button onClick={handleSubmit} disabled={loading} className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
+              {loading ? (uploadMsg ?? "Guardando...") : "Crear contrato"}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

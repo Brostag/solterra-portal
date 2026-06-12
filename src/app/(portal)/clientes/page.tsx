@@ -59,7 +59,7 @@ export default async function ClientesPage({ searchParams }: Props) {
         <div>
           <h1 className="text-2xl font-bold text-[#253158]">Clientes</h1>
           <p className="text-gray-500 text-sm mt-1">
-            {counts.activos} clientes activos · {counts.inactivos} inactivos
+            {counts.activos} {counts.activos === 1 ? "cliente activo" : "clientes activos"} · {counts.inactivos} {counts.inactivos === 1 ? "inactivo" : "inactivos"}
             {query && ` · búsqueda: "${query}"`}
           </p>
         </div>
@@ -137,12 +137,12 @@ export default async function ClientesPage({ searchParams }: Props) {
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50 hover:bg-gray-50 border-b border-gray-200">
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre / Razón Social</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">RUT</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Teléfono</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Facturas</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Estado</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre / Razón Social</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">RUT</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Teléfono</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Facturas</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Estado</TableHead>
               <TableHead className="w-12" />
             </TableRow>
           </TableHeader>
@@ -157,26 +157,26 @@ export default async function ClientesPage({ searchParams }: Props) {
             ) : (
               clients.map((c) => (
                 <TableRow key={c.id} className="relative cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-0">
-                  <TableCell className="px-5 py-4 font-semibold text-gray-800 text-sm">
+                  <TableCell className="px-4 py-3 font-semibold text-gray-800 text-sm">
                     <InstantLink href={`/clientes/${c.id}`} aria-label={`Ver cliente ${c.nombre}`} className="absolute inset-0">
                       <span className="sr-only">Ver detalle</span>
                     </InstantLink>
                     {c.nombre}
                   </TableCell>
-                  <TableCell className="px-5 py-4 text-gray-400 text-sm font-mono">{c.rut ?? "—"}</TableCell>
-                  <TableCell className="px-5 py-4 text-sm">
+                  <TableCell className="px-4 py-3 text-gray-400 text-sm font-mono">{c.rut ?? "—"}</TableCell>
+                  <TableCell className="px-4 py-3 text-sm">
                     {c.email
                       ? <span className="text-[#253158]">{c.email}</span>
                       : <span className="text-gray-300">—</span>}
                   </TableCell>
-                  <TableCell className="px-5 py-4 text-gray-400 text-sm">{c.telefono ?? "—"}</TableCell>
-                  <TableCell className="px-5 py-4 text-right font-semibold text-gray-700 text-sm">{c._count.invoices}</TableCell>
-                  <TableCell className="px-5 py-4">
+                  <TableCell className="px-4 py-3 text-gray-400 text-sm">{c.telefono ?? "—"}</TableCell>
+                  <TableCell className="px-4 py-3 text-right font-semibold text-gray-700 text-sm">{c._count.invoices}</TableCell>
+                  <TableCell className="px-4 py-3">
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-md ${c.activo ? "bg-green-50 text-green-600 border border-green-200" : "bg-gray-50 text-gray-500 border border-gray-200"}`}>
                       {c.activo ? "Activo" : "Inactivo"}
                     </span>
                   </TableCell>
-                  <TableCell className="px-3 py-4 relative z-10">
+                  <TableCell className="px-3 py-3 relative z-10">
                     <InstantLink href={`/clientes/${c.id}`}>
                       <button type="button" className="p-1.5 rounded-md text-gray-400 hover:text-[#253158] hover:bg-gray-100 transition-colors" title="Ver cliente">
                         <Eye className="h-4 w-4" />

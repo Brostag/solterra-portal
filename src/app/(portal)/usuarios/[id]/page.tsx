@@ -55,7 +55,7 @@ export default async function UsuarioDetailPage({ params }: Props) {
         )}
       </div>
 
-      <div className="bg-white rounded-lg border p-6">
+      <div className="bg-white rounded-lg shadow-sm p-6">
         <form action={updateWithId} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="nombre">Nombre completo</Label>

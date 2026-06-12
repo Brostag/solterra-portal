@@ -4,7 +4,7 @@ import { getPortalSessionFast } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { X } from "lucide-react";
 import NuevoContratoForm from "./NuevoContratoForm";
 
 export default async function NuevoContratoPage() {
@@ -39,15 +39,18 @@ export default async function NuevoContratoPage() {
   }));
 
   return (
-    <div className="max-w-4xl space-y-6">
-      <div className="flex items-center gap-3">
-        <Link href="/contratos">
-          <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4" /></Button>
-        </Link>
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-[#253158]">Nuevo Contrato Marco</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Arriendo de maquinaria — el contrato se crea en estado Borrador.</p>
+          <p className="text-gray-500 text-sm mt-0.5">Solo Cliente, Fecha de inicio y los equipos son obligatorios — se crea en estado Borrador.</p>
         </div>
+        <Link href="/contratos" className="flex-shrink-0">
+          <Button variant="ghost" size="sm" className="gap-1.5 text-gray-500 hover:text-[#253158]">
+            <X className="h-4 w-4" />
+            Cancelar
+          </Button>
+        </Link>
       </div>
       <NuevoContratoForm clients={clients} cotizaciones={cotizaciones} />
     </div>

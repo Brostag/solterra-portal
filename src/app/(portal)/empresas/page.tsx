@@ -89,7 +89,9 @@ export default async function EmpresasPage({ searchParams }: Props) {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[#253158]">Empresas</h1>
-          <p className="text-gray-500 text-sm mt-1">{empresas.length} empresa(s) registrada(s)</p>
+          <p className="text-gray-500 text-sm mt-1">
+            {empresas.length} {empresas.length === 1 ? "empresa registrada" : "empresas registradas"}
+          </p>
         </div>
         {session.rol !== "USUARIO" && (
           <InstantLink href="/empresas/nuevo" prefetchOnMount>
@@ -159,13 +161,13 @@ export default async function EmpresasPage({ searchParams }: Props) {
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50 hover:bg-gray-50 border-b border-gray-200">
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre / Razón social</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">RUT</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Roles</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Teléfono</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Ciudad</TableHead>
-              <TableHead className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Estado</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre / Razón social</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">RUT</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Roles</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</TableHead>
+              <TableHead className="hidden xl:table-cell px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Teléfono</TableHead>
+              <TableHead className="hidden xl:table-cell px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Ciudad</TableHead>
+              <TableHead className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Estado</TableHead>
               <TableHead className="w-20" />
             </TableRow>
           </TableHeader>
@@ -180,29 +182,29 @@ export default async function EmpresasPage({ searchParams }: Props) {
             ) : (
               empresas.map((c) => (
                 <TableRow key={c.id} className="relative cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-0">
-                  <TableCell className="px-5 py-4 font-medium text-gray-800 text-sm">
+                  <TableCell className="px-4 py-3 font-medium text-gray-800 text-sm">
                     <InstantLink href={`/empresas/${c.id}`} aria-label={`Ver ${c.nombre_razon_social}`} className="absolute inset-0">
                       <span className="sr-only">Ver detalle</span>
                     </InstantLink>
                     {c.nombre_razon_social}
                   </TableCell>
-                  <TableCell className="px-5 py-4 text-gray-500 text-sm">{c.rut ?? "—"}</TableCell>
-                  <TableCell className="px-5 py-4">
+                  <TableCell className="px-4 py-3 text-gray-500 text-sm">{c.rut ?? "—"}</TableCell>
+                  <TableCell className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {rolesDe(c).map((r) => (
                         <span key={r} className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-[#253158]/10 text-[#253158]">{r}</span>
                       ))}
                     </div>
                   </TableCell>
-                  <TableCell className="px-5 py-4 text-gray-500 text-sm">{c.email ?? "—"}</TableCell>
-                  <TableCell className="px-5 py-4 text-gray-500 text-sm">{c.telefono ?? "—"}</TableCell>
-                  <TableCell className="px-5 py-4 text-gray-500 text-sm">{c.ciudad ?? "—"}</TableCell>
-                  <TableCell className="px-5 py-4">
+                  <TableCell className="px-4 py-3 text-gray-500 text-sm">{c.email ?? "—"}</TableCell>
+                  <TableCell className="hidden xl:table-cell px-4 py-3 text-gray-500 text-sm">{c.telefono ?? "—"}</TableCell>
+                  <TableCell className="hidden xl:table-cell px-4 py-3 text-gray-500 text-sm">{c.ciudad ?? "—"}</TableCell>
+                  <TableCell className="px-4 py-3">
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${c.activo ? "bg-green-50 text-green-600 border border-green-200" : "bg-gray-100 text-gray-500 border border-gray-200"}`}>
                       {c.activo ? "Activa" : "Inactiva"}
                     </span>
                   </TableCell>
-                  <TableCell className="px-3 py-4 relative z-10">
+                  <TableCell className="px-3 py-3 relative z-10">
                     <div className="flex items-center gap-1">
                       <InstantLink href={`/empresas/${c.id}`}>
                         <button type="button" className="p-1.5 rounded-md text-gray-400 hover:text-[#253158] hover:bg-gray-100 transition-colors" title="Ver empresa">

@@ -36,7 +36,7 @@ export default async function ProductoDetailPage({ params }: Props) {
         {product.activo && <ProductoActions productId={id} deactivate={deactivateProduct} />}
       </div>
 
-      <div className="bg-white rounded-lg border p-6">
+      <div className="bg-white rounded-lg shadow-sm p-6">
         <form action={updateWithId} className="space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 space-y-2">
