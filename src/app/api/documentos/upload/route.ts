@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { uploadFile } from "@/lib/supabase/storage";
 import { prisma } from "@/lib/prisma";
+import { fileContentMatchesMime } from "@/lib/file-validation";
 import { randomUUID } from "crypto";
 
 const MAX_SIZE = 20 * 1024 * 1024;
@@ -65,6 +66,14 @@ export async function POST(req: NextRequest) {
   const storage_path = `${randomUUID()}.${ext}`;
 
   const buffer = Buffer.from(await file.arrayBuffer());
+
+  // El MIME del navegador es declarativo: verificar el contenido real.
+  if (!fileContentMatchesMime(file.type, buffer)) {
+    return NextResponse.json(
+      { error: "El contenido del archivo no corresponde al tipo declarado" },
+      { status: 415 },
+    );
+  }
 
   try {
     await uploadFile(storage_path, buffer, file.type);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { uploadFile, deleteFile } from "@/lib/supabase/storage";
 import { prisma } from "@/lib/prisma";
+import { fileContentMatchesMime } from "@/lib/file-validation";
 import { logAudit } from "@/lib/audit";
 import { TipoFotoEquipo } from "@prisma/client";
 import { randomUUID } from "crypto";
@@ -62,6 +63,14 @@ export async function POST(
   const ext = file.name.split(".").pop()?.replace(/[^a-zA-Z0-9]/g, "") ?? "jpg";
   const storage_path = `contratos/${equipo.contract.id}/equipos/${equipmentId}/${randomUUID()}.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
+
+  // El MIME del navegador es declarativo: verificar el contenido real.
+  if (!fileContentMatchesMime(file.type, buffer)) {
+    return NextResponse.json(
+      { error: "El contenido del archivo no corresponde a una imagen JPG, PNG o WEBP" },
+      { status: 415 },
+    );
+  }
 
   try {
     await uploadFile(storage_path, buffer, file.type);

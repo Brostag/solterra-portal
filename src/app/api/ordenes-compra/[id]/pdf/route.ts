@@ -88,7 +88,7 @@ export async function GET(
   try {
     buffer = await renderToBuffer(element as ReactElement<DocumentProps>);
   } catch (err) {
-    console.error("[pdf] Error generando PDF de OC:", err);
+    console.error("[pdf] Error generando PDF de OC:", err instanceof Error ? err.message : String(err));
     return NextResponse.json({ error: "Error al generar el PDF" }, { status: 500 });
   }
 
@@ -96,7 +96,7 @@ export async function GET(
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="orden-compra-${oc.numero}.pdf"`,
-      "Cache-Control": "private, max-age=300",
+      "Cache-Control": "no-store",
     },
   });
 }

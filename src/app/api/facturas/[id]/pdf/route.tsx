@@ -75,7 +75,7 @@ export async function GET(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     buffer = await renderToBuffer(React.createElement(InvoiceDocument, { invoice: invoiceData }) as React.ReactElement<any>);
   } catch (err) {
-    console.error("[pdf] Error generando PDF:", err);
+    console.error("[pdf] Error generando PDF:", err instanceof Error ? err.message : String(err));
     return NextResponse.json({ error: "Error al generar el PDF" }, { status: 500 });
   }
 
@@ -83,7 +83,7 @@ export async function GET(
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `inline; filename="factura-${invoice.numero_factura}.pdf"`,
-      "Cache-Control": "private, max-age=300",
+      "Cache-Control": "no-store",
     },
   });
 }
