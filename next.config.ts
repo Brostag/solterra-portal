@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["*.trycloudflare.com"],
   serverExternalPackages: ["@react-pdf/renderer", "@prisma/client"],
   images: {
     unoptimized: true,
