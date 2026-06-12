@@ -79,3 +79,7 @@ PLAN_*.md
 # OS
 .DS_Store
 Thumbs.db
+
+# Backups de DB y scripts temporales de limpieza (datos sensibles — NO commitear)
+backup-solterra-*.json
+scripts/db-*.ts
