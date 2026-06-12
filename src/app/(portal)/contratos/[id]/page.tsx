@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { redirect, notFound } from "next/navigation";
@@ -7,10 +8,14 @@ import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, FileDown, MessageCircle, Mail } from "lucide-react";
+import { ArrowLeft, FileDown } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { getSignedUrls } from "@/lib/supabase/storage";
 import FotosEquipoSection, { type EquipoConFotos } from "./FotosEquipoSection";
+import PdfShareActions from "@/components/portal/PdfShareActions";
+import PrintPdfButton from "@/components/portal/PrintPdfButton";
+import ContractStatusActions from "./ContractStatusActions";
+import { formatContractDisplayNumber } from "@/lib/contracts";
 
 type EstadoContrato = "BORRADOR" | "VIGENTE" | "FINALIZADO" | "ANULADO";
 
@@ -46,7 +51,6 @@ export default async function ContratoDetallePage({ params }: Props) {
         client: true,
         equipos: {
           orderBy: { orden: "asc" },
-          include: { photos: { orderBy: { created_at: "asc" } } },
         },
         _count: { select: { documents: true } },
       },
@@ -64,68 +68,52 @@ export default async function ContratoDetallePage({ params }: Props) {
     direccion: contrato.cliente_direccion_snapshot ?? contrato.client.direccion,
   };
 
-  // Firmar en un solo batch las URLs de todas las fotos (bucket privado).
-  const allPaths = contrato.equipos.flatMap((e) => e.photos.map((p) => p.storage_path));
-  let signed: Record<string, string> = {};
-  if (allPaths.length > 0) {
-    try {
-      signed = await getSignedUrls(allPaths);
-    } catch {
-      signed = {};
-    }
-  }
-  const equiposConFotos: EquipoConFotos[] = contrato.equipos.map((e) => ({
-    id: e.id,
-    descripcion: e.descripcion,
-    photos: e.photos.map((p) => ({
-      id: p.id,
-      tipo: p.tipo,
-      nombre_original: p.nombre_original,
-      observacion: p.observacion,
-      created_at: p.created_at.toISOString(),
-      signedUrl: signed[p.storage_path] ?? null,
-    })),
-  }));
   const canManage = session.rol === "ADMINISTRADOR" || session.rol === "SUPERVISOR";
 
-  // Compartir: wa.me y mailto no pueden adjuntar el PDF automáticamente,
-  // por eso abren un mensaje/correo preparado y el PDF se adjunta a mano.
+  // Datos para compartir el PDF. La lógica híbrida (Web Share API / descarga +
+  // wa.me|mailto) vive en PdfShareActions; aquí solo armamos los textos.
   const pdfUrl = `/api/contratos/${contrato.id}/pdf`;
-  const waUrl = `https://wa.me/?text=${encodeURIComponent(
-    `Hola, comparto contrato de arriendo ${contrato.numero_contrato} de Solterra SpA para revisión. Descarga el PDF desde el sistema y adjúntalo si corresponde.`
-  )}`;
-  const mailUrl = `mailto:?subject=${encodeURIComponent(
-    `Contrato de arriendo ${contrato.numero_contrato} - Solterra SpA`
-  )}&body=${encodeURIComponent(
-    `Estimados,\nComparto para revisión el contrato de arriendo ${contrato.numero_contrato}.\nSaludos,\nSolterra SpA`
-  )}`;
+  const numeroVisible = formatContractDisplayNumber(contrato.numero_contrato, contrato.fecha_emision);
+  const tituloContrato = `Contrato Marco ${numeroVisible}`;
+  const empresaNombre = contrato.cliente_nombre_snapshot ?? contrato.client.nombre;
+  const pdfFileName = `contrato-marco-${numeroVisible.replace(/\//g, "-")}.pdf`;
+  const waMensaje = `Hola, te envío el ${tituloContrato} de Solterra SpA${empresaNombre ? ` para ${empresaNombre}` : ""}. El PDF se descargó en este dispositivo para adjuntarlo si WhatsApp no lo adjunta automáticamente.`;
+  const emailAsunto = `${tituloContrato} — Solterra SpA`;
+  const emailCuerpo = `Estimados,\n\nAdjunto el ${tituloContrato}${empresaNombre ? ` para ${empresaNombre}` : ""}. Si el archivo no se adjuntó automáticamente, fue descargado para adjuntarlo manualmente.\n\nSaludos,\nSolterra SpA`;
+  const emailDestino = contrato.correo_notificaciones ?? contrato.cliente_email_snapshot ?? contrato.client.email ?? undefined;
 
   return (
     <div className="max-w-5xl space-y-6">
       {/* Encabezado */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <Link href="/contratos">
-            <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="sm" className="flex-shrink-0"><ArrowLeft className="h-4 w-4" /></Button>
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-[#253158]">Contrato #{contrato.numero_contrato}</h1>
-            <p className="text-gray-500 text-sm mt-0.5">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-[#253158]">Contrato Marco {numeroVisible}</h1>
+            <p className="text-gray-500 text-sm">
               Emitido el {fmtDate(contrato.fecha_emision)}
             </p>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-md ${ESTADO_COLORS[contrato.estado as EstadoContrato]}`}>
+          <span className={`text-xs font-semibold px-2.5 py-1 rounded-md flex-shrink-0 ${ESTADO_COLORS[contrato.estado as EstadoContrato]}`}>
             {ESTADO_LABELS[contrato.estado as EstadoContrato].toUpperCase()}
           </span>
-          <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
-            <Button className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 pl-10 sm:pl-0">
+          <ContractStatusActions
+            id={contrato.id}
+            estado={contrato.estado as EstadoContrato}
+            canManage={canManage}
+          />
+          <a href={pdfUrl} download={pdfFileName}>
+            <Button size="sm" className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
               <FileDown className="h-4 w-4" />
-              <span className="hidden sm:inline">Descargar contrato</span>
-              <span className="sm:hidden">PDF</span>
+              Descargar PDF
             </Button>
           </a>
+          <PrintPdfButton pdfUrl={pdfUrl} />
         </div>
       </div>
 
@@ -310,32 +298,24 @@ export default async function ContratoDetallePage({ params }: Props) {
         </div>
       </div>
 
-      {/* Respaldo fotográfico de los equipos (C2.2) */}
-      <FotosEquipoSection equipos={equiposConFotos} canManage={canManage} />
+      {/* Respaldo fotográfico de los equipos (C2.2). Llega por streaming: la
+          página no espera la consulta de fotos ni la firma de URLs de Storage. */}
+      <Suspense fallback={<FotosEquipoSkeleton />}>
+        <FotosEquipoStream contractId={contrato.id} canManage={canManage} />
+      </Suspense>
 
       {/* Compartir contrato */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h2 className="font-semibold text-[#253158] mb-1">Compartir contrato</h2>
-        <p className="text-sm text-gray-500 mb-3">
-          Descarga el PDF y adjúntalo al enviarlo por WhatsApp o correo (no se adjunta automáticamente).
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
-            <Button className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
-              <FileDown className="h-4 w-4" /> Descargar PDF
-            </Button>
-          </a>
-          <a href={waUrl} target="_blank" rel="noopener noreferrer">
-            <Button className="bg-white border border-green-600 text-green-700 hover:bg-green-50 gap-2">
-              <MessageCircle className="h-4 w-4" /> WhatsApp
-            </Button>
-          </a>
-          <a href={mailUrl}>
-            <Button className="bg-white border border-gray-300 text-[#253158] hover:bg-gray-50 gap-2">
-              <Mail className="h-4 w-4" /> Correo
-            </Button>
-          </a>
-        </div>
+        <h2 className="font-semibold text-[#253158] mb-3">Compartir contrato</h2>
+        <PdfShareActions
+          pdfUrl={pdfUrl}
+          fileName={pdfFileName}
+          title={tituloContrato}
+          whatsappMessage={waMensaje}
+          emailSubject={emailAsunto}
+          emailBody={emailCuerpo}
+          emailTo={emailDestino}
+        />
       </div>
 
       <div className="flex justify-start">
@@ -345,6 +325,60 @@ export default async function ContratoDetallePage({ params }: Props) {
             Volver a Contratos
           </Button>
         </Link>
+      </div>
+    </div>
+  );
+}
+
+// Carga diferida (streaming) del respaldo fotográfico: la consulta de fotos y
+// la firma de URLs de Storage corren FUERA del critical path del detalle. La
+// página renderiza de inmediato y esta sección llega cuando Supabase responde.
+async function FotosEquipoStream({ contractId, canManage }: { contractId: string; canManage: boolean }) {
+  const equipos = await prisma.contractEquipment.findMany({
+    where: { contract_id: contractId },
+    orderBy: { orden: "asc" },
+    select: {
+      id: true,
+      descripcion: true,
+      photos: { orderBy: { created_at: "asc" } },
+    },
+  });
+
+  // Firmar en un solo batch las URLs de todas las fotos (bucket privado).
+  const allPaths = equipos.flatMap((e) => e.photos.map((p) => p.storage_path));
+  let signed: Record<string, string> = {};
+  if (allPaths.length > 0) {
+    try {
+      signed = await getSignedUrls(allPaths);
+    } catch {
+      signed = {};
+    }
+  }
+
+  const equiposConFotos: EquipoConFotos[] = equipos.map((e) => ({
+    id: e.id,
+    descripcion: e.descripcion,
+    photos: e.photos.map((p) => ({
+      id: p.id,
+      tipo: p.tipo,
+      nombre_original: p.nombre_original,
+      observacion: p.observacion,
+      created_at: p.created_at.toISOString(),
+      signedUrl: signed[p.storage_path] ?? null,
+    })),
+  }));
+
+  return <FotosEquipoSection equipos={equiposConFotos} canManage={canManage} />;
+}
+
+function FotosEquipoSkeleton() {
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+      <div className="h-5 w-64 max-w-full bg-gray-100 rounded animate-pulse" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="aspect-video bg-gray-100 rounded-lg animate-pulse" />
+        ))}
       </div>
     </div>
   );

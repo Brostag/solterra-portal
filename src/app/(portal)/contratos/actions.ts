@@ -7,6 +7,7 @@ import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { parseContractNumber } from "@/lib/contracts";
 
 const equipoSchema = z.object({
   descripcion: z.string().trim().min(1, "Cada equipo necesita una descripción."),
@@ -27,7 +28,9 @@ const equipoSchema = z.object({
 });
 
 const contractSchema = z.object({
-  client_id: z.string().min(1, "Selecciona un cliente."),
+  // Empresa (Company) seleccionada como cliente/arrendatario — fuente oficial.
+  company_id: z.string().min(1, "Selecciona una empresa (cliente / arrendatario)."),
+  moneda: z.enum(["CLP", "USD", "UF"]).default("CLP"),
   fecha_inicio: z.string().min(1, "La fecha de inicio es obligatoria."),
   fecha_termino: z.string().optional().nullable(),
   duracion_meses: z.number().int().min(1).optional().nullable(),
@@ -47,20 +50,91 @@ const contractSchema = z.object({
 
 export type CreateContractInput = z.infer<typeof contractSchema>;
 
+// Genera el número visible legal NNN/YYYY para contratos nuevos. El correlativo
+// reinicia por año. Considera tanto contratos antiguos (CTR-XXXX, año desde
+// fecha_emision) como nuevos (NNN/YYYY) del mismo año para no colisionar.
 async function getNextContractNumber(): Promise<string> {
-  const last = await prisma.contract.findFirst({
-    orderBy: { numero_contrato: "desc" },
-    select: { numero_contrato: true },
+  const year = new Date().getFullYear();
+  // Solo contratos emitidos este año: el correlativo reinicia por año y tanto
+  // los CTR-XXXX viejos (año = fecha_emision) como los NNN/YYYY nuevos (año del
+  // string == año de creación) quedan cubiertos por este filtro. Evita traer
+  // toda la tabla solo para descartar años anteriores en memoria.
+  const existentes = await prisma.contract.findMany({
+    where: { fecha_emision: { gte: new Date(year, 0, 1) } },
+    select: { numero_contrato: true, fecha_emision: true },
   });
-  if (!last) return "CTR-0001";
-  const match = last.numero_contrato.match(/(\d+)$/);
-  const next = match ? parseInt(match[1], 10) + 1 : 1;
-  return `CTR-${String(next).padStart(4, "0")}`;
+  let maxCorrelativo = 0;
+  for (const c of existentes) {
+    const parsed = parseContractNumber(c.numero_contrato, c.fecha_emision);
+    if (parsed && parsed.anio === year && parsed.correlativo > maxCorrelativo) {
+      maxCorrelativo = parsed.correlativo;
+    }
+  }
+  return `${String(maxCorrelativo + 1).padStart(3, "0")}/${year}`;
+}
+
+function normalizeRut(rut: string | null | undefined): string | null {
+  if (!rut) return null;
+  const n = rut.toLowerCase().replace(/[^0-9k]/g, "");
+  return n || null;
+}
+
+// Compat-mapping: Contract.client_id es FK a Client, pero la fuente oficial es
+// Company. Resuelve el Client vinculado a la empresa; si no existe, lo vincula
+// por RUT o crea uno de compatibilidad. Nunca duplica por RUT.
+async function resolveCompatClientId(empresa: {
+  id: string;
+  nombre_razon_social: string;
+  rut: string | null;
+  email: string | null;
+  telefono: string | null;
+  direccion: string | null;
+}): Promise<string> {
+  // 1. Client ya vinculado a la empresa.
+  const linked = await prisma.client.findFirst({
+    where: { company_id: empresa.id },
+    select: { id: true },
+  });
+  if (linked) return linked.id;
+
+  // 2. Client existente con el mismo RUT normalizado (sin vincular) → vincular.
+  const norm = normalizeRut(empresa.rut);
+  if (norm) {
+    const candidates = await prisma.client.findMany({
+      where: { rut: { not: null } },
+      select: { id: true, rut: true },
+    });
+    const match = candidates.find((c) => normalizeRut(c.rut) === norm);
+    if (match) {
+      await prisma.client.update({
+        where: { id: match.id },
+        data: { company_id: empresa.id },
+      });
+      return match.id;
+    }
+  }
+
+  // 3. Crear Client de compatibilidad con datos de la empresa.
+  const created = await prisma.client.create({
+    data: {
+      nombre: empresa.nombre_razon_social,
+      rut: empresa.rut,
+      email: empresa.email,
+      telefono: empresa.telefono,
+      direccion: empresa.direccion,
+      activo: true,
+      company_id: empresa.id,
+    },
+    select: { id: true },
+  });
+  return created.id;
 }
 
 export async function createContract(
   rawData: CreateContractInput
-): Promise<{ id: string }> {
+  // Devuelve también los equipos creados (id + orden) para que el formulario
+  // pueda subir las fotos de respaldo inmediatamente después de crear.
+): Promise<{ id: string; equipos: { id: string; orden: number }[] }> {
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.rol !== "ADMINISTRADOR" && session.rol !== "SUPERVISOR") {
@@ -69,14 +143,35 @@ export async function createContract(
 
   const data = contractSchema.parse(rawData);
 
-  // Snapshot del cliente con datos frescos del servidor (no se confía en el cliente).
-  const cliente = await prisma.client.findUnique({
-    where: { id: data.client_id },
-    select: { nombre: true, rut: true, direccion: true, email: true, telefono: true },
+  // Empresa (Company) seleccionada — fuente oficial, datos frescos del servidor.
+  const empresa = await prisma.company.findUnique({
+    where: { id: data.company_id },
+    select: {
+      id: true,
+      nombre_razon_social: true,
+      rut: true,
+      email: true,
+      telefono: true,
+      direccion: true,
+      comuna: true,
+      ciudad: true,
+      representante_legal: true,
+      rut_representante: true,
+      correo_notificaciones: true,
+    },
   });
-  if (!cliente) {
-    throw new Error("El cliente seleccionado no existe.");
+  if (!empresa) {
+    throw new Error("La empresa seleccionada no existe.");
   }
+
+  // Compat-mapping con la FK Contract.client_id (ver resolveCompatClientId).
+  const clientId = await resolveCompatClientId(empresa);
+
+  // Snapshot del cliente tomado desde la Empresa (Company) al crear.
+  const direccionSnapshot =
+    [empresa.direccion, empresa.comuna, empresa.ciudad]
+      .filter((v) => v && v.trim() !== "")
+      .join(", ") || null;
 
   // Se ancla al mediodía local para que el input date (YYYY-MM-DD) no retroceda
   // un día al convertirse a UTC en zonas horarias negativas (Chile, GMT-4).
@@ -98,14 +193,15 @@ export async function createContract(
 
   const numero = await getNextContractNumber();
 
-  let contract: { id: string };
+  let contract: { id: string; equipos: { id: string; orden: number }[] };
   try {
     contract = await prisma.contract.create({
       data: {
         numero_contrato: numero,
-        client_id: data.client_id,
+        client_id: clientId,
         user_id: session.id,
         estado: "BORRADOR",
+        moneda: data.moneda,
         fecha_inicio: fechaInicio,
         fecha_termino: fechaTermino,
         duracion_meses: data.duracion_meses ?? null,
@@ -117,16 +213,21 @@ export async function createContract(
         numero_anexo: data.numero_anexo || null,
         fecha_anexo: fechaAnexo,
         numero_cotizacion: data.numero_cotizacion || null,
-        correo_notificaciones: data.correo_notificaciones || null,
-        representante_cliente: data.representante_cliente || null,
-        rut_representante: data.rut_representante || null,
-        // Snapshot al crear (ver reporte: el modelo preveía snapshot al pasar a VIGENTE).
+        // Representante / correo: lo del formulario tiene prioridad; si viene
+        // vacío, se completa desde la Empresa (Company).
+        correo_notificaciones:
+          data.correo_notificaciones || empresa.correo_notificaciones || null,
+        representante_cliente:
+          data.representante_cliente || empresa.representante_legal || null,
+        rut_representante:
+          data.rut_representante || empresa.rut_representante || null,
+        // Snapshot al crear, tomado desde la Empresa (Company).
         cliente_snapshot_at: new Date(),
-        cliente_nombre_snapshot: cliente.nombre,
-        cliente_rut_snapshot: cliente.rut,
-        cliente_direccion_snapshot: cliente.direccion,
-        cliente_email_snapshot: cliente.email,
-        cliente_telefono_snapshot: cliente.telefono,
+        cliente_nombre_snapshot: empresa.nombre_razon_social,
+        cliente_rut_snapshot: empresa.rut,
+        cliente_direccion_snapshot: direccionSnapshot,
+        cliente_email_snapshot: empresa.email ?? empresa.correo_notificaciones,
+        cliente_telefono_snapshot: empresa.telefono,
         equipos: {
           create: data.equipos.map((eq, idx) => ({
             orden: idx + 1,
@@ -148,7 +249,10 @@ export async function createContract(
           })),
         },
       },
-      select: { id: true },
+      select: {
+        id: true,
+        equipos: { select: { id: true, orden: true }, orderBy: { orden: "asc" } },
+      },
     });
   } catch (err) {
     if (
@@ -164,9 +268,44 @@ export async function createContract(
     session.id,
     "contrato_creado",
     "contratos",
-    `Nº ${numero} | Cliente: ${cliente.nombre} | Equipos: ${data.equipos.length}`
+    `Nº ${numero} | Cliente: ${empresa.nombre_razon_social} | Equipos: ${data.equipos.length}`
   );
 
   revalidatePath("/contratos");
-  return { id: contract.id };
+  return { id: contract.id, equipos: contract.equipos };
+}
+
+// Cambio de estado BORRADOR → VIGENTE. Mantiene PDF y datos intactos; solo
+// actualiza el campo `estado`. Transición única y controlada: no permite volver
+// a BORRADOR desde otros estados ni saltar a FINALIZADO/ANULADO (por ahora).
+export async function marcarContratoVigente(id: string): Promise<void> {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  if (session.rol !== "ADMINISTRADOR" && session.rol !== "SUPERVISOR") {
+    throw new Error("Sin permisos para cambiar el estado del contrato.");
+  }
+
+  const contrato = await prisma.contract.findUnique({
+    where: { id },
+    select: { id: true, estado: true, numero_contrato: true },
+  });
+  if (!contrato) throw new Error("El contrato no existe.");
+  if (contrato.estado !== "BORRADOR") {
+    throw new Error("Solo un contrato en borrador puede marcarse como vigente.");
+  }
+
+  await prisma.contract.update({
+    where: { id },
+    data: { estado: "VIGENTE" },
+  });
+
+  await logAudit(
+    session.id,
+    "contrato_vigente",
+    "contratos",
+    `Nº ${contrato.numero_contrato} marcado como VIGENTE`
+  );
+
+  revalidatePath("/contratos");
+  revalidatePath(`/contratos/${id}`);
 }

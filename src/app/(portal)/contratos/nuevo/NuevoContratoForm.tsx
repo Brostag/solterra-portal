@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createContract, type CreateContractInput } from "../actions";
-import { formatCurrency } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +10,44 @@ import {
   Select, SelectContent, SelectItem,
   SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Camera } from "lucide-react";
+import { Plus, Trash2, Camera, ImagePlus, X } from "lucide-react";
+
+type Moneda = "CLP" | "UF" | "USD";
+
+// Tipos de foto del respaldo — mismos valores que valida el endpoint
+// /api/contratos/equipos/[equipmentId]/fotos y que usa el detalle.
+const TIPOS_FOTO: { value: string; label: string }[] = [
+  { value: "FRONTAL",           label: "Frontal" },
+  { value: "LATERAL_DERECHO",   label: "Lateral derecho" },
+  { value: "LATERAL_IZQUIERDO", label: "Lateral izquierdo" },
+  { value: "TRASERA",           label: "Trasera" },
+  { value: "CABINA",            label: "Cabina" },
+  { value: "HOROMETRO",         label: "Horómetro" },
+  { value: "RODADO",            label: "Rodado" },
+  { value: "DANIOS",            label: "Daños" },
+  { value: "OTRO",              label: "Otro" },
+];
+
+const FOTO_MAX_SIZE = 5 * 1024 * 1024; // 5 MB — mismo límite del endpoint
+const FOTO_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+interface FotoNueva {
+  file: File;
+  tipo: string;
+  preview: string;
+}
+
+// Acepta "1,19" o "1.19" o "45000": coma o punto valen como separador decimal.
+function parseNum(s: string): number {
+  const n = parseFloat(String(s).replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
+}
+
+// Formato de monto según la moneda del contrato (no convierte entre monedas).
+function fmtMonto(n: number, moneda: Moneda): string {
+  if (moneda === "CLP") return `$${Math.round(n).toLocaleString("es-CL")}`;
+  return `${moneda} ${n.toLocaleString("es-CL", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+}
 
 interface Equipo {
   descripcion: string;
@@ -22,28 +58,32 @@ interface Equipo {
   chasis: string;
   motor: string;
   color: string;
-  valor_hora: number;
-  horas_minimas_mensuales: number;
-  tarifa_hora_extra: number;
+  valor_hora: string;
+  horas_minimas_mensuales: string;
+  tarifa_hora_extra: string;
   horometro_inicial: string;
   mantenimiento_horas: string;
   observaciones: string;
+  // Fotos de respaldo adjuntadas en el formulario; se suben tras crear.
+  fotos: FotoNueva[];
 }
 
 function emptyEquipo(): Equipo {
   return {
     descripcion: "", marca: "", modelo: "", patente: "", anio: "",
-    chasis: "", motor: "", color: "", valor_hora: 0,
-    horas_minimas_mensuales: 0, tarifa_hora_extra: 0,
+    chasis: "", motor: "", color: "", valor_hora: "",
+    horas_minimas_mensuales: "", tarifa_hora_extra: "",
     horometro_inicial: "", mantenimiento_horas: "", observaciones: "",
+    fotos: [],
   };
 }
 
 interface Props {
   clients: { id: string; nombre: string; rut: string | null }[];
+  cotizaciones: { id: string; numero: string; cliente: string | null; fecha: string }[];
 }
 
-export default function NuevoContratoForm({ clients }: Props) {
+export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
   const router = useRouter();
   const [clientId, setClientId] = useState("");
   const [fechaInicio, setFechaInicio] = useState("");
@@ -55,6 +95,7 @@ export default function NuevoContratoForm({ clients }: Props) {
   // Datos del contrato / celebración
   const [ciudadCelebracion, setCiudadCelebracion] = useState("Calama");
   const [vigenciaContrato, setVigenciaContrato] = useState("");
+  const [moneda, setMoneda] = useState<Moneda>("CLP");
   // Representante del cliente
   const [representanteCliente, setRepresentanteCliente] = useState("");
   const [rutRepresentante, setRutRepresentante] = useState("");
@@ -62,9 +103,15 @@ export default function NuevoContratoForm({ clients }: Props) {
   const [numeroAnexo, setNumeroAnexo] = useState("");
   const [fechaAnexo, setFechaAnexo] = useState("");
   const [numeroCotizacion, setNumeroCotizacion] = useState("");
+  // Selector de cotización: id de la cotización elegida, "__ninguna__" o "__manual__".
+  const [cotizacionSel, setCotizacionSel] = useState("");
   const [correoNotificaciones, setCorreoNotificaciones] = useState("");
   const [equipos, setEquipos] = useState<Equipo[]>([emptyEquipo()]);
   const [loading, setLoading] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState<string | null>(null);
+  // Si el contrato se creó pero alguna foto falló, se ofrece ir al detalle
+  // en vez de permitir un segundo submit (evita contratos duplicados).
+  const [createdId, setCreatedId] = useState<string | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
 
   const selectedClient = clients.find((c) => c.id === clientId);
@@ -74,8 +121,46 @@ export default function NuevoContratoForm({ clients }: Props) {
   function updateEquipo(idx: number, field: keyof Equipo, value: string | number) {
     setEquipos(equipos.map((eq, i) => (i === idx ? { ...eq, [field]: value } : eq)));
   }
+
+  // ── Fotos de respaldo por equipo ──────────────────────────────────────────
+  function addFotos(idx: number, files: FileList | null) {
+    if (!files || files.length === 0) return;
+    const errs: string[] = [];
+    const nuevas: FotoNueva[] = [];
+    for (const file of Array.from(files)) {
+      if (!FOTO_MIME.has(file.type)) {
+        errs.push(`${file.name}: solo se aceptan imágenes JPG, PNG o WEBP.`);
+        continue;
+      }
+      if (file.size > FOTO_MAX_SIZE) {
+        errs.push(`${file.name}: supera el límite de 5 MB.`);
+        continue;
+      }
+      nuevas.push({ file, tipo: "OTRO", preview: URL.createObjectURL(file) });
+    }
+    if (nuevas.length > 0) {
+      setEquipos(equipos.map((eq, i) => (i === idx ? { ...eq, fotos: [...eq.fotos, ...nuevas] } : eq)));
+    }
+    setErrors(errs);
+  }
+
+  function removeFoto(idx: number, fotoIdx: number) {
+    const foto = equipos[idx]?.fotos[fotoIdx];
+    if (foto) URL.revokeObjectURL(foto.preview);
+    setEquipos(equipos.map((eq, i) =>
+      i === idx ? { ...eq, fotos: eq.fotos.filter((_, f) => f !== fotoIdx) } : eq
+    ));
+  }
+
+  function setFotoTipo(idx: number, fotoIdx: number, tipo: string) {
+    setEquipos(equipos.map((eq, i) =>
+      i === idx
+        ? { ...eq, fotos: eq.fotos.map((f, fi) => (fi === fotoIdx ? { ...f, tipo } : f)) }
+        : eq
+    ));
+  }
   function valorMensual(eq: Equipo): number {
-    return (eq.valor_hora || 0) * (eq.horas_minimas_mensuales || 0);
+    return parseNum(eq.valor_hora) * parseNum(eq.horas_minimas_mensuales);
   }
 
   function validate(): boolean {
@@ -87,9 +172,9 @@ export default function NuevoContratoForm({ clients }: Props) {
     if (equipos.length === 0) errs.push("Agrega al menos un equipo.");
     equipos.forEach((eq, i) => {
       if (!eq.descripcion.trim()) errs.push(`Equipo ${i + 1}: falta la descripción del equipo.`);
-      if (eq.valor_hora < 0) errs.push(`Equipo ${i + 1}: el valor hora no puede ser negativo.`);
-      if (eq.horas_minimas_mensuales < 0) errs.push(`Equipo ${i + 1}: las horas mínimas no pueden ser negativas.`);
-      if (eq.tarifa_hora_extra < 0) errs.push(`Equipo ${i + 1}: la tarifa hora extra no puede ser negativa.`);
+      if (parseNum(eq.valor_hora) < 0) errs.push(`Equipo ${i + 1}: el valor hora no puede ser negativo.`);
+      if (parseNum(eq.horas_minimas_mensuales) < 0) errs.push(`Equipo ${i + 1}: las horas mínimas no pueden ser negativas.`);
+      if (parseNum(eq.tarifa_hora_extra) < 0) errs.push(`Equipo ${i + 1}: la tarifa hora extra no puede ser negativa.`);
       if (eq.anio && (Number(eq.anio) < 1900 || Number(eq.anio) > 2100))
         errs.push(`Equipo ${i + 1}: el año no es válido.`);
     });
@@ -101,7 +186,8 @@ export default function NuevoContratoForm({ clients }: Props) {
     if (!validate()) return;
     setLoading(true);
     const payload: CreateContractInput = {
-      client_id: clientId,
+      company_id: clientId,
+      moneda,
       fecha_inicio: fechaInicio,
       fecha_termino: fechaTermino || null,
       duracion_meses: duracionMeses ? parseInt(duracionMeses, 10) : null,
@@ -125,10 +211,10 @@ export default function NuevoContratoForm({ clients }: Props) {
         chasis: eq.chasis || null,
         motor: eq.motor || null,
         color: eq.color || null,
-        valor_hora: eq.valor_hora || 0,
-        horas_minimas_mensuales: eq.horas_minimas_mensuales || null,
+        valor_hora: parseNum(eq.valor_hora),
+        horas_minimas_mensuales: eq.horas_minimas_mensuales.trim() ? Math.round(parseNum(eq.horas_minimas_mensuales)) : null,
         valor_mensual_estimado: valorMensual(eq) || null,
-        tarifa_hora_extra: eq.tarifa_hora_extra || null,
+        tarifa_hora_extra: eq.tarifa_hora_extra.trim() ? parseNum(eq.tarifa_hora_extra) : null,
         horometro_inicial: eq.horometro_inicial || null,
         mantenimiento_horas: eq.mantenimiento_horas || null,
         observaciones: eq.observaciones || null,
@@ -136,6 +222,52 @@ export default function NuevoContratoForm({ clients }: Props) {
     };
     try {
       const result = await createContract(payload);
+
+      // Subir las fotos de respaldo adjuntadas contra el endpoint existente
+      // (mismas validaciones que en el detalle). El contrato ya existe: si
+      // alguna foto falla, se informa y puede reintentarse desde el detalle.
+      const totalFotos = equipos.reduce((acc, eq) => acc + eq.fotos.length, 0);
+      if (totalFotos > 0) {
+        const fallidas: string[] = [];
+        let subidas = 0;
+        for (let i = 0; i < equipos.length; i++) {
+          const equipmentId = result.equipos.find((e) => e.orden === i + 1)?.id;
+          for (const foto of equipos[i].fotos) {
+            subidas += 1;
+            setUploadMsg(`Subiendo fotos ${subidas}/${totalFotos}...`);
+            if (!equipmentId) {
+              fallidas.push(`Equipo ${i + 1} — ${foto.file.name}: no se encontró el equipo creado.`);
+              continue;
+            }
+            const fd = new FormData();
+            fd.append("file", foto.file);
+            fd.append("tipo", foto.tipo);
+            try {
+              const res = await fetch(`/api/contratos/equipos/${equipmentId}/fotos`, {
+                method: "POST",
+                body: fd,
+              });
+              if (!res.ok) {
+                const j = (await res.json().catch(() => null)) as { error?: string } | null;
+                fallidas.push(`Equipo ${i + 1} — ${foto.file.name}: ${j?.error ?? "no se pudo subir"}.`);
+              }
+            } catch {
+              fallidas.push(`Equipo ${i + 1} — ${foto.file.name}: error de red al subir.`);
+            }
+          }
+        }
+        setUploadMsg(null);
+        if (fallidas.length > 0) {
+          setCreatedId(result.id);
+          setErrors([
+            "El contrato se creó correctamente, pero estas fotos no se pudieron subir (puedes reintentar desde el detalle del contrato):",
+            ...fallidas,
+          ]);
+          setLoading(false);
+          return;
+        }
+      }
+
       router.push(`/contratos/${result.id}`);
     } catch (err) {
       setErrors(
@@ -170,6 +302,19 @@ export default function NuevoContratoForm({ clients }: Props) {
                     {c.rut && <span className="block text-xs text-gray-400 leading-tight">{c.rut}</span>}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Moneda del contrato <span className="text-[#c6352e]">*</span></Label>
+            <Select value={moneda} onValueChange={(v) => setMoneda((v as Moneda) ?? "CLP")}>
+              <SelectTrigger>
+                <SelectValue placeholder="Moneda">{moneda}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CLP">CLP — Peso chileno</SelectItem>
+                <SelectItem value="UF">UF — Unidad de Fomento</SelectItem>
+                <SelectItem value="USD">USD — Dólar</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -234,7 +379,50 @@ export default function NuevoContratoForm({ clients }: Props) {
           </div>
           <div className="space-y-2">
             <Label>N° de cotización Solterra</Label>
-            <Input value={numeroCotizacion} placeholder="177 R2/025" onChange={(e) => setNumeroCotizacion(e.target.value)} />
+            <Select
+              value={cotizacionSel}
+              onValueChange={(v) => {
+                const val = v ?? "";
+                setCotizacionSel(val);
+                if (val === "__manual__" || val === "__ninguna__" || val === "") {
+                  setNumeroCotizacion("");
+                } else {
+                  const cot = cotizaciones.find((c) => c.id === val);
+                  setNumeroCotizacion(cot?.numero ?? "");
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar cotización...">
+                  {cotizacionSel === "__manual__"
+                    ? "Otro número (manual)"
+                    : cotizacionSel === "__ninguna__"
+                      ? "Sin cotización asociada"
+                      : cotizacionSel
+                        ? (cotizaciones.find((c) => c.id === cotizacionSel)?.numero ?? null)
+                        : null}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__ninguna__">Sin cotización asociada</SelectItem>
+                {cotizaciones.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    <span className="font-medium">{c.numero}</span>
+                    <span className="block text-xs text-gray-400 leading-tight">
+                      {c.cliente ?? "Sin cliente"} · {c.fecha}
+                    </span>
+                  </SelectItem>
+                ))}
+                <SelectItem value="__manual__">Otro número (escribir manualmente)</SelectItem>
+              </SelectContent>
+            </Select>
+            {cotizacionSel === "__manual__" && (
+              <Input
+                value={numeroCotizacion}
+                placeholder="Ej: 177 R2/025"
+                onChange={(e) => setNumeroCotizacion(e.target.value)}
+              />
+            )}
           </div>
           <div className="space-y-2">
             <Label>Condición de pago</Label>
@@ -280,18 +468,73 @@ export default function NuevoContratoForm({ clients }: Props) {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-1 border-t border-gray-100">
-              <div className="space-y-1.5"><Label>Valor hora (CLP)</Label><Input type="number" min="0" step="1" value={eq.valor_hora} onChange={(e) => updateEquipo(idx, "valor_hora", parseFloat(e.target.value) || 0)} /></div>
-              <div className="space-y-1.5"><Label>Horas mín. mensuales</Label><Input type="number" min="0" step="1" value={eq.horas_minimas_mensuales} onChange={(e) => updateEquipo(idx, "horas_minimas_mensuales", parseFloat(e.target.value) || 0)} /></div>
-              <div className="space-y-1.5"><Label>Tarifa hora extra (CLP)</Label><Input type="number" min="0" step="1" value={eq.tarifa_hora_extra} onChange={(e) => updateEquipo(idx, "tarifa_hora_extra", parseFloat(e.target.value) || 0)} /></div>
+              <div className="space-y-1.5"><Label>Valor hora ({moneda})</Label><Input type="text" inputMode="decimal" placeholder={moneda === "UF" ? "Ej: 1,19" : "0"} value={eq.valor_hora} onFocus={(e) => e.target.select()} onChange={(e) => updateEquipo(idx, "valor_hora", e.target.value)} /></div>
+              <div className="space-y-1.5"><Label>Horas mín. mensuales</Label><Input type="text" inputMode="numeric" placeholder="0" value={eq.horas_minimas_mensuales} onFocus={(e) => e.target.select()} onChange={(e) => updateEquipo(idx, "horas_minimas_mensuales", e.target.value)} /></div>
+              <div className="space-y-1.5"><Label>Tarifa hora extra ({moneda})</Label><Input type="text" inputMode="decimal" placeholder={moneda === "UF" ? "Ej: 0,12" : "0"} value={eq.tarifa_hora_extra} onFocus={(e) => e.target.select()} onChange={(e) => updateEquipo(idx, "tarifa_hora_extra", e.target.value)} /></div>
               <div className="space-y-1.5">
-                <Label>Valor mensual estimado</Label>
-                <div className="h-10 flex items-center px-3 rounded-md bg-gray-50 border border-gray-200 text-sm font-semibold text-[#253158] tabular-nums">{formatCurrency(valorMensual(eq), "CLP")}</div>
+                <Label>Valor mensual estimado ({moneda})</Label>
+                <div className="h-10 flex items-center px-3 rounded-md bg-gray-50 border border-gray-200 text-sm font-semibold text-[#253158] tabular-nums">{fmtMonto(valorMensual(eq), moneda)}</div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label>Mantención cada (horas)</Label><Input value={eq.mantenimiento_horas} placeholder="Ej: 250 h" onChange={(e) => updateEquipo(idx, "mantenimiento_horas", e.target.value)} /></div>
               <div className="space-y-1.5"><Label>Observaciones técnicas</Label><Input value={eq.observaciones} placeholder="Notas del equipo..." onChange={(e) => updateEquipo(idx, "observaciones", e.target.value)} /></div>
+            </div>
+
+            {/* Fotos de respaldo del equipo (opcional): se suben automáticamente
+                al crear el contrato, contra el endpoint existente de fotos. */}
+            <div className="space-y-2 pt-2 border-t border-gray-100">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <Label className="flex items-center gap-1.5">
+                  <Camera className="h-3.5 w-3.5 text-gray-400" />
+                  Fotos de respaldo (opcional)
+                </Label>
+                <span className="text-[11px] text-gray-400">JPG/PNG/WEBP · máx. 5 MB c/u</span>
+              </div>
+              {eq.fotos.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {eq.fotos.map((foto, fi) => (
+                    <div key={foto.preview} className="rounded-lg border border-gray-200 overflow-hidden bg-gray-50">
+                      <div className="relative aspect-video bg-gray-100 overflow-hidden">
+                        <img src={foto.preview} alt={foto.file.name} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removeFoto(idx, fi)}
+                          aria-label={`Quitar ${foto.file.name}`}
+                          className="absolute top-1 right-1 p-1 rounded-md bg-white/90 text-gray-500 hover:text-[#c6352e] shadow-sm transition-colors"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <div className="p-1.5 space-y-1">
+                        <p className="text-[10px] text-gray-400 truncate" title={foto.file.name}>{foto.file.name}</p>
+                        <select
+                          value={foto.tipo}
+                          onChange={(e) => setFotoTipo(idx, fi, e.target.value)}
+                          aria-label={`Tipo de foto ${foto.file.name}`}
+                          className="w-full text-xs border border-gray-200 rounded-md px-1.5 py-1 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#253158]/30"
+                        >
+                          {TIPOS_FOTO.map((t) => (
+                            <option key={t.value} value={t.value}>{t.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <label className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[#253158] border border-dashed border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
+                <ImagePlus className="h-3.5 w-3.5" />
+                Agregar fotos
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  className="sr-only"
+                  onChange={(e) => { addFotos(idx, e.target.files); e.target.value = ""; }}
+                />
+              </label>
             </div>
           </div>
         ))}
@@ -302,13 +545,16 @@ export default function NuevoContratoForm({ clients }: Props) {
         </Button>
       </div>
 
-      {/* Bloque 5 — Respaldo fotográfico (subida en el detalle) */}
+      {/* Bloque 5 — Nota sobre el respaldo fotográfico */}
       <div className="bg-white rounded-lg border border-dashed p-4 sm:p-6">
         <div className="flex items-start gap-3">
           <div className="p-2 bg-gray-50 rounded-md flex-shrink-0"><Camera className="h-5 w-5 text-gray-400" /></div>
           <div>
             <h2 className="font-semibold text-[#253158]">Respaldo fotográfico del equipo</h2>
-            <p className="text-sm text-gray-500 mt-1">Una vez creado el contrato, podrás subir las fotos de cada equipo desde el detalle del contrato.</p>
+            <p className="text-sm text-gray-500 mt-1">
+              Adjunta las fotos en la sección «Fotos de respaldo» de cada equipo: se subirán
+              automáticamente al crear el contrato. También puedes agregar más después desde el detalle.
+            </p>
           </div>
         </div>
       </div>
@@ -320,9 +566,15 @@ export default function NuevoContratoForm({ clients }: Props) {
       )}
 
       <div className="flex justify-end">
-        <Button onClick={handleSubmit} disabled={loading} className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
-          {loading ? "Guardando..." : "Crear contrato"}
-        </Button>
+        {createdId ? (
+          <Button onClick={() => router.push(`/contratos/${createdId}`)} className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
+            Ir al contrato creado
+          </Button>
+        ) : (
+          <Button onClick={handleSubmit} disabled={loading} className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
+            {loading ? (uploadMsg ?? "Guardando...") : "Crear contrato"}
+          </Button>
+        )}
       </div>
     </div>
   );

@@ -93,7 +93,15 @@ function EquipoFotos({ equipo, canManage }: { equipo: EquipoConFotos; canManage:
                 {f.signedUrl ? (
                   // Imagen privada de Supabase Storage vía signed URL. Se usa <img> nativo
                   // (no next/image) para no tocar next.config.ts en esta fase.
-                  <img src={f.signedUrl} alt={TIPO_LABELS[f.tipo] ?? f.tipo} className="w-full h-full object-cover" />
+                  // lazy + async: las fotos (hasta 5 MB c/u) solo se descargan al
+                  // acercarse al viewport, sin bloquear el render del detalle.
+                  <img
+                    src={f.signedUrl}
+                    alt={TIPO_LABELS[f.tipo] ?? f.tipo}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <ImageOff className="h-6 w-6 text-gray-300" />
                 )}

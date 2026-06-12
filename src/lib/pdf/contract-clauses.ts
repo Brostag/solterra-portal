@@ -4,9 +4,23 @@
 // {{VIGENCIA}} (cláusula primera), que el template sustituye por la vigencia
 // del contrato (o "2 años" por defecto).
 
+export interface ClausulaTabla {
+  titulo: string;
+  headers: string[];
+  filas: string[][];
+}
+
+export interface ClausulaBancoItem {
+  label: string;
+  valor: string;
+}
+
 export interface ClausulaBloque {
   titulo: string;
   parrafos: string[];
+  // Render estructurado opcional (mismo contenido legal, mejor formato en PDF).
+  tabla?: ClausulaTabla;
+  bancoDetalle?: ClausulaBancoItem[];
 }
 
 export const CONDICIONES_GENERALES: ClausulaBloque[] = [
@@ -49,16 +63,29 @@ export const CONDICIONES_GENERALES: ClausulaBloque[] = [
     parrafos: [
       "El simple retardo de la Arrendataria respecto de los pagos de las Rentas de Arrendamiento a que está obligada, hará devengar, a título de pena moratoria, el interés máximo convencional que la ley permite estipular para operaciones reajustables o no reajustables, según sea el caso, sobre el total de la obligación insoluta, desde la fecha de la mora o simple retardo y hasta la fecha de su pago efectivo. Para efectos de dar cumplimiento a lo dispuesto en la Ley 19.628, la Arrendataria otorga autorización a la Arrendadora para solicitar la publicación de su información o datos personales respecto a morosidades de rentas, documentos impagos, facturas u otros, relativas al presente Contrato, en un sistema consolidado de morosidades de información pública perteneciente a la empresa DICOM EQUIFAX u otra y la comunicación o transmisión de estos datos a terceros. Los gastos que esta gestión ocasione por su inclusión y posterior eliminación de dicha base de datos serán de cargo de la Arrendataria.",
       "En caso de devolución del Equipo por decisión de la Arrendataria, antes del plazo estipulado en el punto 2 de las Condiciones Particulares y/o sus modificaciones, ésta deberá pagar una multa de salida o término anticipado del arriendo según se detalla en la tabla N°1 siguiente:",
-      "Tabla N°1 — Multa por Equipo por no cumplimiento del plazo del arriendo: Plazo de arriendo 1 a 3 meses: 96 hrs x Tarifa Equipo/hr. Plazo de arriendo 4 a 6 meses: 144 hrs x Tarifa Equipo/hr.",
       "En relación a esta multa, la Arrendadora podrá facturarla sin necesidad de autorización previa de la Arrendataria.",
     ],
+    tabla: {
+      titulo: "Tabla N°1: Multa por Equipo por no cumplimiento del plazo del arriendo",
+      headers: ["Plazo de Arriendo", "Tarifa"],
+      filas: [
+        ["1 a 3 meses", "96 hrs x Tarifa Equipo / hr"],
+        ["4 a 6 meses", "144 hrs x Tarifa Equipo / hr"],
+      ],
+    },
   },
   {
     titulo: "CLÁUSULA QUINTA: FORMA DE PAGO.",
     parrafos: [
       "La Arrendataria pagará la Renta de Arrendamiento del Equipo en períodos mensuales, o fracción de mes en caso que aplique, según la condición acordada en el punto 6 de las Condiciones Particulares, ya sea modalidad de plazo vencido o anticipado, según fecha de Estado de Pago acordada en punto 6 de las Condiciones Particulares.",
       "Para aquellos casos donde la condición de pago es vencida o anticipada, la Arrendadora procederá a facturar una vez cumplido el mes correspondiente de arriendo de manera vencida o anticipada, según corresponda. Para aquellos contratos con Estado de Pago con fecha acordada de vencimiento, la Arrendadora enviará el Estado de Pago en el plazo de 5 días hábiles siguientes al cierre de mes. Posteriormente la Arrendataria tendrá un plazo de 5 días hábiles para revisar el Estado de Pago, en caso de no realizar observaciones dentro de dicho plazo, se entenderá aceptado el Estado de Pago y, la Arrendadora procederá a emitir la factura correspondiente. En caso que la Arrendataria realizare observaciones al Estado de Pago dentro de plazo, las partes deberán resolverlas en el plazo de 5 días hábiles siguientes para posteriormente proceder a facturar el Estado de Pago conciliado por parte de la Arrendadora. La Arrendataria tendrá un plazo de 8 días corridos, contados desde la recepción de la factura, para solicitar la nota de crédito o reclamar del contenido de la factura. Vencido este plazo la Arrendataria no podrá reclamar por ningún concepto el crédito que consta en la factura respectiva.",
-      "La Renta de Arrendamiento se deberá pagar dentro del plazo de 30 días corridos contados desde la recepción de la factura, ya sea en el domicilio de la Arrendadora señalado en el presente Contrato o a través de depósito en efectivo o transferencia electrónica bancaria a la cuenta corriente de la Arrendadora, según el siguiente detalle: Titular: SOLTERRA SPA — RUT: 76.021.667-4 — N° Cuenta: 21643351 — Banco: BCI.",
+      "La Renta de Arrendamiento se deberá pagar dentro del plazo de 30 días corridos contados desde la recepción de la factura, ya sea en el domicilio de la Arrendadora señalado en el presente Contrato o a través de depósito en efectivo o transferencia electrónica bancaria a la cuenta corriente de la Arrendadora, según el siguiente detalle:",
+    ],
+    bancoDetalle: [
+      { label: "Titular", valor: "SOLTERRA SPA" },
+      { label: "RUT", valor: "76.021.667-4" },
+      { label: "N° Cuenta", valor: "21643351" },
+      { label: "Banco", valor: "BCI" },
     ],
   },
   {

@@ -43,3 +43,29 @@ export async function getSignedUrls(
     data.map((item) => [item.path, item.signedUrl ?? ""]),
   );
 }
+
+// Descarga una imagen del bucket para EMBEBERLA en un PDF. Intenta primero la
+// transformación del CDN de Supabase (width/quality) para reducir el peso del
+// PDF final; si el plan no incluye transformaciones (o devuelve WEBP, que
+// @react-pdf no soporta), cae al archivo original. Devuelve el contentType
+// REAL de los bytes entregados, que puede diferir del MIME registrado en DB.
+export async function downloadImageForPdf(
+  path: string,
+): Promise<{ buffer: Buffer; contentType: string }> {
+  const supabase = createAdminClient();
+
+  try {
+    const { data, error } = await supabase.storage
+      .from(BUCKET)
+      .download(path, { transform: { width: 1200, quality: 75 } });
+    if (!error && data && data.type !== "image/webp") {
+      return { buffer: Buffer.from(await data.arrayBuffer()), contentType: data.type };
+    }
+  } catch {
+    // Transformaciones no disponibles → seguir con el original.
+  }
+
+  const { data, error } = await supabase.storage.from(BUCKET).download(path);
+  if (error || !data) throw new Error(`Error al descargar imagen: ${error?.message}`);
+  return { buffer: Buffer.from(await data.arrayBuffer()), contentType: data.type };
+}

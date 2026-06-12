@@ -71,6 +71,43 @@ const styles = StyleSheet.create({
   valorLabel: { fontSize: 8.5, color: GRAY },
   valorValue: { fontSize: 8.5, color: BLUE, fontWeight: 700 },
   nota: { fontSize: 7.5, color: LGRAY, marginTop: 10, textAlign: "justify" },
+  // Tabla dentro de cláusula (Cláusula Cuarta — multa)
+  clTablaTitulo: { fontSize: 8.5, fontWeight: 700, color: "#1a1a1a", marginTop: 4, marginBottom: 3 },
+  clTabla: { borderTopWidth: 1, borderLeftWidth: 1, borderRightWidth: 1, borderColor: BORDER, borderStyle: "solid", marginBottom: 5, marginTop: 2 },
+  clTablaHeadRow: { flexDirection: "row", backgroundColor: BLUE, borderBottom: `1px solid ${BORDER}` },
+  clTablaRow: { flexDirection: "row", borderBottom: `1px solid ${BORDER}` },
+  clThCell: { fontSize: 8, fontWeight: 700, color: "#ffffff", paddingVertical: 4, paddingHorizontal: 5 },
+  clTdCell: { fontSize: 8.5, color: "#1a1a1a", paddingVertical: 4, paddingHorizontal: 5 },
+  clCellDiv: { borderRight: `1px solid ${BORDER}` },
+  clColPlazo: { width: "42%" },
+  clColTarifa: { flex: 1 },
+  // Lista de datos bancarios (Cláusula Quinta)
+  bancoList: { marginTop: 3, marginBottom: 4, paddingLeft: 6 },
+  bancoItem: { flexDirection: "row", marginBottom: 1.5 },
+  bancoBullet: { fontSize: 8.5, color: BLUE, width: 10 },
+  bancoLabel: { fontSize: 8.5, color: GRAY, width: 64 },
+  bancoValue: { fontSize: 8.5, color: "#1a1a1a", fontWeight: 700, flex: 1 },
+  // Condiciones Particulares (anexo) — estilo Word
+  cpTitle: { fontSize: 12, fontWeight: 700, color: BLUE, textAlign: "center", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 2 },
+  cpSub: { fontSize: 9, fontWeight: 700, color: GRAY, textAlign: "center", marginBottom: 10 },
+  cpIntro: { fontSize: 8.5, color: "#1a1a1a", textAlign: "justify", marginTop: 6, marginBottom: 4 },
+  fichaBox: { border: `1px solid ${BORDER}`, borderRadius: 3, padding: 8, marginTop: 8 },
+  fichaTitulo: { fontSize: 9, fontWeight: 700, color: BLUE, marginBottom: 5, borderBottom: `1px solid ${BORDER}`, paddingBottom: 3 },
+  fichaRow: { flexDirection: "row", marginBottom: 1.5 },
+  fichaLabel: { fontSize: 8.5, color: GRAY, fontWeight: 700, width: 118 },
+  fichaValue: { fontSize: 8.5, color: "#1a1a1a", flex: 1 },
+  comBlock: { marginTop: 7, paddingTop: 5, borderTop: `1px solid ${BORDER}` },
+  comLine: { fontSize: 8.5, color: "#1a1a1a", marginBottom: 2.5, lineHeight: 1.35 },
+  // Anexo fotográfico
+  fotoEquipoTitulo: { fontSize: 9, fontWeight: 700, color: BLUE, marginTop: 8, marginBottom: 2, borderBottom: `1px solid ${BORDER}`, paddingBottom: 3 },
+  fotoGrid: { flexDirection: "row", flexWrap: "wrap" },
+  fotoCell: { width: "50%", padding: 4 },
+  fotoFrame: { border: `1px solid ${BORDER}`, borderRadius: 3, padding: 4 },
+  fotoImg: { width: "100%", height: 150, objectFit: "contain", backgroundColor: "#f6f7f9" },
+  fotoMissing: { width: "100%", height: 150, backgroundColor: "#f6f7f9", alignItems: "center", justifyContent: "center" },
+  fotoCaptionBold: { fontSize: 8, fontWeight: 700, color: BLUE, marginTop: 3 },
+  fotoCaption: { fontSize: 7.5, color: GRAY, marginTop: 1 },
+  fotoNota: { fontSize: 7.5, color: LGRAY, textAlign: "center", paddingHorizontal: 6 },
 });
 
 const ce = React.createElement;
@@ -92,8 +129,24 @@ export interface ContractEquipoPDF {
   valor_mensual_estimado: number | null;
 }
 
+export interface ContractFotoPDF {
+  tipo_label: string;
+  fecha: Date;
+  observacion: string | null;
+  /** Data URI (image/jpeg o image/png) listo para @react-pdf; null si no se pudo incluir. */
+  src: string | null;
+  /** Motivo visible cuando src es null (ej. formato WEBP no soportado por el PDF). */
+  nota: string | null;
+}
+
+export interface ContractEquipoFotosPDF {
+  descripcion: string;
+  fotos: ContractFotoPDF[];
+}
+
 export interface ContractPDFData {
   numero_contrato: string;
+  anexo_label: string;
   ciudad_celebracion: string | null;
   fecha: Date;
   vigencia_contrato: string | null;
@@ -108,6 +161,8 @@ export interface ContractPDFData {
   correo_notificaciones: string | null;
   moneda: string;
   equipos: ContractEquipoPDF[];
+  /** Anexo fotográfico opcional: si viene vacío o ausente, el PDF no cambia. */
+  fotos_equipos?: ContractEquipoFotosPDF[];
 }
 
 function dash(v?: string | number | null): string {
@@ -134,17 +189,11 @@ function metaRow(label: string, value: string) {
   );
 }
 
-function dataCell(label: string, value: string) {
-  return ce(View, { style: styles.dataCell },
-    ce(Text, { style: styles.dataCellLabel }, label),
-    ce(Text, { style: styles.dataCellValue }, value),
-  );
-}
-
-function valorRow(label: string, value: string) {
-  return ce(View, { style: styles.valorRow },
-    ce(Text, { style: styles.valorLabel }, label),
-    ce(Text, { style: styles.valorValue }, value),
+// Ficha del equipo estilo Word: etiqueta de ancho fijo + ":" + valor (colon alineado).
+function fichaRow(label: string, value: string) {
+  return ce(View, { style: styles.fichaRow },
+    ce(Text, { style: styles.fichaLabel }, label),
+    ce(Text, { style: styles.fichaValue }, `:  ${value}`),
   );
 }
 
@@ -152,7 +201,7 @@ function header(numero: string) {
   return ce(View, { style: styles.header, fixed: true },
     ce(Image, { style: styles.logo, src: LOGO_URL }),
     ce(View, { style: styles.headerRight },
-      ce(Text, { style: styles.docNum }, `CONTRATO ${numero}`),
+      ce(Text, { style: styles.docNum }, `CONTRATO MARCO ${numero}`),
       ce(Text, { style: styles.docTitle }, "Condiciones Generales de Arrendamiento"),
     ),
   );
@@ -176,6 +225,8 @@ function firmas(repCliente: string, ciCliente: string, empresaCliente: string) {
 }
 
 export function ContractDocument({ data }: { data: ContractPDFData }) {
+  // Solo equipos con fotos: si no hay ninguna, el documento queda igual que antes.
+  const fotosEquipos = (data.fotos_equipos ?? []).filter((e) => e.fotos.length > 0);
   const vigencia = dash(data.vigencia_contrato) === "—" ? "2 años" : (data.vigencia_contrato as string);
   const ciudad = dash(data.ciudad_celebracion) === "—" ? "Calama" : (data.ciudad_celebracion as string);
   const repCliente = dash(data.representante_cliente) === "—" ? "—" : (data.representante_cliente as string);
@@ -191,7 +242,7 @@ export function ContractDocument({ data }: { data: ContractPDFData }) {
     `presente contrato de arrendamiento (Contrato) de bien(es) mueble(s), el que se regirá por los ` +
     `siguientes términos y condiciones:`;
 
-  return ce(Document, { title: `Contrato ${data.numero_contrato}`, author: "Solterra SpA" },
+  return ce(Document, { title: `Contrato Marco ${data.numero_contrato}`, author: "Solterra SpA" },
     // ── Condiciones generales (fluye a varias páginas) ──
     ce(Page, { size: "A4", style: styles.page },
       header(data.numero_contrato),
@@ -202,6 +253,34 @@ export function ContractDocument({ data }: { data: ContractPDFData }) {
           ...cl.parrafos.map((p, j) =>
             ce(Text, { key: `p-${j}`, style: styles.parrafo }, p.replace("{{VIGENCIA}}", vigencia)),
           ),
+          cl.tabla
+            ? ce(Text, { key: "tt", style: styles.clTablaTitulo }, cl.tabla.titulo)
+            : null,
+          cl.tabla
+            ? ce(View, { key: "tb", style: styles.clTabla, wrap: false },
+                ce(View, { style: styles.clTablaHeadRow },
+                  ce(Text, { style: [styles.clThCell, styles.clColPlazo, styles.clCellDiv] }, cl.tabla.headers[0]),
+                  ce(Text, { style: [styles.clThCell, styles.clColTarifa] }, cl.tabla.headers[1]),
+                ),
+                ...cl.tabla.filas.map((fila, r) =>
+                  ce(View, { key: `r-${r}`, style: styles.clTablaRow },
+                    ce(Text, { style: [styles.clTdCell, styles.clColPlazo, styles.clCellDiv] }, fila[0]),
+                    ce(Text, { style: [styles.clTdCell, styles.clColTarifa] }, fila[1]),
+                  ),
+                ),
+              )
+            : null,
+          cl.bancoDetalle
+            ? ce(View, { key: "bd", style: styles.bancoList, wrap: false },
+                ...cl.bancoDetalle.map((b, k) =>
+                  ce(View, { key: `b-${k}`, style: styles.bancoItem },
+                    ce(Text, { style: styles.bancoBullet }, "•"),
+                    ce(Text, { style: styles.bancoLabel }, `${b.label}:`),
+                    ce(Text, { style: styles.bancoValue }, b.valor),
+                  ),
+                ),
+              )
+            : null,
         ),
       ),
       firmas(repCliente, ciCliente, dash(data.cliente.nombre)),
@@ -209,38 +288,45 @@ export function ContractDocument({ data }: { data: ContractPDFData }) {
     // ── Condiciones particulares / Anexo (página nueva) ──
     ce(Page, { size: "A4", style: styles.page },
       header(data.numero_contrato),
-      ce(Text, { style: styles.sectionTitle }, "Condiciones Particulares"),
-      ce(Text, { style: styles.sectionSub },
-        `Anexo ${dash(data.numero_anexo)} / Contrato ${data.numero_contrato}`),
+      ce(Text, { style: styles.cpTitle }, "CONDICIONES PARTICULARES"),
+      ce(Text, { style: styles.cpSub },
+        `Anexo ${data.anexo_label} / Contrato Marco ${data.numero_contrato}`),
       metaRow("Sres.:", dash(data.cliente.nombre)),
-      metaRow("RUT:", dash(data.cliente.rut)),
+      metaRow("Rut.:", dash(data.cliente.rut)),
       metaRow("Fecha:", `${ciudad}, ${fmtFecha(data.fecha_anexo ?? data.fecha)}`),
+      ce(Text, { style: styles.cpIntro },
+        "Por la presente se informan los siguientes datos correspondientes a máquina industrial que será entregada en arriendo."),
+      metaRow("Contrato Nro:", data.numero_contrato),
       metaRow("Cotización Solterra N°:", dash(data.numero_cotizacion)),
-      metaRow("Lugar de operación / entrega:", dash(data.lugar_operacion)),
-      metaRow("Condición de pago:", dash(data.forma_pago)),
-      metaRow("Correo para notificaciones:", dash(data.correo_notificaciones)),
-      ce(Text, { style: { fontSize: 8, color: GRAY, marginTop: 8, marginBottom: 2 } },
-        "Por la presente se informan los datos correspondientes a la(s) máquina(s) que será(n) entregada(s) en arriendo:"),
+      data.lugar_operacion ? metaRow("Lugar de operación / entrega:", dash(data.lugar_operacion)) : null,
+      data.forma_pago ? metaRow("Condición de pago:", dash(data.forma_pago)) : null,
       ...data.equipos.map((eq, i) =>
-        ce(View, { key: `eq-${i}`, style: styles.equipoBox, wrap: false },
-          ce(Text, { style: styles.equipoTitulo },
-            `Equipo ${i + 1}: ${dash(eq.descripcion)}`),
-          ce(View, { style: styles.dataGrid },
-            dataCell("Marca", dash(eq.marca)),
-            dataCell("Modelo", dash(eq.modelo)),
-            dataCell("Patente", dash(eq.patente)),
-            dataCell("Año", dash(eq.anio)),
-            dataCell("N° Chasis", dash(eq.chasis)),
-            dataCell("N° Motor", dash(eq.motor)),
-            dataCell("Color", dash(eq.color)),
-            dataCell("Horómetro inicial", dash(eq.horometro_inicial)),
-            dataCell("Mantención cada", dash(eq.mantenimiento_horas)),
-          ),
-          ce(View, { style: styles.valoresBox },
-            valorRow("Valor arriendo neto por hora", fmtMoneda(eq.valor_hora, data.moneda)),
-            valorRow("Horas mínimas mensuales", dash(eq.horas_minimas_mensuales)),
-            valorRow("Tarifa hora extra", fmtMoneda(eq.tarifa_hora_extra, data.moneda)),
-            valorRow("Valor mensual estimado (neto)", fmtMoneda(eq.valor_mensual_estimado, data.moneda)),
+        ce(View, { key: `eq-${i}`, style: styles.fichaBox, wrap: false },
+          ce(Text, { style: styles.fichaTitulo }, `Equipo ${i + 1}`),
+          fichaRow("EQUIPO", dash(eq.descripcion)),
+          fichaRow("MARCA", dash(eq.marca)),
+          fichaRow("MODELO", dash(eq.modelo)),
+          fichaRow("PATENTE", dash(eq.patente)),
+          fichaRow("AÑO", dash(eq.anio)),
+          fichaRow("NRO. CHASIS", dash(eq.chasis)),
+          fichaRow("NRO. MOTOR", dash(eq.motor)),
+          fichaRow("COLOR", dash(eq.color)),
+          eq.horometro_inicial ? fichaRow("HORÓMETRO INICIAL", dash(eq.horometro_inicial)) : null,
+          eq.mantenimiento_horas ? fichaRow("MANTENCIÓN CADA", dash(eq.mantenimiento_horas)) : null,
+          ce(View, { style: styles.comBlock },
+            ce(Text, { style: styles.comLine },
+              `Valor Arriendo Neto por Hora ${fmtMoneda(eq.valor_hora, data.moneda)}` +
+                (eq.horas_minimas_mensuales != null
+                  ? ` Mínimo ${eq.horas_minimas_mensuales} hrs correspondientes a un mes.`
+                  : ".")),
+            eq.valor_mensual_estimado != null
+              ? ce(Text, { style: styles.comLine },
+                  `Valor mensual ${fmtMoneda(eq.valor_mensual_estimado, data.moneda)} más IVA.`)
+              : null,
+            eq.tarifa_hora_extra != null
+              ? ce(Text, { style: styles.comLine },
+                  `Tarifa hora extra ${fmtMoneda(eq.tarifa_hora_extra, data.moneda)}.`)
+              : null,
           ),
         ),
       ),
@@ -248,5 +334,38 @@ export function ContractDocument({ data }: { data: ContractPDFData }) {
         "Los valores indicados son netos y no incluyen IVA. La Renta de Arrendamiento se rige por la Cláusula Tercera de las Condiciones Generales. Datos de pago: Titular SOLTERRA SPA · RUT 76.021.667-4 · Banco BCI · Cuenta N° 21643351."),
       firmas(repCliente, ciCliente, dash(data.cliente.nombre)),
     ),
+    // ── Anexo fotográfico (página nueva, SOLO si el contrato tiene fotos) ──
+    fotosEquipos.length > 0
+      ? ce(Page, { size: "A4", style: styles.page },
+          header(data.numero_contrato),
+          ce(Text, { style: styles.cpTitle }, "ANEXO FOTOGRÁFICO"),
+          ce(Text, { style: styles.cpSub },
+            `Registro de respaldo de equipos / Contrato Marco ${data.numero_contrato}`),
+          ce(Text, { style: styles.cpIntro },
+            "Las siguientes fotografías forman parte del respaldo del estado de los equipos entregados en arriendo, registradas en el portal de Solterra SpA."),
+          ...fotosEquipos.map((eq, i) =>
+            ce(View, { key: `feq-${i}` },
+              ce(Text, { style: styles.fotoEquipoTitulo }, dash(eq.descripcion)),
+              ce(View, { style: styles.fotoGrid },
+                ...eq.fotos.map((f, j) =>
+                  ce(View, { key: `f-${j}`, style: styles.fotoCell, wrap: false },
+                    ce(View, { style: styles.fotoFrame },
+                      f.src
+                        ? ce(Image, { style: styles.fotoImg, src: f.src })
+                        : ce(View, { style: styles.fotoMissing },
+                            ce(Text, { style: styles.fotoNota }, f.nota ?? "Imagen no disponible")),
+                      ce(Text, { style: styles.fotoCaptionBold }, f.tipo_label),
+                      ce(Text, { style: styles.fotoCaption },
+                        fmtFecha(f.fecha) + (f.observacion ? ` — ${f.observacion}` : "")),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          ce(Text, { style: styles.nota },
+            "Registro fotográfico de respaldo. Las imágenes corresponden al estado de los equipos al momento de su registro en el portal."),
+        )
+      : null,
   );
 }
