@@ -15,6 +15,8 @@ interface Props {
   emailTo?: string;
   /** Layout compacto (flex-wrap siempre) en vez de apilado en móvil. */
   compact?: boolean;
+  /** Oculta la nota explicativa (para usar en una fila de header). */
+  hideHint?: boolean;
   /**
    * Fetcher opcional para PDFs que NO se obtienen por GET (ej. el cotizador, que
    * re-ejecuta el cálculo server-side vía POST). Si se pasa, se usa en lugar de
@@ -38,6 +40,7 @@ export default function PdfShareActions({
   emailBody,
   emailTo,
   compact,
+  hideHint,
   getPdfBlob,
 }: Props) {
   const [busy, setBusy] = useState<Accion | null>(null);
@@ -156,9 +159,11 @@ export default function PdfShareActions({
           {icon("email", Mail)} Correo
         </Button>
       </div>
-      <p className="text-[11px] text-gray-400">
-        En algunos dispositivos el archivo se comparte automáticamente. Si no, se descargará para adjuntarlo manualmente.
-      </p>
+      {!hideHint && (
+        <p className="text-[11px] text-gray-400">
+          En algunos dispositivos el archivo se comparte automáticamente. Si no, se descargará para adjuntarlo manualmente.
+        </p>
+      )}
       {aviso && <p className="text-xs text-amber-600">{aviso}</p>}
     </div>
   );

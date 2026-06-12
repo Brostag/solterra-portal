@@ -8,7 +8,7 @@ import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, FileDown } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { getSignedUrls } from "@/lib/supabase/storage";
 import FotosEquipoSection, { type EquipoConFotos } from "./FotosEquipoSection";
@@ -83,38 +83,41 @@ export default async function ContratoDetallePage({ params }: Props) {
   const emailDestino = contrato.correo_notificaciones ?? contrato.cliente_email_snapshot ?? contrato.client.email ?? undefined;
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="max-w-5xl mx-auto flex flex-col gap-6">
       {/* Encabezado */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <Link href="/contratos">
-            <Button variant="ghost" size="sm" className="flex-shrink-0"><ArrowLeft className="h-4 w-4" /></Button>
-          </Link>
-          <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-[#253158]">Contrato Marco {numeroVisible}</h1>
-            <p className="text-gray-500 text-sm">
-              Emitido el {fmtDate(contrato.fecha_emision)}
-            </p>
-          </div>
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-md flex-shrink-0 ${ESTADO_COLORS[contrato.estado as EstadoContrato]}`}>
-            {ESTADO_LABELS[contrato.estado as EstadoContrato].toUpperCase()}
-          </span>
+      <div className="flex items-center gap-3 min-w-0">
+        <Link href="/contratos">
+          <Button variant="ghost" size="sm" className="flex-shrink-0"><ArrowLeft className="h-4 w-4" /></Button>
+        </Link>
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#253158]">Contrato Marco {numeroVisible}</h1>
+          <p className="text-gray-500 text-sm">
+            Emitido el {fmtDate(contrato.fecha_emision)}
+          </p>
         </div>
+        <span className={`text-xs font-semibold px-2.5 py-1 rounded-md flex-shrink-0 ${ESTADO_COLORS[contrato.estado as EstadoContrato]}`}>
+          {ESTADO_LABELS[contrato.estado as EstadoContrato].toUpperCase()}
+        </span>
+      </div>
 
-        <div className="flex flex-wrap items-center gap-2 pl-10 sm:pl-0">
-          <ContractStatusActions
-            id={contrato.id}
-            estado={contrato.estado as EstadoContrato}
-            canManage={canManage}
-          />
-          <a href={pdfUrl} download={pdfFileName}>
-            <Button size="sm" className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
-              <FileDown className="h-4 w-4" />
-              Descargar PDF
-            </Button>
-          </a>
-          <PrintPdfButton pdfUrl={pdfUrl} />
-        </div>
+      {/* Acciones — en móvil al final del contenido (order-last); en desktop tras el título */}
+      <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center order-last sm:order-none">
+        <ContractStatusActions
+          id={contrato.id}
+          estado={contrato.estado as EstadoContrato}
+          canManage={canManage}
+        />
+        <PdfShareActions
+          pdfUrl={pdfUrl}
+          fileName={pdfFileName}
+          title={tituloContrato}
+          whatsappMessage={waMensaje}
+          emailSubject={emailAsunto}
+          emailBody={emailCuerpo}
+          emailTo={emailDestino}
+          hideHint
+        />
+        <PrintPdfButton pdfUrl={pdfUrl} size="default" className="min-h-[44px] w-full sm:w-auto" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -304,21 +307,8 @@ export default async function ContratoDetallePage({ params }: Props) {
         <FotosEquipoStream contractId={contrato.id} canManage={canManage} />
       </Suspense>
 
-      {/* Compartir contrato */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h2 className="font-semibold text-[#253158] mb-3">Compartir contrato</h2>
-        <PdfShareActions
-          pdfUrl={pdfUrl}
-          fileName={pdfFileName}
-          title={tituloContrato}
-          whatsappMessage={waMensaje}
-          emailSubject={emailAsunto}
-          emailBody={emailCuerpo}
-          emailTo={emailDestino}
-        />
-      </div>
 
-      <div className="flex justify-start">
+      <div className="flex justify-start order-last sm:order-none">
         <Link href="/contratos">
           <Button className="bg-white border border-gray-300 text-[#253158] hover:bg-gray-50 gap-2">
             <ArrowLeft className="h-4 w-4" />

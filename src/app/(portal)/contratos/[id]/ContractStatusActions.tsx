@@ -37,17 +37,15 @@ export default function ContractStatusActions({ id, estado, canManage }: Props) 
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="flex flex-col items-stretch sm:items-end gap-1 w-full sm:w-auto">
       <Button
         type="button"
-        size="sm"
         onClick={handleClick}
         disabled={isPending}
-        className="bg-green-600 hover:bg-green-700 text-white gap-2 disabled:opacity-60"
+        className="bg-green-600 hover:bg-green-700 text-white gap-2 min-h-[44px] w-full sm:w-auto disabled:opacity-60"
       >
         <CheckCircle2 className="h-4 w-4" />
-        <span className="hidden sm:inline">{isPending ? "Guardando…" : "Marcar como vigente"}</span>
-        <span className="sm:hidden">{isPending ? "…" : "Vigente"}</span>
+        <span>{isPending ? "Guardando…" : "Marcar como vigente"}</span>
       </Button>
       {error && <span className="text-xs text-red-500 max-w-[200px] text-right">{error}</span>}
     </div>

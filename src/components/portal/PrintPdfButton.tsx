@@ -2,14 +2,17 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Printer, Loader2 } from "lucide-react";
 
 interface Props {
   pdfUrl: string;
   label?: string;
+  size?: "sm" | "default" | "lg";
+  className?: string;
 }
 
-export default function PrintPdfButton({ pdfUrl, label = "Imprimir" }: Props) {
+export default function PrintPdfButton({ pdfUrl, label = "Imprimir", size = "sm", className }: Props) {
   const [opening, setOpening] = useState(false);
 
   function handleClick() {
@@ -22,8 +25,8 @@ export default function PrintPdfButton({ pdfUrl, label = "Imprimir" }: Props) {
   return (
     <Button
       variant="outline"
-      size="sm"
-      className="gap-2"
+      size={size}
+      className={cn("gap-2", className)}
       onClick={handleClick}
       disabled={opening}
     >
