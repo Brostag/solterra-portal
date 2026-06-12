@@ -1,18 +1,27 @@
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { getCompanySettings } from "@/lib/company-settings";
-import { getActiveClientsForSelector } from "@/lib/cache/master-lists";
+import { getCompanyClientsForSelector } from "@/lib/cache/master-lists";
 import { redirect } from "next/navigation";
 import CotizadorForm from "./CotizadorForm";
+import { getNextQuotationNumber } from "@/app/(portal)/cotizaciones/actions";
 
 export default async function CotizadorPage() {
-  const [session, config, clientes] = await Promise.all([
+  const [session, config, empresas, numeroSugerido] = await Promise.all([
     getPortalSessionFast(),
     getCompanySettings(),
-    getActiveClientsForSelector(),
+    getCompanyClientsForSelector(),
+    getNextQuotationNumber(),
   ]);
   if (!session) redirect("/login");
 
   const ivaPorcentaje = config ? Number(config.iva_porcentaje) : 19;
+
+  // Empresas (rol cliente/arrendataria) adaptadas a la forma del selector.
+  const clientes = empresas.map((e) => ({
+    id: e.id,
+    nombre: e.nombre_razon_social,
+    rut: e.rut,
+  }));
 
   return (
     <div className="space-y-6">
@@ -22,7 +31,7 @@ export default async function CotizadorPage() {
           Calcula presupuestos rápidos para arriendo de maquinaria y servicios.
         </p>
       </div>
-      <CotizadorForm ivaPorcentaje={ivaPorcentaje} clientes={clientes} />
+      <CotizadorForm ivaPorcentaje={ivaPorcentaje} clientes={clientes} numeroSugerido={numeroSugerido} />
     </div>
   );
 }

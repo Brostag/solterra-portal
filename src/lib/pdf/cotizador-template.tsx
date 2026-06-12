@@ -131,12 +131,15 @@ export interface CotizadorPDFData {
   input:  CotizadorInput;
   result: CotizadorResult;
   fecha:  Date;
+  numero?: string;
   cliente?: {
     nombre:     string;
     rut?:       string | null;
+    giro?:      string | null;
     direccion?: string | null;
     email?:     string | null;
     telefono?:  string | null;
+    representante_legal?: string | null;
   } | null;
   company: {
     razon_social: string;
@@ -204,7 +207,7 @@ function dataRowGasto(label: string, value: number, key: string) {
 }
 
 export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
-  const { input, result, fecha, company, cliente } = data;
+  const { input, result, fecha, company, cliente, numero } = data;
   const hasDesc = input.porcentajeDescuento > 0;
   const clienteNombre = cliente?.nombre?.trim() ? cliente.nombre : "Cliente no especificado";
 
@@ -271,6 +274,10 @@ export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
             ce(Text, { style: styles.infoLabel }, "RUT:"),
             ce(Text, { style: styles.infoValue }, dash(cliente?.rut)),
           ),
+          cliente?.giro ? ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabel }, "Giro:"),
+            ce(Text, { style: styles.infoValue }, cliente.giro),
+          ) : null,
           ce(View, { style: styles.infoRow },
             ce(Text, { style: styles.infoLabel }, "Dirección:"),
             ce(Text, { style: styles.infoValue }, dash(cliente?.direccion)),
@@ -283,10 +290,18 @@ export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
             ce(Text, { style: styles.infoLabel }, "Teléfono:"),
             ce(Text, { style: styles.infoValue }, dash(cliente?.telefono)),
           ),
+          cliente?.representante_legal ? ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabel }, "Rep. legal:"),
+            ce(Text, { style: styles.infoValue }, cliente.representante_legal),
+          ) : null,
         ),
 
         ce(View, { style: styles.infoRight },
           ce(Text, { style: styles.infoTitle }, "Datos del presupuesto"),
+          numero ? ce(View, { style: styles.infoRow },
+            ce(Text, { style: styles.infoLabelR }, "Cotización Solterra N°:"),
+            ce(Text, { style: styles.infoValue }, numero),
+          ) : null,
           ce(View, { style: styles.infoRow },
             ce(Text, { style: styles.infoLabelR }, "Fecha emisión:"),
             ce(Text, { style: styles.infoValue }, fechaStr),

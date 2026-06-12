@@ -16,13 +16,11 @@ import {
   BedDouble,
   CalendarDays,
   Clock,
-  Download,
+  FileCheck,
   Fuel,
   HardHat,
   Loader2,
-  Mail,
   MapPin,
-  MessageCircle,
   Plus,
   PlusCircle,
   Printer,
@@ -33,6 +31,9 @@ import {
   UtensilsCrossed,
   Wrench,
 } from "lucide-react";
+import PdfShareActions from "@/components/portal/PdfShareActions";
+import { useRouter } from "next/navigation";
+import { createQuotation } from "@/app/(portal)/cotizaciones/actions";
 
 interface ClienteOption {
   id:     string;
@@ -41,8 +42,9 @@ interface ClienteOption {
 }
 
 interface Props {
-  ivaPorcentaje: number;
-  clientes:      ClienteOption[];
+  ivaPorcentaje:   number;
+  clientes:        ClienteOption[];
+  numeroSugerido:  string;
 }
 
 interface GastoConfig {
@@ -66,15 +68,17 @@ const GASTOS_CONFIG: GastoConfig[] = [
 const inputClass =
   "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#253158]/20 focus:border-[#253158] tabular-nums disabled:bg-gray-50 disabled:text-gray-400";
 
-type ActionId = "pdf" | "print" | "whatsapp" | "mail";
+type ActionId = "pdf" | "print" | "whatsapp" | "mail" | "generar";
 
-export default function CotizadorForm({ ivaPorcentaje, clientes }: Props) {
+export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido }: Props) {
   const [items, setItems]                             = useState<CotizadorItem[]>(() => [nuevoItem()]);
   const [gastos, setGastos]                           = useState<GastosGenerales>(GASTOS_INICIALES);
   const [porcentajeDescuento, setPorcentajeDescuento] = useState(0);
   const [clienteId, setClienteId]                     = useState("");
   const [busyAction, setBusyAction]                   = useState<ActionId | null>(null);
   const [actionError, setActionError]                 = useState<string | null>(null);
+  const [numero, setNumero]                           = useState(numeroSugerido);
+  const router = useRouter();
 
   const clienteSel = clientes.find((c) => c.id === clienteId) ?? null;
 
@@ -162,27 +166,6 @@ export default function CotizadorForm({ ivaPorcentaje, clientes }: Props) {
     return res.blob();
   }
 
-  async function descargarPDF() {
-    setBusyAction("pdf");
-    setActionError(null);
-    try {
-      const blob = await fetchPdfBlob();
-      const yyyymmdd = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `presupuesto-arriendo-solterra-${yyyymmdd}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1500);
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Error al descargar PDF");
-    } finally {
-      setBusyAction(null);
-    }
-  }
-
   async function imprimir() {
     setBusyAction("print");
     setActionError(null);
@@ -202,21 +185,32 @@ export default function CotizadorForm({ ivaPorcentaje, clientes }: Props) {
     }
   }
 
-  function compartirWhatsApp() {
+  async function generar() {
     setActionError(null);
-    const msg = encodeURIComponent(buildSummaryText());
-    window.open(`https://wa.me/?text=${msg}`, "_blank", "noopener,noreferrer");
-  }
-
-  function enviarCorreo() {
-    setActionError(null);
-    const subject = encodeURIComponent(
-      clienteSel
-        ? `Presupuesto de Arriendo Solterra - ${clienteSel.nombre}`
-        : "Presupuesto de Arriendo Solterra",
-    );
-    const body = encodeURIComponent(buildSummaryText());
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    const hayDatos = items.some((it) => it.equipo.trim() !== "" || it.valorHora > 0);
+    if (!hayDatos) {
+      setActionError("Agrega al menos un equipo o servicio con datos.");
+      return;
+    }
+    if (!numero.trim()) {
+      setActionError("Ingresa el número de cotización.");
+      return;
+    }
+    setBusyAction("generar");
+    try {
+      const { id } = await createQuotation({
+        numero: numero.trim(),
+        clienteId: clienteId || null,
+        items,
+        gastos,
+        porcentajeDescuento,
+        ivaPorcentaje,
+      });
+      router.push(`/cotizaciones/${id}`);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "No se pudo generar la cotización.");
+      setBusyAction(null);
+    }
   }
 
   return (
@@ -247,6 +241,22 @@ export default function CotizadorForm({ ivaPorcentaje, clientes }: Props) {
             </select>
             <p className="text-[11px] text-gray-400 mt-1.5">
               Opcional. Si no seleccionás un cliente, el presupuesto se genera igual.
+            </p>
+          </div>
+          <div className="max-w-md">
+            <label htmlFor="numero" className="block text-xs font-medium text-gray-700 mb-1.5">
+              N° de cotización
+            </label>
+            <input
+              id="numero"
+              type="text"
+              value={numero}
+              onChange={(e) => setNumero(e.target.value)}
+              placeholder="001 R0/026"
+              className={inputClass}
+            />
+            <p className="text-[11px] text-gray-400 mt-1.5">
+              Editable. Formato Solterra: NNN R0/AA (ej. 177 R2/025).
             </p>
           </div>
         </section>
@@ -563,55 +573,43 @@ export default function CotizadorForm({ ivaPorcentaje, clientes }: Props) {
           </dl>
 
           <div className="pt-2 space-y-2">
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                type="button"
-                onClick={descargarPDF}
-                disabled={busyAction !== null}
-                variant="outline"
-                className="gap-2 border-[#253158]/30 text-[#253158] hover:bg-[#253158]/5 disabled:opacity-60"
-                aria-busy={busyAction === "pdf"}
-              >
-                {busyAction === "pdf"
-                  ? <Loader2 className="h-4 w-4 animate-spin" />
-                  : <Download className="h-4 w-4" />}
-                PDF
-              </Button>
+            <Button
+              type="button"
+              onClick={generar}
+              disabled={busyAction !== null}
+              className="w-full gap-2 bg-[#253158] hover:bg-[#1e305e] text-white disabled:opacity-60"
+              aria-busy={busyAction === "generar"}
+            >
+              {busyAction === "generar"
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <FileCheck className="h-4 w-4" />}
+              Generar cotización
+            </Button>
+
+            <div className="pt-3 mt-1 border-t border-gray-100 space-y-2">
+              <p className="text-[11px] text-gray-400 text-center">Vista previa (no guarda la cotización)</p>
+              <PdfShareActions
+                pdfUrl=""
+                getPdfBlob={fetchPdfBlob}
+                fileName={`presupuesto-arriendo-solterra-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}.pdf`}
+                title={`Cotización Solterra ${new Date().toLocaleDateString("es-CL")}`}
+                whatsappMessage={buildSummaryText()}
+                emailSubject={`Cotización Solterra ${new Date().toLocaleDateString("es-CL")}`}
+                emailBody={buildSummaryText()}
+                compact
+              />
               <Button
                 type="button"
                 onClick={imprimir}
                 disabled={busyAction !== null}
                 variant="outline"
-                className="gap-2 border-[#253158]/30 text-[#253158] hover:bg-[#253158]/5 disabled:opacity-60"
+                className="w-full gap-2 border-[#253158]/30 text-[#253158] hover:bg-[#253158]/5 disabled:opacity-60"
                 aria-busy={busyAction === "print"}
               >
                 {busyAction === "print"
                   ? <Loader2 className="h-4 w-4 animate-spin" />
                   : <Printer className="h-4 w-4" />}
                 Imprimir
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                type="button"
-                onClick={compartirWhatsApp}
-                disabled={busyAction !== null}
-                variant="outline"
-                className="gap-2 border-[#253158]/30 text-[#253158] hover:bg-[#253158]/5 disabled:opacity-60"
-              >
-                <MessageCircle className="h-4 w-4" />
-                WhatsApp
-              </Button>
-              <Button
-                type="button"
-                onClick={enviarCorreo}
-                disabled={busyAction !== null}
-                variant="outline"
-                className="gap-2 border-[#253158]/30 text-[#253158] hover:bg-[#253158]/5 disabled:opacity-60"
-              >
-                <Mail className="h-4 w-4" />
-                Correo
               </Button>
             </div>
 

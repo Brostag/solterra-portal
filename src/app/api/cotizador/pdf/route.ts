@@ -61,17 +61,38 @@ export async function POST(req: NextRequest) {
   };
   const result = calcularCotizacion(input);
 
-  // El cliente se resuelve en el servidor desde la DB usando solo el id:
-  // nunca se confía en datos del cliente enviados por el navegador.
-  const [cliente, config] = await Promise.all([
+  // El receptor se resuelve en el servidor desde la DB usando solo el id (el id
+  // es de una COMPANY/Empresa): nunca se confía en datos enviados por el navegador.
+  const [empresa, config] = await Promise.all([
     parsed.clienteId
-      ? prisma.client.findUnique({
+      ? prisma.company.findUnique({
           where:  { id: parsed.clienteId },
-          select: { nombre: true, rut: true, direccion: true, email: true, telefono: true },
+          select: {
+            nombre_razon_social: true, rut: true, giro: true,
+            email: true, telefono: true, direccion: true,
+            comuna: true, ciudad: true, region: true,
+            representante_legal: true, correo_notificaciones: true,
+          },
         })
       : Promise.resolve(null),
     getCompanySettings(),
   ]);
+
+  // Mapeo Company → datos del receptor del presupuesto (todo desde Company).
+  const cliente = empresa
+    ? {
+        nombre: empresa.nombre_razon_social,
+        rut: empresa.rut,
+        giro: empresa.giro,
+        direccion:
+          [empresa.direccion, empresa.comuna, empresa.ciudad, empresa.region]
+            .filter((v) => v && v.trim() !== "")
+            .join(", ") || null,
+        email: empresa.email ?? empresa.correo_notificaciones,
+        telefono: empresa.telefono,
+        representante_legal: empresa.representante_legal,
+      }
+    : null;
 
   let buffer: Buffer;
   try {
@@ -93,7 +114,7 @@ export async function POST(req: NextRequest) {
     }) as React.ReactElement;
     buffer = await renderToBuffer(element);
   } catch (err) {
-    console.error("[cotizador-pdf] Error generando PDF:", err);
+    console.error("[cotizador-pdf] Error generando PDF:", err instanceof Error ? err.message : String(err));
     return NextResponse.json({ error: "Error al generar el PDF" }, { status: 500 });
   }
 
