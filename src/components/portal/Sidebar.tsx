@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   FileText,
-  Users,
   Package,
   FolderOpen,
   Settings,
@@ -16,6 +15,7 @@ import {
   Building2,
   ShoppingCart,
   Calculator,
+  ClipboardList,
   ChevronLeft,
   ChevronRight,
   X,
@@ -26,12 +26,12 @@ import type { Rol } from "@/types";
 const navItems = [
   { href: "/dashboard",      label: "Dashboard",         icon: LayoutDashboard },
   { href: "/contratos",      label: "Contratos",         icon: FileText },
-  { href: "/clientes",       label: "Clientes",          icon: Users },
-  { href: "/productos",      label: "Productos",         icon: Package },
+  { href: "/empresas",       label: "Empresas",          icon: Building2 },
+  { href: "/productos",      label: "Servicios",         icon: Package },
   { href: "/documentos",     label: "Documentos",        icon: FolderOpen },
-  { href: "/proveedores",    label: "Proveedores",       icon: Building2 },
   { href: "/ordenes-compra", label: "Órdenes de Compra", icon: ShoppingCart },
   { href: "/cotizador",      label: "Cotizador",         icon: Calculator },
+  { href: "/cotizaciones",   label: "Cotizaciones",      icon: ClipboardList },
 ];
 
 const adminItems = [
