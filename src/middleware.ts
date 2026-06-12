@@ -12,6 +12,10 @@ const PORTAL_PATHS = [
   "/auditoria",
   "/proveedores",
   "/ordenes-compra",
+  "/contratos",
+  "/empresas",
+  "/cotizaciones",
+  "/cotizador",
 ];
 
 export async function middleware(request: NextRequest) {
@@ -68,6 +72,10 @@ export const config = {
     "/auditoria/:path*",
     "/proveedores/:path*",
     "/ordenes-compra/:path*",
+    "/contratos/:path*",
+    "/empresas/:path*",
+    "/cotizaciones/:path*",
+    "/cotizador/:path*",
   ],
 };
 
