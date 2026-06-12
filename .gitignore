@@ -61,6 +61,7 @@ playwright.config.ts
 .mcp.json
 
 # audit / analysis docs (local only)
+docs/
 AUDITORIA_*.md
 QA_PERFORMANCE_*.md
 SPRINT*_PERFORMANCE_*.md
