@@ -73,7 +73,7 @@ export default async function UsuariosPage({ searchParams }: Props) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[#253158]">Usuarios</h1>
           <p className="text-gray-500 text-sm mt-1">
@@ -91,13 +91,13 @@ export default async function UsuariosPage({ searchParams }: Props) {
 
       {/* Filtros */}
       <div className="flex flex-wrap gap-3 items-center">
-        <form method="GET" className="relative">
+        <form method="GET" className="relative w-full sm:w-auto">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             name="q"
             defaultValue={query}
             placeholder="Buscar por nombre o email..."
-            className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#253158]/20 focus:border-[#253158] w-72"
+            className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#253158]/20 focus:border-[#253158] w-full sm:w-72"
           />
           {filtroActivo && <input type="hidden" name="filtro" value={filtroActivo} />}
           {rolFilter && <input type="hidden" name="rol" value={rolFilter} />}
@@ -124,8 +124,56 @@ export default async function UsuariosPage({ searchParams }: Props) {
         </div>
       </div>
 
-      {/* Tabla */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      {/* Móvil: cards — sm:hidden */}
+      <div className="sm:hidden bg-white rounded-xl border border-gray-200 overflow-hidden">
+        {users.length === 0 ? (
+          <div className="text-center text-gray-400 py-12 px-4">
+            <Users className="h-8 w-8 mx-auto mb-2 opacity-30" />
+            <p>{query || filtroActivo || rolFilter ? "No se encontraron usuarios." : "No hay usuarios registrados."}</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {users.map((u) => (
+              <div key={u.id} className="px-4 py-3.5 flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                    <p className="text-sm font-semibold text-gray-800 truncate">{u.nombre}</p>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${ROL_COLORS[u.rol as Rol]}`}>
+                      {ROL_LABELS[u.rol as Rol]}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#253158] truncate">{u.email}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${u.activo ? "bg-green-50 text-green-600 border border-green-200" : "bg-red-50 text-red-500 border border-red-200"}`}>
+                      {u.activo ? "Activo" : "Inactivo"}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      Desde {new Date(u.created_at).toLocaleDateString("es-CL")}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <InstantLink href={`/usuarios/${u.id}`}>
+                    <button
+                      type="button"
+                      aria-label={`Ver usuario ${u.nombre}`}
+                      className="p-1.5 rounded-md text-gray-400 hover:text-[#253158] hover:bg-gray-100 transition-colors"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                  </InstantLink>
+                  {u.id !== session.id && (
+                    <EliminarUsuarioButton userId={u.id} userLabel={u.nombre} />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop: tabla — hidden sm:block */}
+      <div className="hidden sm:block bg-white rounded-xl border border-gray-200 overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50 hover:bg-gray-50 border-b border-gray-200">
@@ -147,8 +195,13 @@ export default async function UsuariosPage({ searchParams }: Props) {
               </TableRow>
             ) : (
               users.map((u) => (
-                <TableRow key={u.id} className="hover:bg-gray-50 border-b border-gray-100 last:border-0">
-                  <TableCell className="px-5 py-4 font-semibold text-gray-800 text-sm">{u.nombre}</TableCell>
+                <TableRow key={u.id} className="relative cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-0">
+                  <TableCell className="px-5 py-4 font-semibold text-gray-800 text-sm">
+                    <InstantLink href={`/usuarios/${u.id}`} aria-label={`Ver usuario ${u.nombre}`} className="absolute inset-0">
+                      <span className="sr-only">Ver detalle</span>
+                    </InstantLink>
+                    {u.nombre}
+                  </TableCell>
                   <TableCell className="px-5 py-4 text-[#253158] text-sm">{u.email}</TableCell>
                   <TableCell className="px-5 py-4">
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-md ${ROL_COLORS[u.rol as Rol]}`}>
@@ -163,7 +216,7 @@ export default async function UsuariosPage({ searchParams }: Props) {
                   <TableCell className="px-5 py-4 text-gray-400 text-sm">
                     {new Date(u.created_at).toLocaleDateString("es-CL")}
                   </TableCell>
-                  <TableCell className="px-3 py-4">
+                  <TableCell className="px-3 py-4 relative z-10">
                     <div className="flex items-center gap-1">
                       <InstantLink href={`/usuarios/${u.id}`}>
                         <button

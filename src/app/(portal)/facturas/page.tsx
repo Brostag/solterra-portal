@@ -71,7 +71,7 @@ export default async function FacturasPage({ searchParams }: Props) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[#253158]">Facturas</h1>
           <p className="text-gray-500 text-sm mt-1">
@@ -198,8 +198,13 @@ export default async function FacturasPage({ searchParams }: Props) {
               </TableRow>
             ) : (
               invoices.map((inv) => (
-                <TableRow key={inv.id} className="hover:bg-gray-50 border-b border-gray-100 last:border-0">
-                  <TableCell className="px-5 py-4 font-mono font-bold text-[#253158] text-sm">#{inv.numero_factura}</TableCell>
+                <TableRow key={inv.id} className="relative cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-0">
+                  <TableCell className="px-5 py-4 font-mono font-bold text-[#253158] text-sm">
+                    <InstantLink href={`/facturas/${inv.id}`} aria-label={`Ver factura ${inv.numero_factura}`} className="absolute inset-0">
+                      <span className="sr-only">Ver detalle</span>
+                    </InstantLink>
+                    #{inv.numero_factura}
+                  </TableCell>
                   <TableCell className="px-5 py-4 font-medium text-gray-800 text-sm">{inv.client.nombre}</TableCell>
                   <TableCell className="px-5 py-4 text-gray-400 text-sm">
                     {new Date(inv.fecha_emision).toLocaleDateString("es-CL")}
@@ -213,7 +218,7 @@ export default async function FacturasPage({ searchParams }: Props) {
                     </span>
                   </TableCell>
                   <TableCell className="px-5 py-4 text-gray-400 text-sm">{abbreviateName(inv.user.nombre)}</TableCell>
-                  <TableCell className="px-3 py-4">
+                  <TableCell className="px-3 py-4 relative z-10">
                     <div className="flex items-center gap-1">
                       <InstantLink href={`/facturas/${inv.id}`}>
                         <button type="button" className="p-1.5 rounded-md text-gray-400 hover:text-[#253158] hover:bg-gray-100 transition-colors" title="Ver factura">

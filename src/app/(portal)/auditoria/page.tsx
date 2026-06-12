@@ -67,13 +67,13 @@ export default async function AuditoriaPage({ searchParams }: Props) {
 
       {/* Filtros */}
       <div className="flex flex-wrap gap-3 items-center">
-        <form method="GET" className="relative">
+        <form method="GET" className="relative w-full sm:w-auto">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             name="q"
             defaultValue={query}
             placeholder="Buscar por usuario, acción o detalle..."
-            className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#253158]/20 focus:border-[#253158] w-80"
+            className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#253158]/20 focus:border-[#253158] w-full sm:w-72"
           />
           {moduloFilter && <input type="hidden" name="modulo" value={moduloFilter} />}
         </form>
@@ -92,8 +92,36 @@ export default async function AuditoriaPage({ searchParams }: Props) {
         </div>
       </div>
 
-      {/* Tabla */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      {/* Móvil: cards — sm:hidden */}
+      <div className="sm:hidden bg-white rounded-xl border border-gray-200 overflow-hidden">
+        {logs.length === 0 ? (
+          <div className="text-center text-gray-400 py-12 px-4">
+            <ShieldCheck className="h-8 w-8 mx-auto mb-2 opacity-30" />
+            <p>{query || moduloFilter ? "No se encontraron registros." : "Sin registros de auditoría."}</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {logs.map((log) => (
+              <div key={log.id} className="px-4 py-3.5">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${MODULO_COLORS[log.modulo] ?? "bg-gray-50 text-gray-500 border border-gray-200"}`}>
+                    {log.modulo}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {new Date(log.created_at).toLocaleString("es-CL")}
+                  </span>
+                </div>
+                <p className="text-sm font-medium text-gray-800">{log.accion}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{log.user.nombre}</p>
+                {log.detalle && <p className="text-xs text-gray-400 mt-0.5 break-words">{log.detalle}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop: tabla — hidden sm:block */}
+      <div className="hidden sm:block bg-white rounded-xl border border-gray-200 overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50 hover:bg-gray-50 border-b border-gray-200">

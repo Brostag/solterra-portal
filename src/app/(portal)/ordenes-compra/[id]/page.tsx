@@ -5,21 +5,22 @@ import { getPortalSessionFast } from "@/lib/auth/session";
 import { formatCurrency } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowLeft, Download, Pencil } from "lucide-react";
+import { ArrowLeft, FileDown, Pencil } from "lucide-react";
 import type { EstadoOC, Moneda, Rol } from "@/types";
 import OCActions from "./OCActions";
 import NuevoOCForm from "../nueva/NuevoOCForm";
 import { changeOrderStatus, annulOrder } from "../actions";
 import DocumentsSection from "@/components/portal/DocumentsSection";
 import PrintPdfButton from "@/components/portal/PrintPdfButton";
+import PdfShareActions from "@/components/portal/PdfShareActions";
 
 const ESTADO_COLORS: Record<EstadoOC, string> = {
-  BORRADOR:  "bg-gray-100 text-gray-600",
-  EMITIDA:   "bg-blue-100 text-blue-700",
-  ENVIADA:   "bg-indigo-100 text-indigo-700",
-  APROBADA:  "bg-green-100 text-green-700",
-  RECHAZADA: "bg-red-100 text-[#c6352e]",
-  ANULADA:   "bg-red-50 text-red-800",
+  BORRADOR:  "bg-gray-50 text-gray-500 border border-gray-200",
+  EMITIDA:   "bg-blue-50 text-blue-600 border border-blue-200",
+  ENVIADA:   "bg-sky-50 text-sky-700 border border-sky-200",
+  APROBADA:  "bg-green-50 text-green-600 border border-green-200",
+  RECHAZADA: "bg-red-50 text-red-500 border border-red-200",
+  ANULADA:   "bg-rose-50 text-rose-500 border border-rose-200",
 };
 
 const ESTADO_LABELS: Record<EstadoOC, string> = {
@@ -116,12 +117,12 @@ export default async function OCDetailPage({ params, searchParams }: Props) {
               {new Date(oc.fecha_emision).toLocaleDateString("es-CL")}
             </p>
           </div>
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${ESTADO_COLORS[estado]}`}>
-            {ESTADO_LABELS[estado]}
+          <span className={`text-xs font-semibold px-2.5 py-1 rounded-md flex-shrink-0 ${ESTADO_COLORS[estado]}`}>
+            {ESTADO_LABELS[estado].toUpperCase()}
           </span>
         </div>
 
-        <div className="flex gap-2 pl-10 sm:pl-0">
+        <div className="flex flex-wrap gap-2 pl-10 sm:pl-0">
           {canEdit && estado === "BORRADOR" && (
             <Link href={`/ordenes-compra/${id}?edit=1`}>
               <Button variant="outline" size="sm" className="gap-2">
@@ -131,9 +132,9 @@ export default async function OCDetailPage({ params, searchParams }: Props) {
             </Link>
           )}
           <a href={`/api/ordenes-compra/${id}/pdf`} download={`orden-compra-${oc.numero}.pdf`}>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Download className="h-4 w-4" />
-              Descargar
+            <Button size="sm" className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
+              <FileDown className="h-4 w-4" />
+              Descargar PDF
             </Button>
           </a>
           <PrintPdfButton pdfUrl={`/api/ordenes-compra/${id}/pdf`} />
@@ -324,6 +325,30 @@ export default async function OCDetailPage({ params, searchParams }: Props) {
         sessionId={session.id}
         sessionRol={session.rol}
       />
+
+      {/* Compartir orden de compra */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <h2 className="font-semibold text-[#253158] mb-3">Compartir orden de compra</h2>
+        <PdfShareActions
+          pdfUrl={`/api/ordenes-compra/${id}/pdf`}
+          fileName={`orden-compra-${oc.numero}.pdf`}
+          title={`Orden de Compra ${oc.numero}`}
+          whatsappMessage={`Hola, te envío la Orden de Compra ${oc.numero} de Solterra SpA${oc.proveedor.nombre ? ` para ${oc.proveedor.nombre}` : ""}. El PDF se descargó en este dispositivo para adjuntarlo si WhatsApp no lo adjunta automáticamente.`}
+          emailSubject={`Orden de Compra ${oc.numero} — Solterra SpA`}
+          emailBody={`Estimados,\n\nAdjunto la Orden de Compra ${oc.numero}${oc.proveedor.nombre ? ` (${oc.proveedor.nombre})` : ""}. Si el archivo no se adjuntó automáticamente, fue descargado para adjuntarlo manualmente.\n\nSaludos,\nSolterra SpA`}
+          emailTo={oc.proveedor.email ?? undefined}
+        />
+      </div>
+
+      {/* Volver */}
+      <div className="flex justify-start">
+        <Link href="/ordenes-compra">
+          <Button className="bg-white border border-gray-300 text-[#253158] hover:bg-gray-50 gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Volver a Órdenes de Compra
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 }
