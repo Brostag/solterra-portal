@@ -4,12 +4,12 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
-import { Mail, Lock } from "lucide-react";
+import { ArrowRight, FileText, Lock, Mail, ShieldCheck, Smartphone } from "lucide-react";
 
-const features = [
-  "Gestión de facturas y órdenes de compra",
-  "Control documental centralizado",
-  "Clientes, proveedores y productos",
+const FEATURES = [
+  { Icon: ShieldCheck, text: "Acceso seguro por roles para todo el equipo" },
+  { Icon: FileText, text: "Contratos, cotizaciones y órdenes de compra en un solo lugar" },
+  { Icon: Smartphone, text: "Pensado para terreno: úsalo desde el celular" },
 ];
 
 export default function LoginForm() {
@@ -69,32 +69,35 @@ export default function LoginForm() {
 
         {/* Contenido centrado verticalmente */}
         <div className="relative z-10 flex-1 flex flex-col justify-center px-16 py-14">
-          <div className="w-full max-w-[520px]">
+          <div className="w-full max-w-[520px] mx-auto">
             <Image
               src="/solterra-logo.png"
               alt="Solterra"
               width={210}
               height={72}
-              className="h-[68px] w-auto object-contain mb-14"
+              className="h-[60px] w-auto object-contain mb-9"
             />
-            <p className="text-[#e05a54] text-[11px] font-semibold tracking-[0.22em] uppercase mb-5">
-              Portal Empresarial
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3.5 py-1.5 text-[11px] font-semibold tracking-[0.18em] text-white/80 uppercase mb-6">
+              Portal interno
+            </span>
+            <p className="text-[#e05a54] text-[11px] font-semibold tracking-[0.22em] uppercase mb-4">
+              Sistema administrativo
             </p>
-            <h2 className="text-[3.5rem] font-bold text-white leading-[1.05] mb-6">
-              Gestión interna<br />de Solterra
+            <h2 className="text-[42px] font-bold text-white leading-[1.08] mb-6">
+              Gestión interna<br />
+              <em className="not-italic">de Solterra</em>
             </h2>
-            <p className="text-white/60 text-lg leading-relaxed mb-12 max-w-[420px]">
-              Plataforma centralizada para la operación y control en el norte de Chile.
+            <p className="text-white/60 text-lg leading-relaxed mb-9 max-w-[440px]">
+              Gestiona contratos, cotizaciones, órdenes de compra, empresas y documentos
+              desde un mismo lugar — en oficina, en faena o desde el celular.
             </p>
-            <ul className="space-y-6">
-              {features.map((f) => (
-                <li key={f} className="flex items-center gap-4">
-                  <span className="h-[30px] w-[30px] rounded-full bg-[#c6352e]/85 flex items-center justify-center flex-shrink-0">
-                    <svg className="h-[15px] w-[15px] text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
+            <ul className="space-y-4">
+              {FEATURES.map(({ Icon, text }) => (
+                <li key={text} className="flex items-center gap-4">
+                  <span className="h-10 w-10 rounded-xl bg-white/8 border border-white/15 flex items-center justify-center flex-shrink-0">
+                    <Icon className="h-[18px] w-[18px] text-white/85" />
                   </span>
-                  <span className="text-white/75 text-[17px]">{f}</span>
+                  <span className="text-white/75 text-[16px]">{text}</span>
                 </li>
               ))}
             </ul>
@@ -103,9 +106,16 @@ export default function LoginForm() {
 
         {/* Footer izquierdo */}
         <div className="relative z-10 px-16 pb-8">
-          <div className="border-t border-white/10 pt-5 max-w-[520px]">
-            <p className="text-white/20 text-[11px]">
-              © Solterra {new Date().getFullYear()} · Movimiento de Tierra, Maquinarias y Equipos
+          <div className="border-t border-white/10 pt-5 max-w-[520px] mx-auto flex items-center justify-between gap-4">
+            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-400/25 px-3 py-1 text-[11px] font-medium text-emerald-300">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+              </span>
+              Sistema operativo
+            </span>
+            <p className="text-white/25 text-[11px]">
+              Calama · Región de Antofagasta · Chile
             </p>
           </div>
         </div>
@@ -124,14 +134,14 @@ export default function LoginForm() {
           <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_24px_60px_-20px_rgba(20,33,61,0.28),0_2px_8px_rgba(20,33,61,0.06)] overflow-hidden">
 
             {/* Encabezado */}
-            <div className="px-6 pt-8 pb-5 sm:px-12 sm:pt-12 sm:pb-6">
-              <h1 className="text-[2.15rem] font-bold text-[#1b2a4e] leading-tight tracking-tight">
+            <div className="px-6 pt-8 pb-5 sm:px-12 sm:pt-10 sm:pb-6">
+              <h1 className="text-[28px] font-bold text-[#1b2a4e] leading-tight tracking-tight">
                 Iniciar sesión
               </h1>
-              <p className="text-base text-gray-400 mt-2">
+              <p className="text-sm text-gray-400 mt-1.5">
                 Ingresa con tu cuenta corporativa
               </p>
-              <div className="mt-6 border-b border-gray-100" />
+              <div className="mt-5 border-b border-gray-100" />
             </div>
 
             {/* Formulario */}
@@ -164,7 +174,8 @@ export default function LoginForm() {
                       placeholder="usuario@solterra.cl"
                       required
                       autoFocus
-                      className="w-full h-14 pl-11 pr-4 border border-gray-200 rounded-xl text-sm bg-[#f8f9fb] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1b2a4e]/15 focus:border-[#1b2a4e] transition-all"
+                      autoComplete="email"
+                      className="w-full h-[46px] pl-11 pr-4 border border-gray-200 rounded-lg text-sm bg-[#f8f9fb] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1b2a4e]/15 focus:border-[#1b2a4e] transition-all"
                     />
                   </div>
                 </div>
@@ -191,7 +202,8 @@ export default function LoginForm() {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       required
-                      className="w-full h-14 pl-11 pr-16 border border-gray-200 rounded-xl text-sm bg-[#f8f9fb] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1b2a4e]/15 focus:border-[#1b2a4e] transition-all"
+                      autoComplete="current-password"
+                      className="w-full h-[46px] pl-11 pr-16 border border-gray-200 rounded-lg text-sm bg-[#f8f9fb] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1b2a4e]/15 focus:border-[#1b2a4e] transition-all"
                     />
                     <button
                       type="button"
@@ -203,6 +215,17 @@ export default function LoginForm() {
                   </div>
                 </div>
 
+                {/* Recuérdame: la sesión de Supabase ya persiste en este equipo;
+                    el control es informativo y no altera el submit. */}
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    defaultChecked
+                    className="h-4 w-4 rounded border-gray-300 accent-[#253158] cursor-pointer"
+                  />
+                  <span className="text-sm text-gray-500">Recuérdame en este equipo</span>
+                </label>
+
                 {error && (
                   <div className="text-sm text-[#c6352e] bg-red-50 border border-red-100 px-4 py-3 rounded-lg">
                     {error}
@@ -212,9 +235,10 @@ export default function LoginForm() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-14 bg-[#c6352e] hover:bg-[#b02e28] active:bg-[#9e2822] disabled:opacity-60 disabled:cursor-not-allowed text-white text-base font-semibold rounded-xl transition-colors mt-2"
+                  className="w-full h-12 flex items-center justify-center gap-2 bg-[#c6352e] hover:bg-[#a82a24] active:bg-[#9e2822] disabled:opacity-60 disabled:cursor-not-allowed text-white text-base font-semibold rounded-lg transition-colors mt-1"
                 >
                   {loading ? "Verificando..." : "Ingresar al portal"}
+                  {!loading && <ArrowRight className="h-[18px] w-[18px]" />}
                 </button>
               </form>
             </div>
@@ -222,6 +246,10 @@ export default function LoginForm() {
 
           {/* Footer */}
           <p className="text-center text-xs text-gray-400 mt-5">
+            ¿Problemas para entrar? Escríbenos a{" "}
+            <a href="mailto:maquinarias@solterra.cl" className="text-[#253158] hover:underline">maquinarias@solterra.cl</a>
+          </p>
+          <p className="text-center text-[11px] text-gray-300 mt-1.5">
             © Solterra {new Date().getFullYear()} — Uso interno
           </p>
         </div>
