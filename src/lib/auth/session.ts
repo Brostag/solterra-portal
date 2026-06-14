@@ -14,7 +14,7 @@ const getCachedProfile = (authUserId: string) =>
     () =>
       prisma.profile.findUnique({
         where: { auth_user_id: authUserId },
-        select: { id: true, email: true, nombre: true, rol: true, activo: true },
+        select: { id: true, email: true, nombre: true, rol: true, activo: true, area: true },
       }),
     ["profile", authUserId],
     { revalidate: 120, tags: [profileCacheTag(authUserId)] }
@@ -40,6 +40,7 @@ export const getSession = cache(async (): Promise<UserSession | null> => {
     email: profile.email,
     nombre: profile.nombre,
     rol: profile.rol as UserSession["rol"],
+    area: profile.area as UserSession["area"],
   };
 });
 
@@ -64,5 +65,6 @@ export const getPortalSessionFast = cache(async (): Promise<UserSession | null> 
     email: profile.email,
     nombre: profile.nombre,
     rol: profile.rol as UserSession["rol"],
+    area: profile.area as UserSession["area"],
   };
 });

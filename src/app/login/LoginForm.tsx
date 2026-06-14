@@ -15,11 +15,11 @@ const FEATURES = [
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const rawRedirect = searchParams.get("redirectTo") ?? "/dashboard";
+  const rawRedirect = searchParams.get("redirectTo") ?? "/modulos";
   const redirectTo =
     rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
       ? rawRedirect
-      : "/dashboard";
+      : "/modulos";
   const inactiveError =
     searchParams.get("error") === "inactive"
       ? "Tu cuenta está desactivada. Contacta al administrador."

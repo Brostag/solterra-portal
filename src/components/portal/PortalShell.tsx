@@ -5,16 +5,17 @@ import { usePathname } from "next/navigation";
 import Sidebar from "@/components/portal/Sidebar";
 import Topbar from "@/components/portal/Topbar";
 import { AuthListener } from "@/components/portal/AuthListener";
-import type { Rol } from "@/types";
+import type { Rol, Area } from "@/types";
 
 interface PortalShellProps {
   nombre: string;
   email: string;
   rol: Rol;
+  area?: Area | null;
   children: React.ReactNode;
 }
 
-export default function PortalShell({ nombre, email, rol, children }: PortalShellProps) {
+export default function PortalShell({ nombre, email, rol, area = null, children }: PortalShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
 
@@ -54,7 +55,7 @@ export default function PortalShell({ nombre, email, rol, children }: PortalShel
         />
       )}
 
-      <Sidebar rol={rol} mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <Sidebar rol={rol} area={area} mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
 
       <div className="flex flex-col flex-1 overflow-hidden">
         <Topbar
