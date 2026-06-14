@@ -1,30 +1,34 @@
-import Link from "next/link";
-import { ChevronLeft, Package } from "lucide-react";
+import { Package } from "lucide-react";
+import { getEquipos } from "@/lib/terreno/queries";
+import EquiposLista from "@/components/operacion/EquiposLista";
 
-export default function EquiposPage() {
+export default async function EquiposPage() {
+  const equipos = await getEquipos();
+
   return (
-    <div className="mx-auto max-w-5xl">
-      <Link
-        href="/operacion"
-        className="inline-flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-[#253158]"
-      >
-        <ChevronLeft className="h-4 w-4" /> Volver a Operación
-      </Link>
-      <header className="mb-8 mt-4 flex items-start gap-3">
-        <span className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-[#253158]/10 text-[#253158]">
-          <Package className="h-5 w-5" />
-        </span>
-        <div>
-          <h1 className="text-2xl font-bold text-[#253158]">Equipos</h1>
-          <p className="mt-0.5 text-sm text-gray-500">Maquinaria y flota disponible</p>
+    <div className="mx-auto max-w-6xl space-y-6">
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <span className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-[#253158]/10 text-[#253158]">
+            <Package className="h-5 w-5" />
+          </span>
+          <div>
+            <h1 className="text-2xl font-bold text-[#253158]">Equipos</h1>
+            <p className="mt-0.5 text-sm text-gray-500">Maquinaria y flota disponible</p>
+          </div>
         </div>
+        {/* Placeholder: el formulario de alta llega en una fase posterior */}
+        <button
+          type="button"
+          disabled
+          title="Disponible próximamente"
+          className="cursor-not-allowed rounded-lg bg-[#253158]/40 px-4 py-2 text-sm font-semibold text-white opacity-60"
+        >
+          Nuevo equipo
+        </button>
       </header>
-      <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center">
-        <p className="font-semibold text-[#253158]">Pantalla en construcción</p>
-        <p className="mt-1 text-sm text-gray-500">
-          La funcionalidad de este módulo se integrará en una fase posterior.
-        </p>
-      </div>
+
+      <EquiposLista equipos={equipos} />
     </div>
   );
 }

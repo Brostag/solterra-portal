@@ -141,3 +141,55 @@ export const getOperacionDashboard = unstable_cache(
   ["operacion-dashboard"],
   { revalidate: 60, tags: [OPERACION_DASHBOARD_TAG] },
 );
+
+// ── Equipos (listado de Operación) ─────────────────────────
+
+export const MANT_EQUIPOS_TAG = "mant-equipos";
+
+export type EquipoLista = {
+  id: string;
+  codigo: string;
+  nombre: string;
+  tipo: string;
+  marca: string | null;
+  modelo: string | null;
+  patente: string | null;
+  horometro_actual: number;
+  km_actual: number;
+  estado: string;
+};
+
+export const getEquipos = unstable_cache(
+  async (): Promise<EquipoLista[]> => {
+    const rows = await prisma.mantEquipo.findMany({
+      where: { deleted_at: null },
+      orderBy: { updated_at: "desc" },
+      select: {
+        id: true,
+        codigo: true,
+        nombre: true,
+        tipo: true,
+        marca: true,
+        modelo: true,
+        patente: true,
+        horometro_actual: true,
+        km_actual: true,
+        estado: true,
+      },
+    });
+    return rows.map((e) => ({
+      id: e.id,
+      codigo: e.codigo,
+      nombre: e.nombre,
+      tipo: e.tipo,
+      marca: e.marca,
+      modelo: e.modelo,
+      patente: e.patente,
+      horometro_actual: Number(e.horometro_actual),
+      km_actual: Number(e.km_actual),
+      estado: e.estado,
+    }));
+  },
+  ["mant-equipos"],
+  { revalidate: 60, tags: [MANT_EQUIPOS_TAG] },
+);
