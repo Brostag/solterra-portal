@@ -44,6 +44,9 @@ next-env.d.ts
 # design reference (temporary, do not commit)
 claude desing/
 
+# módulo de mantención antiguo — referencia temporal para portar (NO build, NO commit)
+solterra-manteniemiento/
+
 # qa / playwright artifacts
 .playwright-mcp/
 test-results/

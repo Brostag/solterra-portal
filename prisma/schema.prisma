@@ -8,6 +8,11 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum Area {
+  OPERACIONES
+  MANTENCION
+}
+
 enum Rol {
   ADMINISTRADOR
   SUPERVISOR
@@ -87,6 +92,11 @@ model Profile {
   documents                 Document[]
   contracts                 Contract[]
   contract_equipment_photos ContractEquipmentPhoto[]
+  area                      Area?
+  mant_partes_diarios       MantParteDiario[]        @relation("ParteDiarioOperador")
+  mant_mantenciones         MantMantencion[]         @relation("MantencionResponsable")
+  mant_checklists           MantChecklist[]          @relation("ChecklistOperador")
+  mant_checklists_anulados  MantChecklist[]          @relation("ChecklistAnuladoPor")
 
   @@map("profiles")
 }
@@ -476,4 +486,156 @@ model QuotationItem {
 
   @@index([quotation_id])
   @@map("quotation_items")
+}
+
+// ============================================================
+// MÓDULOS MANTENCIÓN / OPERACIÓN  (aislados, offline, uuid client-generated)
+// Tablas mant_* — operadores = Profile del portal. Bookkeeping de sync
+// (synced/sync_queue) vive solo en PGlite local, no aquí.
+// ============================================================
+
+model MantEquipo {
+  id               String            @id @default(uuid())
+  codigo           String            @unique
+  nombre           String
+  tipo             String
+  marca            String?
+  modelo           String?
+  numero_serie     String?
+  patente          String?
+  anio             Int?
+  horometro_actual Decimal           @default(0) @db.Decimal(10, 2)
+  km_actual        Decimal           @default(0) @db.Decimal(10, 2)
+  estado           String            @default("Activo")
+  imagen_url       String?
+  deleted_at       DateTime?
+  created_at       DateTime          @default(now())
+  updated_at       DateTime          @updatedAt
+  partes_diarios   MantParteDiario[]
+  mantenciones     MantMantencion[]
+  checklists       MantChecklist[]
+  certificados     MantCertificado[]
+
+  @@index([estado])
+  @@index([updated_at])
+  @@map("mant_equipos")
+}
+
+model MantParteDiario {
+  id                  String     @id @default(uuid())
+  equipo_id           String
+  operador_id         String
+  fecha               DateTime   @db.Date
+  horometro_inicio    Decimal?   @db.Decimal(10, 2)
+  horometro_fin       Decimal?   @db.Decimal(10, 2)
+  km_inicio           Decimal?   @db.Decimal(10, 2)
+  km_fin              Decimal?   @db.Decimal(10, 2)
+  combustible_litros  Decimal?   @db.Decimal(8, 2)
+  aceite_litros       Decimal?   @db.Decimal(8, 2)
+  descripcion_trabajo String?
+  observaciones       String?
+  estado              String     @default("Pendiente")
+  firma_operador_b64  String?
+  firma_encargado_b64 String?
+  foto_urls           String[]   @default([])
+  deleted_at          DateTime?
+  created_at          DateTime   @default(now())
+  updated_at          DateTime   @updatedAt
+  equipo              MantEquipo @relation(fields: [equipo_id], references: [id])
+  operador            Profile    @relation("ParteDiarioOperador", fields: [operador_id], references: [id])
+
+  @@index([equipo_id])
+  @@index([operador_id])
+  @@index([fecha])
+  @@index([updated_at])
+  @@map("mant_partes_diarios")
+}
+
+model MantMantencion {
+  id                           String     @id @default(uuid())
+  equipo_id                    String
+  responsable_id               String
+  tipo                         String
+  fecha_inicio                 DateTime
+  fecha_fin                    DateTime?
+  horometro_realizada          Decimal?   @db.Decimal(10, 2)
+  descripcion                  String
+  trabajos_realizados          String?
+  repuestos_usados             String?
+  costo                        Decimal?   @db.Decimal(12, 2)
+  proxima_mantencion_horometro Decimal?   @db.Decimal(10, 2)
+  proxima_mantencion_fecha     DateTime?  @db.Date
+  estado                       String     @default("En Proceso")
+  observaciones                String?
+  deleted_at                   DateTime?
+  created_at                   DateTime   @default(now())
+  updated_at                   DateTime   @updatedAt
+  equipo                       MantEquipo @relation(fields: [equipo_id], references: [id])
+  responsable                  Profile    @relation("MantencionResponsable", fields: [responsable_id], references: [id])
+
+  @@index([equipo_id])
+  @@index([estado])
+  @@index([updated_at])
+  @@map("mant_mantenciones")
+}
+
+model MantChecklist {
+  id                    String     @id @default(uuid())
+  equipo_id             String
+  operador_id           String
+  fecha                 DateTime   @default(now())
+  nivel_aceite          Boolean?
+  nivel_combustible     Boolean?
+  nivel_agua_radiador   Boolean?
+  nivel_hidraulico      Boolean?
+  presion_neumaticos    Boolean?
+  luces_funcionan       Boolean?
+  frenos_funcionan      Boolean?
+  cinturon_seguridad    Boolean?
+  extintor_presente     Boolean?
+  documentacion_vigente Boolean?
+  limpieza_cabina       Boolean?
+  alarma_retroceso      Boolean?
+  estado_cucharas       Boolean?
+  fugas_aceite          Boolean?
+  fugas_combustible     Boolean?
+  estado_general        String     @default("Apto")
+  observaciones         String?
+  firma_operador_b64    String?
+  anulado_at            DateTime?
+  motivo_anulacion      String?
+  anulado_por_id        String?
+  created_at            DateTime   @default(now())
+  updated_at            DateTime   @updatedAt
+  equipo                MantEquipo @relation(fields: [equipo_id], references: [id])
+  operador              Profile    @relation("ChecklistOperador", fields: [operador_id], references: [id])
+  anulado_por           Profile?   @relation("ChecklistAnuladoPor", fields: [anulado_por_id], references: [id])
+
+  @@index([equipo_id])
+  @@index([operador_id])
+  @@index([fecha])
+  @@index([updated_at])
+  @@map("mant_checklists")
+}
+
+model MantCertificado {
+  id                  String     @id @default(uuid())
+  equipo_id           String
+  tipo                String
+  numero              String?
+  fecha_emision       DateTime?  @db.Date
+  fecha_vencimiento   DateTime   @db.Date
+  empresa_emisora     String?
+  observaciones       String?
+  documento_url       String?
+  firma_encargado_b64 String?
+  deleted_at          DateTime?
+  created_at          DateTime   @default(now())
+  updated_at          DateTime   @updatedAt
+  equipo              MantEquipo @relation(fields: [equipo_id], references: [id])
+
+  @@index([equipo_id])
+  @@index([fecha_vencimiento])
+  @@index([updated_at])
+  @@map("mant_certificados")
 }
