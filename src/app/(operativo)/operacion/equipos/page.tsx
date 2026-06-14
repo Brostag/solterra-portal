@@ -1,9 +1,20 @@
+import Link from "next/link";
 import { Package } from "lucide-react";
 import { getEquipos } from "@/lib/terreno/queries";
 import EquiposLista from "@/components/operacion/EquiposLista";
+import { getPortalSessionFast } from "@/lib/auth/session";
+import { canAccessModule } from "@/lib/modules";
 
 export default async function EquiposPage() {
-  const equipos = await getEquipos();
+  const [equipos, session] = await Promise.all([
+    getEquipos(),
+    getPortalSessionFast(),
+  ]);
+
+  const puedeCrear =
+    !!session &&
+    canAccessModule(session, "OPERACION") &&
+    (session.rol === "ADMINISTRADOR" || session.rol === "SUPERVISOR");
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -17,15 +28,14 @@ export default async function EquiposPage() {
             <p className="mt-0.5 text-sm text-gray-500">Maquinaria y flota disponible</p>
           </div>
         </div>
-        {/* Placeholder: el formulario de alta llega en una fase posterior */}
-        <button
-          type="button"
-          disabled
-          title="Disponible próximamente"
-          className="cursor-not-allowed rounded-lg bg-[#253158]/40 px-4 py-2 text-sm font-semibold text-white opacity-60"
-        >
-          Nuevo equipo
-        </button>
+        {puedeCrear && (
+          <Link
+            href="/operacion/equipos/nuevo"
+            className="rounded-lg bg-[#253158] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1b2540]"
+          >
+            Nuevo equipo
+          </Link>
+        )}
       </header>
 
       <EquiposLista equipos={equipos} />

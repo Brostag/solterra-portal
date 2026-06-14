@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { EquipoLista } from "@/lib/terreno/queries";
 
 const FILTROS = [
@@ -22,6 +24,7 @@ function fmt(n: number): string {
 }
 
 export default function EquiposLista({ equipos }: { equipos: EquipoLista[] }) {
+  const router = useRouter();
   const [q, setQ] = useState("");
   const [filtro, setFiltro] = useState<string>("todos");
 
@@ -47,6 +50,8 @@ export default function EquiposLista({ equipos }: { equipos: EquipoLista[] }) {
       </div>
     );
   }
+
+  const href = (id: string) => `/operacion/equipos/${id}`;
 
   return (
     <div className="space-y-4">
@@ -104,9 +109,19 @@ export default function EquiposLista({ equipos }: { equipos: EquipoLista[] }) {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filtrados.map((e) => (
-                  <tr key={e.id} className="hover:bg-gray-50">
+                  <tr
+                    key={e.id}
+                    onClick={() => router.push(href(e.id))}
+                    className="cursor-pointer hover:bg-gray-50"
+                  >
                     <td className="whitespace-nowrap px-4 py-3 font-medium text-[#253158]">
-                      {e.codigo}
+                      <Link
+                        href={href(e.id)}
+                        onClick={(ev) => ev.stopPropagation()}
+                        className="hover:underline"
+                      >
+                        {e.codigo}
+                      </Link>
                     </td>
                     <td className="px-4 py-3 text-gray-700">{e.nombre}</td>
                     <td className="px-4 py-3 text-gray-500">{e.tipo}</td>
@@ -136,12 +151,13 @@ export default function EquiposLista({ equipos }: { equipos: EquipoLista[] }) {
             </table>
           </div>
 
-          {/* Mobile: cards */}
+          {/* Mobile: cards clickeables */}
           <div className="space-y-3 md:hidden">
             {filtrados.map((e) => (
-              <div
+              <Link
                 key={e.id}
-                className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                href={href(e.id)}
+                className="block rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:border-[#253158]/30"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -170,7 +186,7 @@ export default function EquiposLista({ equipos }: { equipos: EquipoLista[] }) {
                     </span>
                   )}
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
 

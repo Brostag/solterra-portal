@@ -193,3 +193,61 @@ export const getEquipos = unstable_cache(
   ["mant-equipos"],
   { revalidate: 60, tags: [MANT_EQUIPOS_TAG] },
 );
+
+// ── Detalle de un equipo ───────────────────────────────────
+
+export type EquipoDetalle = {
+  id: string;
+  codigo: string;
+  nombre: string;
+  tipo: string;
+  marca: string | null;
+  modelo: string | null;
+  numero_serie: string | null;
+  patente: string | null;
+  anio: number | null;
+  horometro_actual: number;
+  km_actual: number;
+  estado: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function getEquipoDetalle(id: string): Promise<EquipoDetalle | null> {
+  const e = await prisma.mantEquipo.findFirst({
+    where: { id, deleted_at: null },
+    select: {
+      id: true,
+      codigo: true,
+      nombre: true,
+      tipo: true,
+      marca: true,
+      modelo: true,
+      numero_serie: true,
+      patente: true,
+      anio: true,
+      horometro_actual: true,
+      km_actual: true,
+      estado: true,
+      created_at: true,
+      updated_at: true,
+    },
+  });
+  if (!e) return null;
+  return {
+    id: e.id,
+    codigo: e.codigo,
+    nombre: e.nombre,
+    tipo: e.tipo,
+    marca: e.marca,
+    modelo: e.modelo,
+    numero_serie: e.numero_serie,
+    patente: e.patente,
+    anio: e.anio,
+    horometro_actual: Number(e.horometro_actual),
+    km_actual: Number(e.km_actual),
+    estado: e.estado,
+    created_at: e.created_at.toISOString(),
+    updated_at: e.updated_at.toISOString(),
+  };
+}
