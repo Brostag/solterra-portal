@@ -479,6 +479,140 @@ export const getCertificados = unstable_cache(
   { revalidate: 60, tags: [MANT_CERTIFICADOS_TAG] },
 );
 
+// ── Dashboard del módulo Mantención ────────────────────────
+
+export type MantDashboardMantencion = {
+  id: string;
+  equipo: string | null;
+  tipo: string;
+  estado: string;
+  fecha_inicio: string; // ISO
+};
+
+export type MantDashboardCertificado = {
+  id: string;
+  equipo: string | null;
+  tipo: string;
+  fecha_vencimiento: string; // ISO date
+  estado: string; // derivado
+};
+
+export type MantencionDashboard = {
+  kpis: {
+    equiposEnMantencion: number;
+    mantencionesAbiertas: number;
+    mantencionesCompletadas: number;
+    certificadosVigentes: number;
+    certificadosPorVencer: number;
+    certificadosVencidos: number;
+  };
+  mantencionesEnCurso: MantDashboardMantencion[];
+  certificadosPorVencer: MantDashboardCertificado[];
+};
+
+export const getMantencionDashboard = unstable_cache(
+  async (): Promise<MantencionDashboard> => {
+    const ahora = new Date();
+    // Medianoche UTC de hoy, para alinear con las fechas @db.Date.
+    const hoyUTC = new Date(
+      Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth(), ahora.getUTCDate()),
+    );
+    const en30 = new Date(hoyUTC);
+    en30.setUTCDate(en30.getUTCDate() + 30);
+
+    const [
+      equiposEnMantencion,
+      mantencionesAbiertas,
+      mantencionesCompletadas,
+      certificadosVigentes,
+      certificadosPorVencerCount,
+      certificadosVencidos,
+      mantencionesEnCurso,
+      certificadosProximos,
+    ] = await Promise.all([
+      prisma.mantEquipo.count({
+        where: { deleted_at: null, estado: "En Mantención" },
+      }),
+      prisma.mantMantencion.count({
+        where: { deleted_at: null, estado: { not: "Completada" } },
+      }),
+      prisma.mantMantencion.count({
+        where: { deleted_at: null, estado: "Completada" },
+      }),
+      prisma.mantCertificado.count({
+        where: { deleted_at: null, fecha_vencimiento: { gt: en30 } },
+      }),
+      prisma.mantCertificado.count({
+        where: {
+          deleted_at: null,
+          fecha_vencimiento: { gte: hoyUTC, lte: en30 },
+        },
+      }),
+      prisma.mantCertificado.count({
+        where: { deleted_at: null, fecha_vencimiento: { lt: hoyUTC } },
+      }),
+      prisma.mantMantencion.findMany({
+        where: { deleted_at: null, estado: { not: "Completada" } },
+        orderBy: { fecha_inicio: "desc" },
+        take: 5,
+        select: {
+          id: true,
+          tipo: true,
+          estado: true,
+          fecha_inicio: true,
+          equipo: { select: { codigo: true, nombre: true } },
+        },
+      }),
+      prisma.mantCertificado.findMany({
+        where: { deleted_at: null, fecha_vencimiento: { lte: en30 } },
+        orderBy: { fecha_vencimiento: "asc" },
+        take: 5,
+        select: {
+          id: true,
+          tipo: true,
+          fecha_vencimiento: true,
+          equipo: { select: { codigo: true, nombre: true } },
+        },
+      }),
+    ]);
+
+    return {
+      kpis: {
+        equiposEnMantencion,
+        mantencionesAbiertas,
+        mantencionesCompletadas,
+        certificadosVigentes,
+        certificadosPorVencer: certificadosPorVencerCount,
+        certificadosVencidos,
+      },
+      mantencionesEnCurso: mantencionesEnCurso.map((m) => ({
+        id: m.id,
+        equipo: m.equipo ? `${m.equipo.codigo} · ${m.equipo.nombre}` : null,
+        tipo: m.tipo,
+        estado: m.estado,
+        fecha_inicio: m.fecha_inicio.toISOString(),
+      })),
+      certificadosPorVencer: certificadosProximos.map((c) => {
+        const fecha = c.fecha_vencimiento.toISOString();
+        return {
+          id: c.id,
+          equipo: c.equipo ? `${c.equipo.codigo} · ${c.equipo.nombre}` : null,
+          tipo: c.tipo,
+          fecha_vencimiento: fecha,
+          estado: estadoCertificado(fecha),
+        };
+      }),
+    };
+  },
+  ["mant-dashboard"],
+  {
+    revalidate: 60,
+    // Cualquier mutación de mantenciones, certificados o equipos invalida
+    // también este dashboard (comparten estos tags).
+    tags: [MANT_MANTENCIONES_TAG, MANT_CERTIFICADOS_TAG, MANT_EQUIPOS_TAG],
+  },
+);
+
 // ── Detalle de un certificado ──────────────────────────────
 
 export type CertificadoDetalle = {
