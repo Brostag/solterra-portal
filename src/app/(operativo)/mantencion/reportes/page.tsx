@@ -1,16 +1,21 @@
 import Link from "next/link";
 import { ChevronLeft, ClipboardList } from "lucide-react";
+import { getEquiposOptions } from "@/lib/terreno/queries";
+import ReportesCliente from "@/components/mantencion/ReportesCliente";
 
-export default function ReportesPage() {
+export default async function ReportesPage() {
+  const equipos = await getEquiposOptions();
+
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-5xl space-y-6">
       <Link
         href="/mantencion"
         className="inline-flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-[#253158]"
       >
         <ChevronLeft className="h-4 w-4" /> Volver a Mantención
       </Link>
-      <header className="mb-8 mt-4 flex items-start gap-3">
+
+      <header className="flex items-start gap-3">
         <span className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-[#253158]/10 text-[#253158]">
           <ClipboardList className="h-5 w-5" />
         </span>
@@ -21,12 +26,8 @@ export default function ReportesPage() {
           </p>
         </div>
       </header>
-      <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center">
-        <p className="font-semibold text-[#253158]">Pantalla en construcción</p>
-        <p className="mt-1 text-sm text-gray-500">
-          La funcionalidad de este módulo se integrará en una fase posterior.
-        </p>
-      </div>
+
+      <ReportesCliente equipos={equipos} />
     </div>
   );
 }
