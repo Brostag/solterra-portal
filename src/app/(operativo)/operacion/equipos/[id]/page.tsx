@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Package } from "lucide-react";
 import { getEquipoDetalle } from "@/lib/terreno/queries";
+import { getPortalSessionFast } from "@/lib/auth/session";
+import { canAccessModule } from "@/lib/modules";
 
 function estadoBadge(estado: string): string {
   if (estado === "Activo") return "bg-green-50 text-green-700 ring-1 ring-green-600/20";
@@ -28,8 +30,16 @@ type Props = { params: Promise<{ id: string }> };
 
 export default async function EquipoDetallePage({ params }: Props) {
   const { id } = await params;
-  const e = await getEquipoDetalle(id);
+  const [e, session] = await Promise.all([
+    getEquipoDetalle(id),
+    getPortalSessionFast(),
+  ]);
   if (!e) notFound();
+
+  const puedeEditar =
+    !!session &&
+    canAccessModule(session, "OPERACION") &&
+    (session.rol === "ADMINISTRADOR" || session.rol === "SUPERVISOR");
 
   const datos = [
     { label: "Código", value: e.codigo },
@@ -73,11 +83,21 @@ export default async function EquipoDetallePage({ params }: Props) {
             </p>
           </div>
         </div>
-        <span
-          className={"rounded-full px-3 py-1 text-xs font-medium " + estadoBadge(e.estado)}
-        >
-          {e.estado}
-        </span>
+        <div className="flex items-center gap-3">
+          <span
+            className={"rounded-full px-3 py-1 text-xs font-medium " + estadoBadge(e.estado)}
+          >
+            {e.estado}
+          </span>
+          {puedeEditar && (
+            <Link
+              href={`/operacion/equipos/${e.id}/editar`}
+              className="rounded-lg bg-[#253158] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1b2540]"
+            >
+              Editar equipo
+            </Link>
+          )}
+        </div>
       </header>
 
       {/* Datos del equipo */}
