@@ -1,5 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { unstable_cache } from "next/cache";
+import {
+  CHECKLIST_ITEM_KEYS,
+  type ChecklistItemKey,
+} from "@/lib/terreno/checklist-items";
 
 // Tag para invalidar el dashboard de Operación cuando existan acciones de
 // escritura (partes diarios / checklists / equipos). Por ahora solo lectura.
@@ -478,6 +482,233 @@ export const getCertificados = unstable_cache(
   ["mant-certificados"],
   { revalidate: 60, tags: [MANT_CERTIFICADOS_TAG] },
 );
+
+// ── Partes diarios (Operación) ─────────────────────────────
+
+export const MANT_PARTES_TAG = "mant-partes";
+
+export type ParteLista = {
+  id: string;
+  fecha: string; // ISO date
+  equipo: string | null;
+  equipoCodigo: string | null;
+  operador: string | null;
+  horometro_inicio: number | null;
+  horometro_fin: number | null;
+  combustible_litros: number | null;
+  estado: string;
+};
+
+export const getPartes = unstable_cache(
+  async (): Promise<ParteLista[]> => {
+    const rows = await prisma.mantParteDiario.findMany({
+      where: { deleted_at: null },
+      orderBy: [{ fecha: "desc" }, { created_at: "desc" }],
+      take: 200,
+      select: {
+        id: true,
+        fecha: true,
+        horometro_inicio: true,
+        horometro_fin: true,
+        combustible_litros: true,
+        estado: true,
+        equipo: { select: { codigo: true, nombre: true } },
+        operador: { select: { nombre: true } },
+      },
+    });
+    return rows.map((p) => ({
+      id: p.id,
+      fecha: p.fecha.toISOString(),
+      equipo: p.equipo?.nombre ?? null,
+      equipoCodigo: p.equipo?.codigo ?? null,
+      operador: p.operador?.nombre ?? null,
+      horometro_inicio:
+        p.horometro_inicio != null ? Number(p.horometro_inicio) : null,
+      horometro_fin: p.horometro_fin != null ? Number(p.horometro_fin) : null,
+      combustible_litros:
+        p.combustible_litros != null ? Number(p.combustible_litros) : null,
+      estado: p.estado,
+    }));
+  },
+  ["mant-partes"],
+  { revalidate: 60, tags: [MANT_PARTES_TAG] },
+);
+
+// ── Detalle de un parte diario ─────────────────────────────
+
+export type ParteDetalle = {
+  id: string;
+  equipo_id: string;
+  operador_id: string;
+  equipo: string | null;
+  equipoCodigo: string | null;
+  operador: string | null;
+  fecha: string; // ISO date
+  horometro_inicio: number | null;
+  horometro_fin: number | null;
+  km_inicio: number | null;
+  km_fin: number | null;
+  combustible_litros: number | null;
+  aceite_litros: number | null;
+  descripcion_trabajo: string | null;
+  observaciones: string | null;
+  estado: string;
+};
+
+export async function getParteDetalle(id: string): Promise<ParteDetalle | null> {
+  const p = await prisma.mantParteDiario.findFirst({
+    where: { id, deleted_at: null },
+    select: {
+      id: true,
+      equipo_id: true,
+      operador_id: true,
+      fecha: true,
+      horometro_inicio: true,
+      horometro_fin: true,
+      km_inicio: true,
+      km_fin: true,
+      combustible_litros: true,
+      aceite_litros: true,
+      descripcion_trabajo: true,
+      observaciones: true,
+      estado: true,
+      equipo: { select: { codigo: true, nombre: true } },
+      operador: { select: { nombre: true } },
+    },
+  });
+  if (!p) return null;
+  const num = (v: unknown) => (v != null ? Number(v as number) : null);
+  return {
+    id: p.id,
+    equipo_id: p.equipo_id,
+    operador_id: p.operador_id,
+    equipo: p.equipo?.nombre ?? null,
+    equipoCodigo: p.equipo?.codigo ?? null,
+    operador: p.operador?.nombre ?? null,
+    fecha: p.fecha.toISOString(),
+    horometro_inicio: num(p.horometro_inicio),
+    horometro_fin: num(p.horometro_fin),
+    km_inicio: num(p.km_inicio),
+    km_fin: num(p.km_fin),
+    combustible_litros: num(p.combustible_litros),
+    aceite_litros: num(p.aceite_litros),
+    descripcion_trabajo: p.descripcion_trabajo,
+    observaciones: p.observaciones,
+    estado: p.estado,
+  };
+}
+
+// ── Checklists pre-operacionales (Operación) ───────────────
+
+export const MANT_CHECKLISTS_TAG = "mant-checklists";
+
+export type ChecklistLista = {
+  id: string;
+  fecha: string; // ISO
+  equipo: string | null;
+  equipoCodigo: string | null;
+  operador: string | null;
+  estado_general: string;
+  ok: number;
+  fail: number;
+  total: number;
+  anulado: boolean;
+};
+
+const CHECKLIST_BOOL_SELECT = CHECKLIST_ITEM_KEYS.reduce(
+  (acc, k) => ({ ...acc, [k]: true }),
+  {} as Record<ChecklistItemKey, true>,
+);
+
+export const getChecklists = unstable_cache(
+  async (): Promise<ChecklistLista[]> => {
+    const rows = await prisma.mantChecklist.findMany({
+      orderBy: { fecha: "desc" },
+      take: 200,
+      select: {
+        id: true,
+        fecha: true,
+        estado_general: true,
+        anulado_at: true,
+        ...CHECKLIST_BOOL_SELECT,
+        equipo: { select: { codigo: true, nombre: true } },
+        operador: { select: { nombre: true } },
+      },
+    });
+    return rows.map((c) => {
+      const row = c as unknown as Record<ChecklistItemKey, boolean | null>;
+      const ok = CHECKLIST_ITEM_KEYS.filter((k) => row[k] === true).length;
+      const fail = CHECKLIST_ITEM_KEYS.filter((k) => row[k] === false).length;
+      return {
+        id: c.id,
+        fecha: c.fecha.toISOString(),
+        equipo: c.equipo?.nombre ?? null,
+        equipoCodigo: c.equipo?.codigo ?? null,
+        operador: c.operador?.nombre ?? null,
+        estado_general: c.estado_general,
+        ok,
+        fail,
+        total: CHECKLIST_ITEM_KEYS.length,
+        anulado: c.anulado_at != null,
+      };
+    });
+  },
+  ["mant-checklists"],
+  { revalidate: 60, tags: [MANT_CHECKLISTS_TAG] },
+);
+
+// ── Detalle de un checklist ────────────────────────────────
+
+export type ChecklistDetalle = {
+  id: string;
+  fecha: string; // ISO
+  equipo: string | null;
+  equipoCodigo: string | null;
+  operador: string | null;
+  estado_general: string;
+  observaciones: string | null;
+  items: { key: ChecklistItemKey; valor: boolean | null }[];
+  anulado: boolean;
+  anulado_at: string | null;
+  motivo_anulacion: string | null;
+  anulado_por: string | null;
+};
+
+export async function getChecklistDetalle(
+  id: string,
+): Promise<ChecklistDetalle | null> {
+  const c = await prisma.mantChecklist.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      fecha: true,
+      estado_general: true,
+      observaciones: true,
+      anulado_at: true,
+      motivo_anulacion: true,
+      ...CHECKLIST_BOOL_SELECT,
+      equipo: { select: { codigo: true, nombre: true } },
+      operador: { select: { nombre: true } },
+      anulado_por: { select: { nombre: true } },
+    },
+  });
+  if (!c) return null;
+  const row = c as unknown as Record<ChecklistItemKey, boolean | null>;
+  return {
+    id: c.id,
+    fecha: c.fecha.toISOString(),
+    equipo: c.equipo?.nombre ?? null,
+    equipoCodigo: c.equipo?.codigo ?? null,
+    operador: c.operador?.nombre ?? null,
+    estado_general: c.estado_general,
+    observaciones: c.observaciones,
+    items: CHECKLIST_ITEM_KEYS.map((k) => ({ key: k, valor: row[k] })),
+    anulado: c.anulado_at != null,
+    anulado_at: c.anulado_at ? c.anulado_at.toISOString() : null,
+    motivo_anulacion: c.motivo_anulacion,
+    anulado_por: c.anulado_por?.nombre ?? null,
+  };
+}
 
 // ── Dashboard del módulo Mantención ────────────────────────
 
