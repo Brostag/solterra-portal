@@ -121,6 +121,12 @@ export default async function ParteDetallePage({ params }: Props) {
               Editar
             </Link>
           )}
+          <a
+            href={`/api/operacion/registro/${p.id}/pdf`}
+            className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-[#253158] transition hover:bg-gray-50"
+          >
+            Descargar PDF
+          </a>
         </div>
       </header>
 
