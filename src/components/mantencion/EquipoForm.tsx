@@ -2,7 +2,10 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { createEquipo, updateEquipo } from "@/app/(operativo)/operacion/equipos/actions";
+import {
+  createEquipo,
+  updateEquipo,
+} from "@/app/(operativo)/mantencion/equipos/actions";
 
 export type EquipoFormValues = {
   id: string;
@@ -68,7 +71,6 @@ export default function EquipoForm({ equipo }: { equipo?: EquipoFormValues }) {
     setError(null);
     const fd = new FormData(e.currentTarget);
     startTransition(async () => {
-      // En éxito la action redirige (no retorna); en error devuelve { error }.
       const res = equipo
         ? await updateEquipo(equipo.id, fd)
         : await createEquipo(fd);
@@ -118,7 +120,7 @@ export default function EquipoForm({ equipo }: { equipo?: EquipoFormValues }) {
           {pending ? "Guardando…" : editar ? "Guardar cambios" : "Crear equipo"}
         </button>
         <Link
-          href={equipo ? `/operacion/equipos/${equipo.id}` : "/operacion/equipos"}
+          href={equipo ? `/mantencion/equipos/${equipo.id}` : "/mantencion/equipos"}
           className="text-sm font-medium text-gray-500 hover:text-[#253158]"
         >
           Cancelar

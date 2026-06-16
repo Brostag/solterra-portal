@@ -45,6 +45,7 @@ const adminItems: NavItem[] = [
 
 const mantencionItems: NavItem[] = [
   { href: "/mantencion",              label: "Inicio",       icon: LayoutDashboard },
+  { href: "/mantencion/equipos",      label: "Equipos",      icon: Package },
   { href: "/mantencion/taller",       label: "Taller",       icon: Settings },
   { href: "/mantencion/certificados", label: "Certificados", icon: ShieldCheck },
   { href: "/mantencion/reportes",     label: "Reportes",     icon: ClipboardList },
@@ -52,7 +53,6 @@ const mantencionItems: NavItem[] = [
 
 const operacionItems: NavItem[] = [
   { href: "/operacion",                label: "Inicio",         icon: LayoutDashboard },
-  { href: "/operacion/equipos",        label: "Equipos",        icon: Package },
   { href: "/operacion/partes-diarios", label: "Partes Diarios", icon: FileText },
   { href: "/operacion/checklists",     label: "Checklists",     icon: FolderOpen },
 ];

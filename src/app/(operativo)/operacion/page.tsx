@@ -14,17 +14,6 @@ import {
   type ChecklistResumen,
 } from "@/lib/terreno/queries";
 
-function estadoBadge(estado: string): string {
-  if (estado === "Activo") return "bg-green-50 text-green-700 ring-1 ring-green-600/20";
-  if (estado === "En Mantención") return "bg-amber-50 text-amber-700 ring-1 ring-amber-600/20";
-  if (estado === "Fuera de Servicio") return "bg-red-50 text-[#c6352e] ring-1 ring-red-600/20";
-  return "bg-gray-100 text-gray-600 ring-1 ring-gray-500/20";
-}
-
-function fmt(n: number): string {
-  return n.toLocaleString("es-CL");
-}
-
 function fechaCorta(iso: string): string {
   return new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "short" });
 }
@@ -48,9 +37,8 @@ export default async function OperacionDashboard() {
   ];
 
   const acciones = [
-    { href: "/operacion/partes-diarios", label: "Nuevo parte diario", icon: FileText },
-    { href: "/operacion/checklists", label: "Nuevo checklist", icon: FolderOpen },
-    { href: "/operacion/equipos", label: "Ver equipos", icon: Package },
+    { href: "/operacion/partes-diarios/nuevo", label: "Nuevo parte diario", icon: FileText },
+    { href: "/operacion/checklists/nuevo", label: "Nuevo checklist", icon: FolderOpen },
   ];
 
   const sinActividad =
@@ -85,74 +73,25 @@ export default async function OperacionDashboard() {
         ))}
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Equipos */}
-        <section className="lg:col-span-2 rounded-xl border border-gray-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-            <h2 className="font-semibold text-[#253158]">Equipos</h2>
+      {/* Acciones rápidas */}
+      <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <h2 className="font-semibold text-[#253158]">Acciones rápidas</h2>
+        <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+          {acciones.map(({ href, label, icon: Icon }) => (
             <Link
-              href="/operacion/equipos"
-              className="inline-flex items-center gap-1 text-sm font-medium text-[#c6352e] hover:underline"
+              key={href}
+              href={href}
+              className="group flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 transition hover:border-[#253158]/30 hover:bg-gray-50"
             >
-              Ver todos <ArrowRight className="h-4 w-4" />
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#253158]/10 text-[#253158]">
+                <Icon className="h-[18px] w-[18px]" />
+              </span>
+              <span className="flex-1 text-sm font-medium text-[#253158]">{label}</span>
+              <ArrowRight className="h-4 w-4 text-gray-400 transition group-hover:translate-x-0.5 group-hover:text-[#c6352e]" />
             </Link>
-          </div>
-          {d.equipos.length === 0 ? (
-            <EmptyState texto="Aún no hay equipos registrados." />
-          ) : (
-            <ul className="divide-y divide-gray-100">
-              {d.equipos.map((e) => (
-                <li key={e.id}>
-                  <Link
-                    href="/operacion/equipos"
-                    className="flex items-center justify-between gap-3 px-5 py-3 transition hover:bg-gray-50"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-[#253158]">
-                        {e.codigo} · {e.nombre}
-                      </p>
-                      <p className="text-xs text-gray-500">{e.tipo}</p>
-                    </div>
-                    <div className="flex flex-shrink-0 items-center gap-3">
-                      <div className="hidden text-right text-xs text-gray-500 sm:block">
-                        <p>{fmt(e.horometro_actual)} h</p>
-                        {e.km_actual > 0 && <p>{fmt(e.km_actual)} km</p>}
-                      </div>
-                      <span
-                        className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${estadoBadge(
-                          e.estado,
-                        )}`}
-                      >
-                        {e.estado}
-                      </span>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        {/* Acciones rápidas */}
-        <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="font-semibold text-[#253158]">Acciones rápidas</h2>
-          <div className="mt-4 space-y-2.5">
-            {acciones.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                className="group flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 transition hover:border-[#253158]/30 hover:bg-gray-50"
-              >
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#253158]/10 text-[#253158]">
-                  <Icon className="h-[18px] w-[18px]" />
-                </span>
-                <span className="flex-1 text-sm font-medium text-[#253158]">{label}</span>
-                <ArrowRight className="h-4 w-4 text-gray-400 transition group-hover:translate-x-0.5 group-hover:text-[#c6352e]" />
-              </Link>
-            ))}
-          </div>
-        </section>
-      </div>
+          ))}
+        </div>
+      </section>
 
       {/* Actividad reciente */}
       <section className="rounded-xl border border-gray-200 bg-white shadow-sm">

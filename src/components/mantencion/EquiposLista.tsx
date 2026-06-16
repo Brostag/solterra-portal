@@ -39,7 +39,6 @@ export default function EquiposLista({ equipos }: { equipos: EquipoLista[] }) {
     });
   }, [equipos, q, filtro]);
 
-  // Estado vacío total: no hay equipos en la base.
   if (equipos.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-gray-300 bg-white p-12 text-center">
@@ -51,11 +50,10 @@ export default function EquiposLista({ equipos }: { equipos: EquipoLista[] }) {
     );
   }
 
-  const href = (id: string) => `/operacion/equipos/${id}`;
+  const href = (id: string) => `/mantencion/equipos/${id}`;
 
   return (
     <div className="space-y-4">
-      {/* Buscador + filtros */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <input
           type="search"
@@ -92,7 +90,7 @@ export default function EquiposLista({ equipos }: { equipos: EquipoLista[] }) {
         </div>
       ) : (
         <>
-          {/* Desktop: tabla (scroll horizontal contenido en el wrapper) */}
+          {/* Desktop */}
           <div className="hidden overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm md:block">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-gray-100 text-xs uppercase tracking-wide text-gray-500">
@@ -151,7 +149,7 @@ export default function EquiposLista({ equipos }: { equipos: EquipoLista[] }) {
             </table>
           </div>
 
-          {/* Mobile: cards clickeables */}
+          {/* Mobile */}
           <div className="space-y-3 md:hidden">
             {filtrados.map((e) => (
               <Link

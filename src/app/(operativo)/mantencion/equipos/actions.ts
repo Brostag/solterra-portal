@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidateTag, revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { MANT_EQUIPOS_TAG, OPERACION_DASHBOARD_TAG } from "@/lib/terreno/queries";
 import type { UserSession } from "@/types";
@@ -30,10 +30,13 @@ function str(v: FormDataEntryValue | null): string {
   return typeof v === "string" ? v.trim() : "";
 }
 
-// Permiso: ADMINISTRADOR o SUPERVISOR con acceso a Operación. USUARIO no.
-function puedeGestionarEquipos(session: Pick<UserSession, "rol" | "area">): boolean {
+// Permiso: el catálogo de equipos lo gestiona Mantención (ADMIN o SUPERVISOR
+// con acceso a Mantención). Operación los usa pero no los crea.
+function puedeGestionarEquipos(
+  session: Pick<UserSession, "rol" | "area">,
+): boolean {
   return (
-    canAccessModule(session, "OPERACION") &&
+    canAccessModule(session, "MANTENCION") &&
     (session.rol === "ADMINISTRADOR" || session.rol === "SUPERVISOR")
   );
 }
@@ -47,7 +50,6 @@ function esCodigo(e: unknown, code: string): boolean {
   );
 }
 
-// Valida y normaliza el formulario. Compartido por crear y editar.
 function parseEquipoData(formData: FormData): { data: EquipoData } | ActionResult {
   const codigo = str(formData.get("codigo"));
   const nombre = str(formData.get("nombre"));
@@ -125,10 +127,11 @@ export async function createEquipo(
 
   revalidateTag(MANT_EQUIPOS_TAG);
   revalidateTag(OPERACION_DASHBOARD_TAG);
+  revalidatePath("/mantencion");
+  revalidatePath("/mantencion/equipos");
   revalidatePath("/operacion");
-  revalidatePath("/operacion/equipos");
 
-  redirect(`/operacion/equipos/${nuevo.id}`);
+  redirect(`/mantencion/equipos/${nuevo.id}`);
 }
 
 export async function updateEquipo(
@@ -147,11 +150,9 @@ export async function updateEquipo(
   try {
     await prisma.mantEquipo.update({ where: { id }, data: parsed.data });
   } catch (e: unknown) {
-    // P2002 = código duplicado (de OTRO equipo; el propio no choca).
     if (esCodigo(e, "P2002")) {
       return { error: `Ya existe un equipo con el código "${parsed.data.codigo}".` };
     }
-    // P2025 = registro no encontrado.
     if (esCodigo(e, "P2025")) {
       return { error: "El equipo no existe." };
     }
@@ -160,9 +161,10 @@ export async function updateEquipo(
 
   revalidateTag(MANT_EQUIPOS_TAG);
   revalidateTag(OPERACION_DASHBOARD_TAG);
+  revalidatePath("/mantencion");
+  revalidatePath("/mantencion/equipos");
+  revalidatePath(`/mantencion/equipos/${id}`);
   revalidatePath("/operacion");
-  revalidatePath("/operacion/equipos");
-  revalidatePath(`/operacion/equipos/${id}`);
 
-  redirect(`/operacion/equipos/${id}`);
+  redirect(`/mantencion/equipos/${id}`);
 }

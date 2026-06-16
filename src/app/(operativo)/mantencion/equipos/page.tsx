@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { Package } from "lucide-react";
+import { ChevronLeft, Package } from "lucide-react";
 import { getEquipos } from "@/lib/terreno/queries";
-import EquiposLista from "@/components/operacion/EquiposLista";
+import EquiposLista from "@/components/mantencion/EquiposLista";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
 
@@ -13,11 +13,18 @@ export default async function EquiposPage() {
 
   const puedeCrear =
     !!session &&
-    canAccessModule(session, "OPERACION") &&
+    canAccessModule(session, "MANTENCION") &&
     (session.rol === "ADMINISTRADOR" || session.rol === "SUPERVISOR");
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
+      <Link
+        href="/mantencion"
+        className="inline-flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-[#253158]"
+      >
+        <ChevronLeft className="h-4 w-4" /> Volver a Mantención
+      </Link>
+
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <span className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-[#253158]/10 text-[#253158]">
@@ -30,7 +37,7 @@ export default async function EquiposPage() {
         </div>
         {puedeCrear && (
           <Link
-            href="/operacion/equipos/nuevo"
+            href="/mantencion/equipos/nuevo"
             className="rounded-lg bg-[#253158] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1b2540]"
           >
             Nuevo equipo
