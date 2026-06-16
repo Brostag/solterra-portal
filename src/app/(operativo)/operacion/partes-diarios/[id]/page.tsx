@@ -5,6 +5,16 @@ import { getParteDetalle } from "@/lib/terreno/queries";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
 import RevisarParteButtons from "@/components/operacion/RevisarParteButtons";
+import { REGISTRO_COMPONENTES as COMPONENTES_DEF } from "@/lib/terreno/registro-componentes";
+
+function fechaUTC(iso: string): string {
+  return new Date(iso).toLocaleDateString("es-CL", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
 
 function estadoBadge(estado: string): string {
   if (estado === "Aprobado") return "bg-green-50 text-green-700 ring-1 ring-green-600/20";
@@ -44,34 +54,39 @@ export default async function ParteDetallePage({ params }: Props) {
 
   const datos = [
     { label: "Equipo", value: p.equipo ? `${p.equipoCodigo ?? ""} ${p.equipo}`.trim() : "—" },
-    { label: "Operador", value: p.operador ?? "—" },
-    { label: "Fecha", value: fechaLarga(p.fecha) },
+    { label: "Responsable", value: p.operador ?? "—" },
+    { label: "Fecha de ingreso", value: fechaUTC(p.fecha) },
+    { label: "Fecha de salida", value: p.fecha_salida ? fechaUTC(p.fecha_salida) : "—" },
     { label: "Estado", value: p.estado },
+    { label: "Área de uso", value: p.area_uso ?? "—" },
+    { label: "Centro de costo", value: p.centro_costo ?? "—" },
+    { label: "Tipo de mantención", value: p.tipo_mantencion ?? "—" },
+    { label: "Horómetro", value: p.horometro != null ? `${fmt(p.horometro)} h` : "—" },
+    { label: "Odómetro", value: p.odometro != null ? `${fmt(p.odometro)} km` : "—" },
+    { label: "Combustible", value: p.combustible_fraccion ?? "—" },
     {
-      label: "Horómetro",
-      value:
-        p.horometro_inicio != null && p.horometro_fin != null
-          ? `${fmt(p.horometro_inicio)} → ${fmt(p.horometro_fin)} h`
-          : "—",
+      label: "Responsable ingreso",
+      value: p.nombre_responsable
+        ? `${p.nombre_responsable}${p.rut_responsable ? ` · ${p.rut_responsable}` : ""}`
+        : "—",
     },
     {
-      label: "Kilometraje",
-      value:
-        p.km_inicio != null && p.km_fin != null
-          ? `${fmt(p.km_inicio)} → ${fmt(p.km_fin)} km`
-          : "—",
+      label: "Receptor salida",
+      value: p.nombre_receptor
+        ? `${p.nombre_receptor}${p.rut_receptor ? ` · ${p.rut_receptor}` : ""}`
+        : "—",
     },
-    {
-      label: "Combustible",
-      value: p.combustible_litros != null ? `${fmt(p.combustible_litros)} L` : "—",
-    },
-    { label: "Aceite", value: p.aceite_litros != null ? `${fmt(p.aceite_litros)} L` : "—" },
   ];
 
-  const textos = [
-    { label: "Descripción del trabajo", value: p.descripcion_trabajo },
-    { label: "Observaciones", value: p.observaciones },
-  ].filter((t) => t.value);
+  const textos = [{ label: "Observaciones generales", value: p.observaciones }].filter(
+    (t) => t.value,
+  );
+
+  const componentes = COMPONENTES_DEF.map((c) => ({
+    label: c.label,
+    ingreso: p.componentes?.[c.key]?.ingreso ?? null,
+    salida: p.componentes?.[c.key]?.salida ?? null,
+  })).filter((c) => c.ingreso || c.salida);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -135,9 +150,35 @@ export default async function ParteDetallePage({ params }: Props) {
         </section>
       )}
 
+      {componentes.length > 0 && (
+        <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+          <h2 className="mb-3 text-sm font-semibold text-[#253158]">Componentes</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-gray-100 text-xs uppercase tracking-wide text-gray-500">
+                <tr>
+                  <th className="py-2 pr-4 font-semibold">Componente</th>
+                  <th className="py-2 pr-4 text-center font-semibold">Ingreso</th>
+                  <th className="py-2 text-center font-semibold">Salida</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {componentes.map((c) => (
+                  <tr key={c.label}>
+                    <td className="py-2 pr-4 text-[#253158]">{c.label}</td>
+                    <td className="py-2 pr-4 text-center text-gray-600">{c.ingreso ?? "—"}</td>
+                    <td className="py-2 text-center text-gray-600">{c.salida ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       {puedeRevisar && (
         <div className="flex flex-col items-end gap-2">
-          <p className="text-xs text-gray-500">Revisar parte pendiente:</p>
+          <p className="text-xs text-gray-500">Revisar registro pendiente:</p>
           <RevisarParteButtons id={p.id} />
         </div>
       )}

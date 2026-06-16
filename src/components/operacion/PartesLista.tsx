@@ -133,12 +133,10 @@ export default function PartesLista({ partes }: { partes: ParteLista[] }) {
                     </td>
                     <td className="px-4 py-3 text-gray-500">{p.operador ?? "—"}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-gray-600">
-                      {p.horometro_inicio != null && p.horometro_fin != null
-                        ? `${fmtNum(p.horometro_inicio)} → ${fmtNum(p.horometro_fin)}`
-                        : "—"}
+                      {p.horometro != null ? `${fmtNum(p.horometro)} h` : "—"}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-right text-gray-600">
-                      {p.combustible_litros != null ? `${fmtNum(p.combustible_litros)} L` : "—"}
+                      {p.combustible_fraccion || "—"}
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -182,14 +180,8 @@ export default function PartesLista({ partes }: { partes: ParteLista[] }) {
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
                   <span>{p.operador ?? "—"}</span>
-                  {p.horometro_inicio != null && p.horometro_fin != null && (
-                    <span>
-                      {fmtNum(p.horometro_inicio)} → {fmtNum(p.horometro_fin)} h
-                    </span>
-                  )}
-                  {p.combustible_litros != null && (
-                    <span>{fmtNum(p.combustible_litros)} L</span>
-                  )}
+                  {p.horometro != null && <span>{fmtNum(p.horometro)} h</span>}
+                  {p.combustible_fraccion && <span>Comb: {p.combustible_fraccion}</span>}
                 </div>
               </Link>
             ))}

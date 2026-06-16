@@ -4,6 +4,7 @@ import {
   CHECKLIST_ITEM_KEYS,
   type ChecklistItemKey,
 } from "@/lib/terreno/checklist-items";
+import type { ComponentesData } from "@/lib/terreno/registro-componentes";
 
 // Tag para invalidar el dashboard de Operación cuando existan acciones de
 // escritura (partes diarios / checklists / equipos). Por ahora solo lectura.
@@ -580,9 +581,8 @@ export type ParteLista = {
   equipo: string | null;
   equipoCodigo: string | null;
   operador: string | null;
-  horometro_inicio: number | null;
-  horometro_fin: number | null;
-  combustible_litros: number | null;
+  horometro: number | null;
+  combustible_fraccion: string | null;
   estado: string;
 };
 
@@ -595,9 +595,8 @@ export const getPartes = unstable_cache(
       select: {
         id: true,
         fecha: true,
-        horometro_inicio: true,
-        horometro_fin: true,
-        combustible_litros: true,
+        horometro: true,
+        combustible_fraccion: true,
         estado: true,
         equipo: { select: { codigo: true, nombre: true } },
         operador: { select: { nombre: true } },
@@ -609,11 +608,8 @@ export const getPartes = unstable_cache(
       equipo: p.equipo?.nombre ?? null,
       equipoCodigo: p.equipo?.codigo ?? null,
       operador: p.operador?.nombre ?? null,
-      horometro_inicio:
-        p.horometro_inicio != null ? Number(p.horometro_inicio) : null,
-      horometro_fin: p.horometro_fin != null ? Number(p.horometro_fin) : null,
-      combustible_litros:
-        p.combustible_litros != null ? Number(p.combustible_litros) : null,
+      horometro: p.horometro != null ? Number(p.horometro) : null,
+      combustible_fraccion: p.combustible_fraccion,
       estado: p.estado,
     }));
   },
@@ -640,6 +636,19 @@ export type ParteDetalle = {
   descripcion_trabajo: string | null;
   observaciones: string | null;
   estado: string;
+  // Registro Ingreso/Salida
+  horometro: number | null;
+  odometro: number | null;
+  area_uso: string | null;
+  centro_costo: string | null;
+  tipo_mantencion: string | null;
+  combustible_fraccion: string | null;
+  nombre_responsable: string | null;
+  rut_responsable: string | null;
+  nombre_receptor: string | null;
+  rut_receptor: string | null;
+  fecha_salida: string | null; // ISO date
+  componentes: ComponentesData | null;
 };
 
 export async function getParteDetalle(id: string): Promise<ParteDetalle | null> {
@@ -659,6 +668,18 @@ export async function getParteDetalle(id: string): Promise<ParteDetalle | null> 
       descripcion_trabajo: true,
       observaciones: true,
       estado: true,
+      horometro: true,
+      odometro: true,
+      area_uso: true,
+      centro_costo: true,
+      tipo_mantencion: true,
+      combustible_fraccion: true,
+      nombre_responsable: true,
+      rut_responsable: true,
+      nombre_receptor: true,
+      rut_receptor: true,
+      fecha_salida: true,
+      componentes: true,
       equipo: { select: { codigo: true, nombre: true } },
       operador: { select: { nombre: true } },
     },
@@ -682,6 +703,18 @@ export async function getParteDetalle(id: string): Promise<ParteDetalle | null> 
     descripcion_trabajo: p.descripcion_trabajo,
     observaciones: p.observaciones,
     estado: p.estado,
+    horometro: num(p.horometro),
+    odometro: num(p.odometro),
+    area_uso: p.area_uso,
+    centro_costo: p.centro_costo,
+    tipo_mantencion: p.tipo_mantencion,
+    combustible_fraccion: p.combustible_fraccion,
+    nombre_responsable: p.nombre_responsable,
+    rut_responsable: p.rut_responsable,
+    nombre_receptor: p.nombre_receptor,
+    rut_receptor: p.rut_receptor,
+    fecha_salida: p.fecha_salida ? p.fecha_salida.toISOString() : null,
+    componentes: (p.componentes as ComponentesData | null) ?? null,
   };
 }
 
