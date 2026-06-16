@@ -954,6 +954,123 @@ export async function nextCorrelativoChecklistMant(): Promise<number> {
   return (max._max.correlativo ?? 0) + 1;
 }
 
+// ── Certificado de Mantención (documento firmado) ──────────
+
+export const MANT_CERT_MANT_TAG = "mant-certificado-mantencion";
+
+export type CertMantLista = {
+  id: string;
+  correlativo: number;
+  fecha: string; // ISO date
+  equipo: string | null;
+  equipoCodigo: string | null;
+  responsable: string | null;
+  anulado: boolean;
+};
+
+export const getCertificadosMantencion = unstable_cache(
+  async (): Promise<CertMantLista[]> => {
+    const rows = await prisma.mantCertificadoMantencion.findMany({
+      orderBy: { fecha: "desc" },
+      take: 200,
+      select: {
+        id: true,
+        correlativo: true,
+        fecha: true,
+        anulado_at: true,
+        equipo: { select: { codigo: true, nombre: true } },
+        responsable: { select: { nombre: true } },
+      },
+    });
+    return rows.map((c) => ({
+      id: c.id,
+      correlativo: c.correlativo,
+      fecha: c.fecha.toISOString(),
+      equipo: c.equipo?.nombre ?? null,
+      equipoCodigo: c.equipo?.codigo ?? null,
+      responsable: c.responsable?.nombre ?? null,
+      anulado: c.anulado_at != null,
+    }));
+  },
+  ["mant-certificado-mantencion"],
+  { revalidate: 60, tags: [MANT_CERT_MANT_TAG] },
+);
+
+export type CertMantDetalle = {
+  id: string;
+  correlativo: number;
+  equipo: string | null;
+  equipoCodigo: string | null;
+  responsable: string | null;
+  gerente: string | null;
+  fecha: string; // ISO date
+  ciudad: string;
+  tipo_equipo_snapshot: string | null;
+  marca_snapshot: string | null;
+  patente_snapshot: string | null;
+  horometro_snapshot: number | null;
+  odometro_snapshot: number | null;
+  proxima_mantencion: number | null;
+  anulado: boolean;
+  anulado_at: string | null;
+  motivo_anulacion: string | null;
+};
+
+export async function getCertificadoMantencionDetalle(
+  id: string,
+): Promise<CertMantDetalle | null> {
+  const c = await prisma.mantCertificadoMantencion.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      correlativo: true,
+      fecha: true,
+      ciudad: true,
+      tipo_equipo_snapshot: true,
+      marca_snapshot: true,
+      patente_snapshot: true,
+      horometro_snapshot: true,
+      odometro_snapshot: true,
+      proxima_mantencion: true,
+      anulado_at: true,
+      motivo_anulacion: true,
+      equipo: { select: { codigo: true, nombre: true } },
+      responsable: { select: { nombre: true } },
+      gerente: { select: { nombre: true } },
+    },
+  });
+  if (!c) return null;
+  const num = (v: unknown) => (v != null ? Number(v as number) : null);
+  return {
+    id: c.id,
+    correlativo: c.correlativo,
+    equipo: c.equipo?.nombre ?? null,
+    equipoCodigo: c.equipo?.codigo ?? null,
+    responsable: c.responsable?.nombre ?? null,
+    gerente: c.gerente?.nombre ?? null,
+    fecha: c.fecha.toISOString(),
+    ciudad: c.ciudad,
+    tipo_equipo_snapshot: c.tipo_equipo_snapshot,
+    marca_snapshot: c.marca_snapshot,
+    patente_snapshot: c.patente_snapshot,
+    horometro_snapshot: num(c.horometro_snapshot),
+    odometro_snapshot: num(c.odometro_snapshot),
+    proxima_mantencion: num(c.proxima_mantencion),
+    anulado: c.anulado_at != null,
+    anulado_at: c.anulado_at ? c.anulado_at.toISOString() : null,
+    motivo_anulacion: c.motivo_anulacion,
+  };
+}
+
+export async function nextCorrelativoCertMant(): Promise<number> {
+  const inicioAnio = new Date(Date.UTC(new Date().getUTCFullYear(), 0, 1));
+  const max = await prisma.mantCertificadoMantencion.aggregate({
+    _max: { correlativo: true },
+    where: { fecha: { gte: inicioAnio } },
+  });
+  return (max._max.correlativo ?? 0) + 1;
+}
+
 // ── Dashboard del módulo Mantención ────────────────────────
 
 export type MantDashboardMantencion = {

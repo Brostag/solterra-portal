@@ -48,6 +48,7 @@ const mantencionItems: NavItem[] = [
   { href: "/mantencion/equipos",      label: "Equipos",      icon: Package },
   { href: "/mantencion/taller",       label: "Taller",       icon: Settings },
   { href: "/mantencion/checklist-mantencion", label: "Check List", icon: ClipboardList },
+  { href: "/mantencion/certificado-mantencion", label: "Certificado", icon: FileText },
   { href: "/mantencion/certificados", label: "Vencimientos", icon: ShieldCheck },
   { href: "/mantencion/reportes",     label: "Reportes",     icon: ClipboardList },
 ];
