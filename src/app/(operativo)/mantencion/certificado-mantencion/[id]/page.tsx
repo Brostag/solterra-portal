@@ -68,11 +68,19 @@ export default async function CertMantDetallePage({ params }: Props) {
             <p className="mt-0.5 text-sm text-gray-500">{c.equipo ?? "Equipo"}</p>
           </div>
         </div>
-        {c.anulado && (
-          <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-500 ring-1 ring-gray-300">
-            Anulado
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {c.anulado && (
+            <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-500 ring-1 ring-gray-300">
+              Anulado
+            </span>
+          )}
+          <a
+            href={`/api/mantencion/certificado/${c.id}/pdf`}
+            className="rounded-lg bg-[#253158] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1b2540]"
+          >
+            Descargar PDF
+          </a>
+        </div>
       </header>
 
       {c.anulado && c.motivo_anulacion && (
