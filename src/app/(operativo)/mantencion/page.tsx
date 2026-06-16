@@ -189,9 +189,9 @@ export default async function MantencionHub() {
           ) : (
             <ul className="divide-y divide-gray-100">
               {d.certificadosPorVencer.map((c) => (
-                <li key={c.id}>
+                <li key={`${c.id}-${c.tipo}`}>
                   <Link
-                    href={`/mantencion/certificados/${c.id}`}
+                    href={`/mantencion/equipos/${c.id}`}
                     className="flex items-center justify-between gap-3 px-5 py-3 transition hover:bg-gray-50"
                   >
                     <div className="min-w-0">

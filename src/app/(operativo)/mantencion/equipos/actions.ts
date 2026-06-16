@@ -24,10 +24,21 @@ type EquipoData = {
   horometro_actual: number;
   km_actual: number;
   estado: string;
+  soap_vencimiento: Date | null;
+  permiso_circ_vencimiento: Date | null;
+  rev_tecnica_vencimiento: Date | null;
+  extintor_vencimiento: Date | null;
 };
 
 function str(v: FormDataEntryValue | null): string {
   return typeof v === "string" ? v.trim() : "";
+}
+
+// "YYYY-MM-DD" → Date (UTC) o null. Inválida → null (campo opcional).
+function fechaOpcional(raw: string): Date | null {
+  if (!raw) return null;
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 // Permiso: el catálogo de equipos lo gestiona Mantención (ADMIN o SUPERVISOR
@@ -96,6 +107,16 @@ function parseEquipoData(formData: FormData): { data: EquipoData } | ActionResul
       horometro_actual,
       km_actual,
       estado,
+      soap_vencimiento: fechaOpcional(str(formData.get("soap_vencimiento"))),
+      permiso_circ_vencimiento: fechaOpcional(
+        str(formData.get("permiso_circ_vencimiento")),
+      ),
+      rev_tecnica_vencimiento: fechaOpcional(
+        str(formData.get("rev_tecnica_vencimiento")),
+      ),
+      extintor_vencimiento: fechaOpcional(
+        str(formData.get("extintor_vencimiento")),
+      ),
     },
   };
 }

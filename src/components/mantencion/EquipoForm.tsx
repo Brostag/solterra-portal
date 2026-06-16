@@ -20,10 +20,30 @@ export type EquipoFormValues = {
   horometro_actual: number;
   km_actual: number;
   estado: string;
+  soap_vencimiento: string | null;
+  permiso_circ_vencimiento: string | null;
+  rev_tecnica_vencimiento: string | null;
+  extintor_vencimiento: string | null;
 };
 
 const inputCls =
   "w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-[#253158] placeholder:text-gray-400 focus:border-[#253158] focus:outline-none focus:ring-2 focus:ring-[#253158]/15";
+
+// ISO @db.Date → "YYYY-MM-DD" en UTC para <input type="date">.
+function toUTCDate(iso: string | null | undefined): string | undefined {
+  if (!iso) return undefined;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return undefined;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+}
+
+const VENCIMIENTOS: { name: string; label: string }[] = [
+  { name: "soap_vencimiento", label: "SOAP" },
+  { name: "permiso_circ_vencimiento", label: "Permiso de circulación" },
+  { name: "rev_tecnica_vencimiento", label: "Revisión técnica" },
+  { name: "extintor_vencimiento", label: "Extintor" },
+];
 
 function Campo({
   label,
@@ -110,6 +130,30 @@ export default function EquipoForm({ equipo }: { equipo?: EquipoFormValues }) {
         <Campo label="Horómetro actual" name="horometro_actual" type="number" min="0" placeholder="0" defaultValue={equipo?.horometro_actual ?? undefined} />
         <Campo label="KM actual" name="km_actual" type="number" min="0" placeholder="0" defaultValue={equipo?.km_actual ?? undefined} />
       </div>
+
+      {/* Vencimientos de documentos legales */}
+      <fieldset className="mt-6 rounded-lg border border-gray-200 p-4">
+        <legend className="px-2 text-sm font-semibold text-[#253158]">
+          Vencimientos de documentos
+        </legend>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {VENCIMIENTOS.map((v) => (
+            <label key={v.name} className="block">
+              <span className="mb-1.5 block text-sm font-semibold text-gray-700">
+                {v.label}
+              </span>
+              <input
+                name={v.name}
+                type="date"
+                defaultValue={toUTCDate(
+                  equipo?.[v.name as keyof EquipoFormValues] as string | null,
+                )}
+                className={inputCls}
+              />
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       <div className="mt-6 flex items-center gap-3">
         <button

@@ -213,6 +213,10 @@ export type EquipoDetalle = {
   horometro_actual: number;
   km_actual: number;
   estado: string;
+  soap_vencimiento: string | null;
+  permiso_circ_vencimiento: string | null;
+  rev_tecnica_vencimiento: string | null;
+  extintor_vencimiento: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -233,6 +237,10 @@ export async function getEquipoDetalle(id: string): Promise<EquipoDetalle | null
       horometro_actual: true,
       km_actual: true,
       estado: true,
+      soap_vencimiento: true,
+      permiso_circ_vencimiento: true,
+      rev_tecnica_vencimiento: true,
+      extintor_vencimiento: true,
       created_at: true,
       updated_at: true,
     },
@@ -251,10 +259,89 @@ export async function getEquipoDetalle(id: string): Promise<EquipoDetalle | null
     horometro_actual: Number(e.horometro_actual),
     km_actual: Number(e.km_actual),
     estado: e.estado,
+    soap_vencimiento: e.soap_vencimiento ? e.soap_vencimiento.toISOString() : null,
+    permiso_circ_vencimiento: e.permiso_circ_vencimiento
+      ? e.permiso_circ_vencimiento.toISOString()
+      : null,
+    rev_tecnica_vencimiento: e.rev_tecnica_vencimiento
+      ? e.rev_tecnica_vencimiento.toISOString()
+      : null,
+    extintor_vencimiento: e.extintor_vencimiento
+      ? e.extintor_vencimiento.toISOString()
+      : null,
     created_at: e.created_at.toISOString(),
     updated_at: e.updated_at.toISOString(),
   };
 }
+
+// ── Vencimientos de documentos legales (Reporte de Fechas) ──
+
+export const MANT_VENCIMIENTOS_TAG = "mant-equipos";
+
+export type VencimientoDoc = {
+  fecha: string | null; // ISO date
+  estado: string; // Vigente | Por Vencer | Vencido | Sin dato
+  dias: number | null;
+};
+
+export type EquipoVencimientos = {
+  id: string;
+  codigo: string;
+  nombre: string;
+  tipo: string;
+  patente: string | null;
+  soap: VencimientoDoc;
+  permiso_circ: VencimientoDoc;
+  rev_tecnica: VencimientoDoc;
+  extintor: VencimientoDoc;
+};
+
+// Estado de un vencimiento date-only respecto a hoy (UTC, alineado con @db.Date).
+function calcVencimiento(fecha: Date | null): VencimientoDoc {
+  if (!fecha) return { fecha: null, estado: "Sin dato", dias: null };
+  const ahora = new Date();
+  const hoyUTC = Date.UTC(
+    ahora.getUTCFullYear(),
+    ahora.getUTCMonth(),
+    ahora.getUTCDate(),
+  );
+  const dias = Math.floor((fecha.getTime() - hoyUTC) / 86_400_000);
+  const estado = dias < 0 ? "Vencido" : dias <= 30 ? "Por Vencer" : "Vigente";
+  return { fecha: fecha.toISOString(), estado, dias };
+}
+
+export const getReporteVencimientos = unstable_cache(
+  async (): Promise<EquipoVencimientos[]> => {
+    const rows = await prisma.mantEquipo.findMany({
+      where: { deleted_at: null },
+      orderBy: { codigo: "asc" },
+      select: {
+        id: true,
+        codigo: true,
+        nombre: true,
+        tipo: true,
+        patente: true,
+        soap_vencimiento: true,
+        permiso_circ_vencimiento: true,
+        rev_tecnica_vencimiento: true,
+        extintor_vencimiento: true,
+      },
+    });
+    return rows.map((e) => ({
+      id: e.id,
+      codigo: e.codigo,
+      nombre: e.nombre,
+      tipo: e.tipo,
+      patente: e.patente,
+      soap: calcVencimiento(e.soap_vencimiento),
+      permiso_circ: calcVencimiento(e.permiso_circ_vencimiento),
+      rev_tecnica: calcVencimiento(e.rev_tecnica_vencimiento),
+      extintor: calcVencimiento(e.extintor_vencimiento),
+    }));
+  },
+  ["mant-vencimientos"],
+  { revalidate: 60, tags: [MANT_EQUIPOS_TAG] },
+);
 
 // ── Responsables / operadores (Profiles para selects) ──────
 
@@ -755,11 +842,8 @@ export const getMantencionDashboard = unstable_cache(
       equiposEnMantencion,
       mantencionesAbiertas,
       mantencionesCompletadas,
-      certificadosVigentes,
-      certificadosPorVencerCount,
-      certificadosVencidos,
       mantencionesEnCurso,
-      certificadosProximos,
+      equiposVenc,
     ] = await Promise.all([
       prisma.mantEquipo.count({
         where: { deleted_at: null, estado: "En Mantención" },
@@ -769,18 +853,6 @@ export const getMantencionDashboard = unstable_cache(
       }),
       prisma.mantMantencion.count({
         where: { deleted_at: null, estado: "Completada" },
-      }),
-      prisma.mantCertificado.count({
-        where: { deleted_at: null, fecha_vencimiento: { gt: en30 } },
-      }),
-      prisma.mantCertificado.count({
-        where: {
-          deleted_at: null,
-          fecha_vencimiento: { gte: hoyUTC, lte: en30 },
-        },
-      }),
-      prisma.mantCertificado.count({
-        where: { deleted_at: null, fecha_vencimiento: { lt: hoyUTC } },
       }),
       prisma.mantMantencion.findMany({
         where: { deleted_at: null, estado: { not: "Completada" } },
@@ -794,18 +866,56 @@ export const getMantencionDashboard = unstable_cache(
           equipo: { select: { codigo: true, nombre: true } },
         },
       }),
-      prisma.mantCertificado.findMany({
-        where: { deleted_at: null, fecha_vencimiento: { lte: en30 } },
-        orderBy: { fecha_vencimiento: "asc" },
-        take: 5,
+      prisma.mantEquipo.findMany({
+        where: { deleted_at: null },
         select: {
           id: true,
-          tipo: true,
-          fecha_vencimiento: true,
-          equipo: { select: { codigo: true, nombre: true } },
+          codigo: true,
+          nombre: true,
+          soap_vencimiento: true,
+          permiso_circ_vencimiento: true,
+          rev_tecnica_vencimiento: true,
+          extintor_vencimiento: true,
         },
       }),
     ]);
+
+    // Vencimientos: se cuentan los 4 documentos legales de cada equipo.
+    const DOCS = [
+      { key: "soap_vencimiento", label: "SOAP" },
+      { key: "permiso_circ_vencimiento", label: "Permiso de circulación" },
+      { key: "rev_tecnica_vencimiento", label: "Revisión técnica" },
+      { key: "extintor_vencimiento", label: "Extintor" },
+    ] as const;
+
+    let certificadosVigentes = 0;
+    let certificadosPorVencerCount = 0;
+    let certificadosVencidos = 0;
+    const proximos: (MantDashboardCertificado & { _ms: number })[] = [];
+
+    for (const e of equiposVenc) {
+      for (const doc of DOCS) {
+        const fecha = e[doc.key];
+        if (!fecha) continue;
+        const dias = Math.floor((fecha.getTime() - hoyUTC.getTime()) / 86_400_000);
+        const estado = dias < 0 ? "Vencido" : dias <= 30 ? "Por Vencer" : "Vigente";
+        if (estado === "Vigente") {
+          certificadosVigentes += 1;
+          continue;
+        }
+        if (estado === "Por Vencer") certificadosPorVencerCount += 1;
+        else certificadosVencidos += 1;
+        proximos.push({
+          id: e.id,
+          equipo: `${e.codigo} · ${e.nombre}`,
+          tipo: doc.label,
+          fecha_vencimiento: fecha.toISOString(),
+          estado,
+          _ms: fecha.getTime(),
+        });
+      }
+    }
+    proximos.sort((a, b) => a._ms - b._ms);
 
     return {
       kpis: {
@@ -823,16 +933,13 @@ export const getMantencionDashboard = unstable_cache(
         estado: m.estado,
         fecha_inicio: m.fecha_inicio.toISOString(),
       })),
-      certificadosPorVencer: certificadosProximos.map((c) => {
-        const fecha = c.fecha_vencimiento.toISOString();
-        return {
-          id: c.id,
-          equipo: c.equipo ? `${c.equipo.codigo} · ${c.equipo.nombre}` : null,
-          tipo: c.tipo,
-          fecha_vencimiento: fecha,
-          estado: estadoCertificado(fecha),
-        };
-      }),
+      certificadosPorVencer: proximos.slice(0, 5).map((p) => ({
+        id: p.id,
+        equipo: p.equipo,
+        tipo: p.tipo,
+        fecha_vencimiento: p.fecha_vencimiento,
+        estado: p.estado,
+      })),
     };
   },
   ["mant-dashboard"],

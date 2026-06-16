@@ -26,6 +26,25 @@ function fechaLarga(iso: string): string {
   });
 }
 
+function fechaUTC(iso: string): string {
+  return new Date(iso).toLocaleDateString("es-CL", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+function vencBadge(iso: string | null): { texto: string; cls: string } {
+  if (!iso) return { texto: "Sin dato", cls: "bg-gray-100 text-gray-500 ring-gray-300" };
+  const ahora = new Date();
+  const hoyUTC = Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth(), ahora.getUTCDate());
+  const dias = Math.floor((new Date(iso).getTime() - hoyUTC) / 86_400_000);
+  if (dias < 0) return { texto: `Vencido (${fechaUTC(iso)})`, cls: "bg-red-50 text-[#c6352e] ring-red-600/20" };
+  if (dias <= 30) return { texto: `Por vencer · ${fechaUTC(iso)} (${dias}d)`, cls: "bg-amber-50 text-amber-700 ring-amber-600/20" };
+  return { texto: `Vigente · ${fechaUTC(iso)}`, cls: "bg-green-50 text-green-700 ring-green-600/20" };
+}
+
 type Props = { params: Promise<{ id: string }> };
 
 export default async function EquipoDetallePage({ params }: Props) {
@@ -104,6 +123,33 @@ export default async function EquipoDetallePage({ params }: Props) {
               <dd className="mt-0.5 text-sm text-[#253158]">{d.value}</dd>
             </div>
           ))}
+        </dl>
+      </section>
+
+      {/* Vencimientos de documentos */}
+      <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+        <h2 className="mb-3 text-sm font-semibold text-[#253158]">
+          Vencimientos de documentos
+        </h2>
+        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {[
+            { label: "SOAP", iso: e.soap_vencimiento },
+            { label: "Permiso de circulación", iso: e.permiso_circ_vencimiento },
+            { label: "Revisión técnica", iso: e.rev_tecnica_vencimiento },
+            { label: "Extintor", iso: e.extintor_vencimiento },
+          ].map((d) => {
+            const b = vencBadge(d.iso);
+            return (
+              <div key={d.label} className="flex items-center justify-between gap-3">
+                <dt className="text-sm text-gray-600">{d.label}</dt>
+                <dd>
+                  <span className={"rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 " + b.cls}>
+                    {b.texto}
+                  </span>
+                </dd>
+              </div>
+            );
+          })}
         </dl>
       </section>
     </div>
