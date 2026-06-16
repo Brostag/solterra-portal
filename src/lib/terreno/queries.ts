@@ -830,6 +830,130 @@ export async function getChecklistDetalle(
   };
 }
 
+// ── Check List de Mantenimiento (taller, 83 ítems) ─────────
+
+export const MANT_CHECKLIST_MANT_TAG = "mant-checklist-mantencion";
+
+export type ChecklistMantLista = {
+  id: string;
+  correlativo: number;
+  fecha: string; // ISO date
+  equipo: string | null;
+  equipoCodigo: string | null;
+  tipo_mantencion: string;
+  responsable: string | null;
+  anulado: boolean;
+};
+
+export const getChecklistsMantencion = unstable_cache(
+  async (): Promise<ChecklistMantLista[]> => {
+    const rows = await prisma.mantChecklistMantencion.findMany({
+      orderBy: { fecha: "desc" },
+      take: 200,
+      select: {
+        id: true,
+        correlativo: true,
+        fecha: true,
+        tipo_mantencion: true,
+        anulado_at: true,
+        equipo: { select: { codigo: true, nombre: true } },
+        responsable: { select: { nombre: true } },
+      },
+    });
+    return rows.map((c) => ({
+      id: c.id,
+      correlativo: c.correlativo,
+      fecha: c.fecha.toISOString(),
+      equipo: c.equipo?.nombre ?? null,
+      equipoCodigo: c.equipo?.codigo ?? null,
+      tipo_mantencion: c.tipo_mantencion,
+      responsable: c.responsable?.nombre ?? null,
+      anulado: c.anulado_at != null,
+    }));
+  },
+  ["mant-checklist-mantencion"],
+  { revalidate: 60, tags: [MANT_CHECKLIST_MANT_TAG] },
+);
+
+export type ChecklistMantDetalle = {
+  id: string;
+  correlativo: number;
+  equipo_id: string;
+  equipo: string | null;
+  equipoCodigo: string | null;
+  responsable: string | null;
+  fecha: string; // ISO date
+  tipo_mantencion: string;
+  empresa: string;
+  patente_snapshot: string | null;
+  km_snapshot: number | null;
+  horometro_snapshot: number | null;
+  proxima_mantencion: number | null;
+  items: unknown;
+  observaciones_generales: string | null;
+  anulado: boolean;
+  anulado_at: string | null;
+  motivo_anulacion: string | null;
+};
+
+export async function getChecklistMantencionDetalle(
+  id: string,
+): Promise<ChecklistMantDetalle | null> {
+  const c = await prisma.mantChecklistMantencion.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      correlativo: true,
+      equipo_id: true,
+      fecha: true,
+      tipo_mantencion: true,
+      empresa: true,
+      patente_snapshot: true,
+      km_snapshot: true,
+      horometro_snapshot: true,
+      proxima_mantencion: true,
+      items: true,
+      observaciones_generales: true,
+      anulado_at: true,
+      motivo_anulacion: true,
+      equipo: { select: { codigo: true, nombre: true } },
+      responsable: { select: { nombre: true } },
+    },
+  });
+  if (!c) return null;
+  const num = (v: unknown) => (v != null ? Number(v as number) : null);
+  return {
+    id: c.id,
+    correlativo: c.correlativo,
+    equipo_id: c.equipo_id,
+    equipo: c.equipo?.nombre ?? null,
+    equipoCodigo: c.equipo?.codigo ?? null,
+    responsable: c.responsable?.nombre ?? null,
+    fecha: c.fecha.toISOString(),
+    tipo_mantencion: c.tipo_mantencion,
+    empresa: c.empresa,
+    patente_snapshot: c.patente_snapshot,
+    km_snapshot: num(c.km_snapshot),
+    horometro_snapshot: num(c.horometro_snapshot),
+    proxima_mantencion: num(c.proxima_mantencion),
+    items: c.items,
+    observaciones_generales: c.observaciones_generales,
+    anulado: c.anulado_at != null,
+    anulado_at: c.anulado_at ? c.anulado_at.toISOString() : null,
+    motivo_anulacion: c.motivo_anulacion,
+  };
+}
+
+// Siguiente correlativo del año en curso para el check list de mantenimiento.
+export async function nextCorrelativoChecklistMant(): Promise<number> {
+  const inicioAnio = new Date(Date.UTC(new Date().getUTCFullYear(), 0, 1));
+  const max = await prisma.mantChecklistMantencion.aggregate({
+    _max: { correlativo: true },
+    where: { fecha: { gte: inicioAnio } },
+  });
+  return (max._max.correlativo ?? 0) + 1;
+}
+
 // ── Dashboard del módulo Mantención ────────────────────────
 
 export type MantDashboardMantencion = {
