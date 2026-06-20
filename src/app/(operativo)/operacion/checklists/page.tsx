@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft, FolderOpen } from "lucide-react";
 import { getChecklists } from "@/lib/terreno/queries";
 import ChecklistsLista from "@/components/operacion/ChecklistsLista";
+import AutoRefresh from "@/components/terreno/AutoRefresh";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
 
@@ -44,6 +45,7 @@ export default async function ChecklistsPage() {
         )}
       </header>
 
+      <AutoRefresh />
       <ChecklistsLista checklists={checklists} />
     </div>
   );

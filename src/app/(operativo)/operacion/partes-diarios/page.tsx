@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft, FileText } from "lucide-react";
 import { getPartes } from "@/lib/terreno/queries";
 import PartesLista from "@/components/operacion/PartesLista";
+import AutoRefresh from "@/components/terreno/AutoRefresh";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
 
@@ -44,6 +45,7 @@ export default async function PartesDiariosPage() {
         )}
       </header>
 
+      <AutoRefresh />
       <PartesLista partes={partes} />
     </div>
   );

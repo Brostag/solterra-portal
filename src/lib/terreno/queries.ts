@@ -586,8 +586,10 @@ export type ParteLista = {
   estado: string;
 };
 
-export const getPartes = unstable_cache(
-  async (): Promise<ParteLista[]> => {
+// Sin unstable_cache: lista "viva" con AutoRefresh (polling). El cache
+// neutralizaría el refresco mostrando datos viejos hasta el TTL.
+export async function getPartes(): Promise<ParteLista[]> {
+  {
     const rows = await prisma.mantParteDiario.findMany({
       where: { deleted_at: null },
       orderBy: [{ fecha: "desc" }, { created_at: "desc" }],
@@ -612,10 +614,8 @@ export const getPartes = unstable_cache(
       combustible_fraccion: p.combustible_fraccion,
       estado: p.estado,
     }));
-  },
-  ["mant-partes"],
-  { revalidate: 60, tags: [MANT_PARTES_TAG] },
-);
+  }
+}
 
 // ── Detalle de un parte diario ─────────────────────────────
 
@@ -740,8 +740,9 @@ const CHECKLIST_BOOL_SELECT = CHECKLIST_ITEM_KEYS.reduce(
   {} as Record<ChecklistItemKey, true>,
 );
 
-export const getChecklists = unstable_cache(
-  async (): Promise<ChecklistLista[]> => {
+// Sin unstable_cache: lista "viva" con AutoRefresh (polling).
+export async function getChecklists(): Promise<ChecklistLista[]> {
+  {
     const rows = await prisma.mantChecklist.findMany({
       orderBy: { fecha: "desc" },
       take: 200,
@@ -772,10 +773,8 @@ export const getChecklists = unstable_cache(
         anulado: c.anulado_at != null,
       };
     });
-  },
-  ["mant-checklists"],
-  { revalidate: 60, tags: [MANT_CHECKLISTS_TAG] },
-);
+  }
+}
 
 // ── Detalle de un checklist ────────────────────────────────
 
