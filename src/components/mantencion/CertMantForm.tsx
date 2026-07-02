@@ -7,10 +7,7 @@ import {
   type CertMantInput,
 } from "@/app/(operativo)/mantencion/certificado-mantencion/actions";
 import type { EquipoOption, ResponsableOption } from "@/lib/terreno/queries";
-
-const inputCls =
-  "w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-[#253158] placeholder:text-gray-400 focus:border-[#253158] focus:outline-none focus:ring-2 focus:ring-[#253158]/15";
-const labelCls = "mb-1.5 block text-sm font-semibold text-gray-700";
+import { inputCls, labelCls } from "@/lib/terreno/form-styles";
 
 export default function CertMantForm({
   equipos,

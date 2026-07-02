@@ -10,9 +10,45 @@ import {
   nextCorrelativoChecklistMant,
 } from "@/lib/terreno/queries";
 import {
+  SECCION_A,
+  SECCION_B,
   TIPO_MANTENCION_OPCIONES,
   type ChecklistMantData,
+  type ValorItem,
 } from "@/lib/terreno/checklist-mantencion-items";
+
+const VALORES_ITEM: ValorItem[] = ["SI", "NO", "NA"];
+const CODIGOS_A = new Set(SECCION_A.map((i) => i.codigo));
+const CODIGOS_B = new Set(SECCION_B.map((i) => i.codigo));
+
+// Construye un items limpio SOLO con códigos conocidos y valores válidos.
+// Evita persistir JSON arbitrario enviado por el cliente.
+function limpiarItems(input: ChecklistMantData | undefined): ChecklistMantData {
+  const limpiarSeccion = (
+    raw: Record<string, { valor?: ValorItem | null; obs?: string | null }> | undefined,
+    codigos: Set<string>,
+  ) => {
+    const out: ChecklistMantData["seccion_a"] = {};
+    for (const [codigo, item] of Object.entries(raw ?? {})) {
+      if (!codigos.has(codigo)) continue;
+      const valor = item?.valor && VALORES_ITEM.includes(item.valor) ? item.valor : null;
+      out[codigo] = { valor, obs: item?.obs?.trim() || null };
+    }
+    return out;
+  };
+  const correctivas = Array.isArray(input?.seccion_c)
+    ? input.seccion_c
+        .filter((s): s is string => typeof s === "string")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, 50)
+    : [];
+  return {
+    seccion_a: limpiarSeccion(input?.seccion_a, CODIGOS_A),
+    seccion_b: limpiarSeccion(input?.seccion_b, CODIGOS_B),
+    seccion_c: correctivas,
+  };
+}
 import type { UserSession } from "@/types";
 
 type ActionResult = { error: string };
@@ -78,31 +114,41 @@ export async function createChecklistMantencion(
   });
   if (!equipo) return { error: "El equipo seleccionado no existe." };
 
-  let nuevo: { id: string };
-  try {
-    const correlativo = await nextCorrelativoChecklistMant();
-    nuevo = await prisma.mantChecklistMantencion.create({
-      data: {
-        correlativo,
-        equipo_id: input.equipo_id,
-        responsable_id: input.responsable_id,
-        fecha,
-        tipo_mantencion: input.tipo_mantencion,
-        empresa: "SOLTERRA",
-        patente_snapshot: equipo.patente,
-        km_snapshot: num(input.km),
-        horometro_snapshot: num(input.horometro),
-        proxima_mantencion: num(input.proxima_mantencion),
-        items: input.items as never,
-        observaciones_generales: input.observaciones_generales?.trim() || null,
-      },
-      select: { id: true },
-    });
-  } catch (e: unknown) {
-    if (esCodigo(e, "P2003")) {
-      return { error: "El equipo o el encargado seleccionado no existe." };
+  const anio = fecha.getUTCFullYear();
+  let nuevo: { id: string } | null = null;
+  // Reintenta si el correlativo fue tomado por una request concurrente
+  // (índice único (correlativo, anio) en DB → P2002).
+  for (let intento = 0; intento < 4 && !nuevo; intento++) {
+    const correlativo = await nextCorrelativoChecklistMant(anio);
+    try {
+      nuevo = await prisma.mantChecklistMantencion.create({
+        data: {
+          correlativo,
+          anio,
+          equipo_id: input.equipo_id,
+          responsable_id: input.responsable_id,
+          fecha,
+          tipo_mantencion: input.tipo_mantencion,
+          empresa: "SOLTERRA",
+          patente_snapshot: equipo.patente,
+          km_snapshot: num(input.km),
+          horometro_snapshot: num(input.horometro),
+          proxima_mantencion: num(input.proxima_mantencion),
+          items: limpiarItems(input.items) as never,
+          observaciones_generales: input.observaciones_generales?.trim() || null,
+        },
+        select: { id: true },
+      });
+    } catch (e: unknown) {
+      if (esCodigo(e, "P2002")) continue; // correlativo duplicado por carrera → reintentar
+      if (esCodigo(e, "P2003")) {
+        return { error: "El equipo o el encargado seleccionado no existe." };
+      }
+      return { error: "No se pudo guardar el check list. Intenta nuevamente." };
     }
-    return { error: "No se pudo guardar el check list. Intenta nuevamente." };
+  }
+  if (!nuevo) {
+    return { error: "No se pudo asignar un número de documento. Intenta nuevamente." };
   }
 
   revalidateTag(MANT_CHECKLIST_MANT_TAG);

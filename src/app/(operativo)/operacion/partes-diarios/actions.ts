@@ -163,6 +163,18 @@ export async function updateParte(
     return { error: "No tienes permisos para editar registros." };
   }
 
+  // Propiedad: solo el operador del registro o un supervisor/admin puede editarlo.
+  const existente = await prisma.mantParteDiario.findFirst({
+    where: { id, deleted_at: null },
+    select: { operador_id: true },
+  });
+  if (!existente) return { error: "El registro no existe." };
+  const esSupervisor =
+    session.rol === "ADMINISTRADOR" || session.rol === "SUPERVISOR";
+  if (existente.operador_id !== session.id && !esSupervisor) {
+    return { error: "Solo puedes editar tus propios registros." };
+  }
+
   const parsed = parseRegistro(input);
   if ("error" in parsed) return parsed;
 

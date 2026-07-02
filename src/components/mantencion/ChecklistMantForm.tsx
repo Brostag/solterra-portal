@@ -15,10 +15,8 @@ import {
   type ValorItem,
 } from "@/lib/terreno/checklist-mantencion-items";
 import type { EquipoOption, ResponsableOption } from "@/lib/terreno/queries";
+import { inputCls, labelCls, valorBtnCls } from "@/lib/terreno/form-styles";
 
-const inputCls =
-  "w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-[#253158] placeholder:text-gray-400 focus:border-[#253158] focus:outline-none focus:ring-2 focus:ring-[#253158]/15";
-const labelCls = "mb-1.5 block text-sm font-semibold text-gray-700";
 const VALORES: ValorItem[] = ["SI", "NO", "NA"];
 
 function initSeccion(items: ItemMant[]): Record<string, ItemValor> {
@@ -26,14 +24,6 @@ function initSeccion(items: ItemMant[]): Record<string, ItemValor> {
     (acc, i) => ({ ...acc, [i.codigo]: { valor: null, obs: null } }),
     {} as Record<string, ItemValor>,
   );
-}
-
-function valorBtn(activo: boolean, v: ValorItem) {
-  const base = "rounded px-2 py-1 text-xs font-semibold transition ";
-  if (!activo) return base + "bg-white text-gray-500 ring-1 ring-gray-200 hover:bg-gray-50";
-  if (v === "SI") return base + "bg-green-600 text-white";
-  if (v === "NO") return base + "bg-[#c6352e] text-white";
-  return base + "bg-gray-400 text-white";
 }
 
 function Seccion({
@@ -68,7 +58,7 @@ function Seccion({
                   key={v}
                   type="button"
                   onClick={() => onSet(item.codigo, v)}
-                  className={valorBtn(valores[item.codigo]?.valor === v, v)}
+                  className={valorBtnCls(valores[item.codigo]?.valor === v, v)}
                 >
                   {v}
                 </button>

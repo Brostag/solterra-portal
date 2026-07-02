@@ -7,6 +7,8 @@ import {
   updateMantencion,
 } from "@/app/(operativo)/mantencion/taller/actions";
 import type { EquipoOption, ResponsableOption } from "@/lib/terreno/queries";
+import { inputCls, labelCls } from "@/lib/terreno/form-styles";
+import { toUTCDateInput, toLocalDateTimeInput } from "@/lib/terreno/format";
 
 export type MantencionFormValues = {
   id: string;
@@ -28,29 +30,6 @@ export type MantencionFormValues = {
 
 const TIPOS = ["Preventiva", "Correctiva", "Emergencia"];
 const ESTADOS = ["Programada", "En Proceso", "Completada"];
-
-const inputCls =
-  "w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-[#253158] placeholder:text-gray-400 focus:border-[#253158] focus:outline-none focus:ring-2 focus:ring-[#253158]/15";
-const labelCls = "mb-1.5 block text-sm font-semibold text-gray-700";
-
-// ISO → "YYYY-MM-DDTHH:mm" en hora local, para <input type="datetime-local">.
-function toLocalDateTime(iso: string | null | undefined): string | undefined {
-  if (!iso) return undefined;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return undefined;
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-// ISO → "YYYY-MM-DD" para <input type="date">. proxima_mantencion_fecha es
-// @db.Date (medianoche UTC): usar getters UTC para no retroceder un día.
-function toLocalDate(iso: string | null | undefined): string | undefined {
-  if (!iso) return undefined;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return undefined;
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
-}
 
 export default function MantencionForm({
   equipos,
@@ -171,7 +150,7 @@ export default function MantencionForm({
             name="fecha_inicio"
             type="datetime-local"
             required
-            defaultValue={toLocalDateTime(mantencion?.fecha_inicio)}
+            defaultValue={toLocalDateTimeInput(mantencion?.fecha_inicio)}
             className={inputCls}
           />
         </label>
@@ -181,7 +160,7 @@ export default function MantencionForm({
           <input
             name="fecha_fin"
             type="datetime-local"
-            defaultValue={toLocalDateTime(mantencion?.fecha_fin)}
+            defaultValue={toLocalDateTimeInput(mantencion?.fecha_fin)}
             className={inputCls}
           />
         </label>
@@ -229,7 +208,7 @@ export default function MantencionForm({
           <input
             name="proxima_mantencion_fecha"
             type="date"
-            defaultValue={toLocalDate(mantencion?.proxima_mantencion_fecha)}
+            defaultValue={toUTCDateInput(mantencion?.proxima_mantencion_fecha)}
             className={inputCls}
           />
         </label>

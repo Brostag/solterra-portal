@@ -4,7 +4,8 @@ import { ChevronLeft, Award } from "lucide-react";
 import { getCertificadoMantencionDetalle } from "@/lib/terreno/queries";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
-import AnularCertMantButton from "@/components/mantencion/AnularCertMantButton";
+import AnularConMotivoButton from "@/components/terreno/AnularConMotivoButton";
+import { anularCertificadoMantencion } from "@/app/(operativo)/mantencion/certificado-mantencion/actions";
 
 function fechaUTC(iso: string): string {
   return new Date(iso).toLocaleDateString("es-CL", {
@@ -103,7 +104,12 @@ export default async function CertMantDetallePage({ params }: Props) {
 
       {puedeAnular && (
         <div className="flex justify-end">
-          <AnularCertMantButton id={c.id} />
+          <AnularConMotivoButton
+            id={c.id}
+            label="Anular certificado"
+            titulo="Anular certificado"
+            onAnular={anularCertificadoMantencion}
+          />
         </div>
       )}
     </div>

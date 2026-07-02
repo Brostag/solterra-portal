@@ -1,19 +1,12 @@
 // @react-pdf/reconciler v0.23 no reconoce react.transitional.element
 // (JSX transform de React 18.3). Se usa React.createElement siempre. NO JSX.
 import React from "react";
-import { Document, Page, Text, View, StyleSheet, Font } from "@react-pdf/renderer";
-import path from "path";
+import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import { registerFonts, PDF_COLORS } from "./pdf-base";
 
-Font.register({
-  family: "Inter",
-  fonts: [
-    { src: path.join(process.cwd(), "public", "fonts", "Inter-Regular.ttf"), fontWeight: 400 },
-    { src: path.join(process.cwd(), "public", "fonts", "Inter-Bold.ttf"), fontWeight: 700 },
-  ],
-});
+registerFonts();
 
-const BLUE = "#253158";
-const GRAY = "#6b7280";
+const { BLUE, GRAY } = PDF_COLORS;
 
 const styles = StyleSheet.create({
   page: { fontFamily: "Inter", fontSize: 10.5, color: "#1a1a1a", padding: 48, lineHeight: 1.5 },

@@ -69,31 +69,41 @@ export async function createCertificadoMantencion(
   });
   if (!equipo) return { error: "El equipo seleccionado no existe." };
 
-  let nuevo: { id: string };
-  try {
-    const correlativo = await nextCorrelativoCertMant();
-    nuevo = await prisma.mantCertificadoMantencion.create({
-      data: {
-        correlativo,
-        equipo_id: input.equipo_id,
-        responsable_id: input.responsable_id,
-        gerente_id: input.gerente_id || null,
-        fecha,
-        ciudad: input.ciudad?.trim() || "Calama",
-        tipo_equipo_snapshot: equipo.tipo,
-        marca_snapshot: equipo.marca,
-        patente_snapshot: equipo.patente,
-        horometro_snapshot: num(input.horometro),
-        odometro_snapshot: num(input.odometro),
-        proxima_mantencion: num(input.proxima_mantencion),
-      },
-      select: { id: true },
-    });
-  } catch (e: unknown) {
-    if (esCodigo(e, "P2003")) {
-      return { error: "El equipo o las personas seleccionadas no existen." };
+  const anio = fecha.getUTCFullYear();
+  let nuevo: { id: string } | null = null;
+  // Reintenta si el correlativo fue tomado por una request concurrente
+  // (índice único (correlativo, anio) en DB → P2002).
+  for (let intento = 0; intento < 4 && !nuevo; intento++) {
+    const correlativo = await nextCorrelativoCertMant(anio);
+    try {
+      nuevo = await prisma.mantCertificadoMantencion.create({
+        data: {
+          correlativo,
+          anio,
+          equipo_id: input.equipo_id,
+          responsable_id: input.responsable_id,
+          gerente_id: input.gerente_id || null,
+          fecha,
+          ciudad: input.ciudad?.trim() || "Calama",
+          tipo_equipo_snapshot: equipo.tipo,
+          marca_snapshot: equipo.marca,
+          patente_snapshot: equipo.patente,
+          horometro_snapshot: num(input.horometro),
+          odometro_snapshot: num(input.odometro),
+          proxima_mantencion: num(input.proxima_mantencion),
+        },
+        select: { id: true },
+      });
+    } catch (e: unknown) {
+      if (esCodigo(e, "P2002")) continue; // correlativo duplicado por carrera → reintentar
+      if (esCodigo(e, "P2003")) {
+        return { error: "El equipo o las personas seleccionadas no existen." };
+      }
+      return { error: "No se pudo crear el certificado. Intenta nuevamente." };
     }
-    return { error: "No se pudo crear el certificado. Intenta nuevamente." };
+  }
+  if (!nuevo) {
+    return { error: "No se pudo asignar un número de documento. Intenta nuevamente." };
   }
 
   revalidateTag(MANT_CERT_MANT_TAG);

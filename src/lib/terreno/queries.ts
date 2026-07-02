@@ -10,6 +10,10 @@ import type { ComponentesData } from "@/lib/terreno/registro-componentes";
 // escritura (partes diarios / checklists / equipos). Por ahora solo lectura.
 export const OPERACION_DASHBOARD_TAG = "operacion-dashboard";
 
+// Tope de filas en los listados de terreno. Provisional hasta tener paginación
+// por cursor (deuda técnica conocida: listas grandes ocultarían registros).
+const MAX_LISTA_TERRENO = 200;
+
 export type EquipoResumen = {
   id: string;
   codigo: string;
@@ -276,8 +280,8 @@ export async function getEquipoDetalle(id: string): Promise<EquipoDetalle | null
 }
 
 // ── Vencimientos de documentos legales (Reporte de Fechas) ──
-
-export const MANT_VENCIMIENTOS_TAG = "mant-equipos";
+// Los vencimientos viven como columnas del equipo (mant_equipos), por lo que
+// el cache se invalida con MANT_EQUIPOS_TAG (no tiene tag propio).
 
 export type VencimientoDoc = {
   fecha: string | null; // ISO date
@@ -589,32 +593,30 @@ export type ParteLista = {
 // Sin unstable_cache: lista "viva" con AutoRefresh (polling). El cache
 // neutralizaría el refresco mostrando datos viejos hasta el TTL.
 export async function getPartes(): Promise<ParteLista[]> {
-  {
-    const rows = await prisma.mantParteDiario.findMany({
-      where: { deleted_at: null },
-      orderBy: [{ fecha: "desc" }, { created_at: "desc" }],
-      take: 200,
-      select: {
-        id: true,
-        fecha: true,
-        horometro: true,
-        combustible_fraccion: true,
-        estado: true,
-        equipo: { select: { codigo: true, nombre: true } },
-        operador: { select: { nombre: true } },
-      },
-    });
-    return rows.map((p) => ({
-      id: p.id,
-      fecha: p.fecha.toISOString(),
-      equipo: p.equipo?.nombre ?? null,
-      equipoCodigo: p.equipo?.codigo ?? null,
-      operador: p.operador?.nombre ?? null,
-      horometro: p.horometro != null ? Number(p.horometro) : null,
-      combustible_fraccion: p.combustible_fraccion,
-      estado: p.estado,
-    }));
-  }
+  const rows = await prisma.mantParteDiario.findMany({
+    where: { deleted_at: null },
+    orderBy: [{ fecha: "desc" }, { created_at: "desc" }],
+    take: MAX_LISTA_TERRENO,
+    select: {
+      id: true,
+      fecha: true,
+      horometro: true,
+      combustible_fraccion: true,
+      estado: true,
+      equipo: { select: { codigo: true, nombre: true } },
+      operador: { select: { nombre: true } },
+    },
+  });
+  return rows.map((p) => ({
+    id: p.id,
+    fecha: p.fecha.toISOString(),
+    equipo: p.equipo?.nombre ?? null,
+    equipoCodigo: p.equipo?.codigo ?? null,
+    operador: p.operador?.nombre ?? null,
+    horometro: p.horometro != null ? Number(p.horometro) : null,
+    combustible_fraccion: p.combustible_fraccion,
+    estado: p.estado,
+  }));
 }
 
 // ── Detalle de un parte diario ─────────────────────────────
@@ -742,38 +744,36 @@ const CHECKLIST_BOOL_SELECT = CHECKLIST_ITEM_KEYS.reduce(
 
 // Sin unstable_cache: lista "viva" con AutoRefresh (polling).
 export async function getChecklists(): Promise<ChecklistLista[]> {
-  {
-    const rows = await prisma.mantChecklist.findMany({
-      orderBy: { fecha: "desc" },
-      take: 200,
-      select: {
-        id: true,
-        fecha: true,
-        estado_general: true,
-        anulado_at: true,
-        ...CHECKLIST_BOOL_SELECT,
-        equipo: { select: { codigo: true, nombre: true } },
-        operador: { select: { nombre: true } },
-      },
-    });
-    return rows.map((c) => {
-      const row = c as unknown as Record<ChecklistItemKey, boolean | null>;
-      const ok = CHECKLIST_ITEM_KEYS.filter((k) => row[k] === true).length;
-      const fail = CHECKLIST_ITEM_KEYS.filter((k) => row[k] === false).length;
-      return {
-        id: c.id,
-        fecha: c.fecha.toISOString(),
-        equipo: c.equipo?.nombre ?? null,
-        equipoCodigo: c.equipo?.codigo ?? null,
-        operador: c.operador?.nombre ?? null,
-        estado_general: c.estado_general,
-        ok,
-        fail,
-        total: CHECKLIST_ITEM_KEYS.length,
-        anulado: c.anulado_at != null,
-      };
-    });
-  }
+  const rows = await prisma.mantChecklist.findMany({
+    orderBy: { fecha: "desc" },
+    take: MAX_LISTA_TERRENO,
+    select: {
+      id: true,
+      fecha: true,
+      estado_general: true,
+      anulado_at: true,
+      ...CHECKLIST_BOOL_SELECT,
+      equipo: { select: { codigo: true, nombre: true } },
+      operador: { select: { nombre: true } },
+    },
+  });
+  return rows.map((c) => {
+    const row = c as unknown as Record<ChecklistItemKey, boolean | null>;
+    const ok = CHECKLIST_ITEM_KEYS.filter((k) => row[k] === true).length;
+    const fail = CHECKLIST_ITEM_KEYS.filter((k) => row[k] === false).length;
+    return {
+      id: c.id,
+      fecha: c.fecha.toISOString(),
+      equipo: c.equipo?.nombre ?? null,
+      equipoCodigo: c.equipo?.codigo ?? null,
+      operador: c.operador?.nombre ?? null,
+      estado_general: c.estado_general,
+      ok,
+      fail,
+      total: CHECKLIST_ITEM_KEYS.length,
+      anulado: c.anulado_at != null,
+    };
+  });
 }
 
 // ── Detalle de un checklist ────────────────────────────────
@@ -848,7 +848,7 @@ export const getChecklistsMantencion = unstable_cache(
   async (): Promise<ChecklistMantLista[]> => {
     const rows = await prisma.mantChecklistMantencion.findMany({
       orderBy: { fecha: "desc" },
-      take: 200,
+      take: MAX_LISTA_TERRENO,
       select: {
         id: true,
         correlativo: true,
@@ -943,12 +943,13 @@ export async function getChecklistMantencionDetalle(
   };
 }
 
-// Siguiente correlativo del año en curso para el check list de mantenimiento.
-export async function nextCorrelativoChecklistMant(): Promise<number> {
-  const inicioAnio = new Date(Date.UTC(new Date().getUTCFullYear(), 0, 1));
+// Siguiente correlativo del año para el check list de mantenimiento.
+// La unicidad real la garantiza el índice único (correlativo, anio) en DB;
+// la action reintenta si hay carrera (ver createChecklistMantencion).
+export async function nextCorrelativoChecklistMant(anio: number): Promise<number> {
   const max = await prisma.mantChecklistMantencion.aggregate({
     _max: { correlativo: true },
-    where: { fecha: { gte: inicioAnio } },
+    where: { anio },
   });
   return (max._max.correlativo ?? 0) + 1;
 }
@@ -971,7 +972,7 @@ export const getCertificadosMantencion = unstable_cache(
   async (): Promise<CertMantLista[]> => {
     const rows = await prisma.mantCertificadoMantencion.findMany({
       orderBy: { fecha: "desc" },
-      take: 200,
+      take: MAX_LISTA_TERRENO,
       select: {
         id: true,
         correlativo: true,
@@ -1061,11 +1062,10 @@ export async function getCertificadoMantencionDetalle(
   };
 }
 
-export async function nextCorrelativoCertMant(): Promise<number> {
-  const inicioAnio = new Date(Date.UTC(new Date().getUTCFullYear(), 0, 1));
+export async function nextCorrelativoCertMant(anio: number): Promise<number> {
   const max = await prisma.mantCertificadoMantencion.aggregate({
     _max: { correlativo: true },
-    where: { fecha: { gte: inicioAnio } },
+    where: { anio },
   });
   return (max._max.correlativo ?? 0) + 1;
 }

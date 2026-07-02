@@ -6,6 +6,8 @@ import {
   createEquipo,
   updateEquipo,
 } from "@/app/(operativo)/mantencion/equipos/actions";
+import { inputCls } from "@/lib/terreno/form-styles";
+import { toUTCDateInput } from "@/lib/terreno/format";
 
 export type EquipoFormValues = {
   id: string;
@@ -25,18 +27,6 @@ export type EquipoFormValues = {
   rev_tecnica_vencimiento: string | null;
   extintor_vencimiento: string | null;
 };
-
-const inputCls =
-  "w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-[#253158] placeholder:text-gray-400 focus:border-[#253158] focus:outline-none focus:ring-2 focus:ring-[#253158]/15";
-
-// ISO @db.Date → "YYYY-MM-DD" en UTC para <input type="date">.
-function toUTCDate(iso: string | null | undefined): string | undefined {
-  if (!iso) return undefined;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return undefined;
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
-}
 
 const VENCIMIENTOS: { name: string; label: string }[] = [
   { name: "soap_vencimiento", label: "SOAP" },
@@ -145,7 +135,7 @@ export default function EquipoForm({ equipo }: { equipo?: EquipoFormValues }) {
               <input
                 name={v.name}
                 type="date"
-                defaultValue={toUTCDate(
+                defaultValue={toUTCDateInput(
                   equipo?.[v.name as keyof EquipoFormValues] as string | null,
                 )}
                 className={inputCls}

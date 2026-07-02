@@ -10,10 +10,7 @@ import {
   type ChecklistItemKey,
 } from "@/lib/terreno/checklist-items";
 import type { EquipoOption, ResponsableOption } from "@/lib/terreno/queries";
-
-const inputCls =
-  "w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-[#253158] focus:border-[#253158] focus:outline-none focus:ring-2 focus:ring-[#253158]/15";
-const labelCls = "mb-1.5 block text-sm font-semibold text-gray-700";
+import { inputCls, labelCls } from "@/lib/terreno/form-styles";
 
 function estadoBadge(estado: string): string {
   if (estado === "Apto") return "bg-green-50 text-green-700 ring-1 ring-green-600/20";

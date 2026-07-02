@@ -17,19 +17,10 @@ import {
   type ValorComponente,
 } from "@/lib/terreno/registro-componentes";
 import type { EquipoOption, ResponsableOption, ParteDetalle } from "@/lib/terreno/queries";
+import { inputCls, labelCls, valorBtnCls } from "@/lib/terreno/form-styles";
+import { toUTCDateInput } from "@/lib/terreno/format";
 
-const inputCls =
-  "w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-[#253158] placeholder:text-gray-400 focus:border-[#253158] focus:outline-none focus:ring-2 focus:ring-[#253158]/15";
-const labelCls = "mb-1.5 block text-sm font-semibold text-gray-700";
 const VALORES: ValorComponente[] = ["SI", "NO", "NA"];
-
-function toUTCDate(iso: string | null | undefined): string | undefined {
-  if (!iso) return undefined;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return undefined;
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
-}
 
 function initComponentes(parte?: ParteDetalle): ComponentesData {
   const base: ComponentesData = {};
@@ -97,14 +88,6 @@ export default function ParteForm({
     });
   }
 
-  const valorBtn = (activo: boolean, v: ValorComponente) => {
-    const base = "rounded px-2 py-1 text-xs font-semibold transition ";
-    if (!activo) return base + "bg-white text-gray-500 ring-1 ring-gray-200 hover:bg-gray-50";
-    if (v === "SI") return base + "bg-green-600 text-white";
-    if (v === "NO") return base + "bg-[#c6352e] text-white";
-    return base + "bg-gray-400 text-white";
-  };
-
   return (
     <form
       onSubmit={onSubmit}
@@ -138,11 +121,11 @@ export default function ParteForm({
         </label>
         <label className="block">
           <span className={labelCls}>Fecha ingreso <span className="text-[#c6352e]">*</span></span>
-          <input name="fecha" type="date" required defaultValue={toUTCDate(parte?.fecha) ?? new Date().toISOString().slice(0, 10)} className={inputCls} />
+          <input name="fecha" type="date" required defaultValue={toUTCDateInput(parte?.fecha) ?? new Date().toISOString().slice(0, 10)} className={inputCls} />
         </label>
         <label className="block">
           <span className={labelCls}>Fecha salida</span>
-          <input name="fecha_salida" type="date" defaultValue={toUTCDate(parte?.fecha_salida)} className={inputCls} />
+          <input name="fecha_salida" type="date" defaultValue={toUTCDateInput(parte?.fecha_salida)} className={inputCls} />
         </label>
         <label className="block">
           <span className={labelCls}>Área de uso</span>
@@ -223,7 +206,7 @@ export default function ParteForm({
                         key={v}
                         type="button"
                         onClick={() => setValor(item.key, "ingreso", v)}
-                        className={valorBtn(c.ingreso === v, v)}
+                        className={valorBtnCls(c.ingreso === v, v)}
                       >
                         {v}
                       </button>
@@ -236,7 +219,7 @@ export default function ParteForm({
                         key={v}
                         type="button"
                         onClick={() => setValor(item.key, "salida", v)}
-                        className={valorBtn(c.salida === v, v)}
+                        className={valorBtnCls(c.salida === v, v)}
                       >
                         {v}
                       </button>

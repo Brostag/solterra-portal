@@ -3,6 +3,7 @@ import { ChevronLeft, ClipboardCheck } from "lucide-react";
 import { getChecklistsMantencion } from "@/lib/terreno/queries";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
+import PageHeader from "@/components/terreno/PageHeader";
 
 function fechaUTC(iso: string): string {
   return new Date(iso).toLocaleDateString("es-CL", {
@@ -33,27 +34,16 @@ export default async function ChecklistMantPage() {
         <ChevronLeft className="h-4 w-4" /> Volver a Mantención
       </Link>
 
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <span className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-[#253158]/10 text-[#253158]">
-            <ClipboardCheck className="h-5 w-5" />
-          </span>
-          <div>
-            <h1 className="text-2xl font-bold text-[#253158]">Check List de Mantenimiento</h1>
-            <p className="mt-0.5 text-sm text-gray-500">
-              Pauta de taller: fabricante, preventivo y correctivo
-            </p>
-          </div>
-        </div>
-        {puedeCrear && (
-          <Link
-            href="/mantencion/checklist-mantencion/nuevo"
-            className="rounded-lg bg-[#253158] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1b2540]"
-          >
-            Nuevo check list
-          </Link>
-        )}
-      </header>
+      <PageHeader
+        icon={<ClipboardCheck className="h-5 w-5" />}
+        titulo="Check List de Mantenimiento"
+        subtitulo="Pauta de taller: fabricante, preventivo y correctivo"
+        accion={
+          puedeCrear
+            ? { href: "/mantencion/checklist-mantencion/nuevo", label: "Nuevo check list" }
+            : undefined
+        }
+      />
 
       {items.length === 0 ? (
         <div className="rounded-xl border border-dashed border-gray-300 bg-white p-12 text-center">

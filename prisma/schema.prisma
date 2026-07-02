@@ -529,6 +529,7 @@ model MantEquipo {
 
   @@index([estado])
   @@index([updated_at])
+  @@index([deleted_at, updated_at])
   @@map("mant_equipos")
 }
 
@@ -575,6 +576,7 @@ model MantParteDiario {
   @@index([operador_id])
   @@index([fecha])
   @@index([updated_at])
+  @@index([deleted_at, fecha])
   @@map("mant_partes_diarios")
 }
 
@@ -603,6 +605,7 @@ model MantMantencion {
   @@index([equipo_id])
   @@index([estado])
   @@index([updated_at])
+  @@index([deleted_at, fecha_inicio])
   @@map("mant_mantenciones")
 }
 
@@ -664,12 +667,14 @@ model MantCertificado {
   @@index([equipo_id])
   @@index([fecha_vencimiento])
   @@index([updated_at])
+  @@index([deleted_at, fecha_vencimiento])
   @@map("mant_certificados")
 }
 
 model MantChecklistMantencion {
   id                      String     @id @default(uuid())
   correlativo             Int
+  anio                    Int        @default(0)
   equipo_id               String
   responsable_id          String?
   fecha                   DateTime   @default(now()) @db.Date
@@ -691,6 +696,7 @@ model MantChecklistMantencion {
   responsable             Profile?   @relation("ChecklistMantResponsable", fields: [responsable_id], references: [id])
   anulado_por             Profile?   @relation("ChecklistMantAnuladoPor", fields: [anulado_por_id], references: [id])
 
+  @@unique([correlativo, anio])
   @@index([equipo_id])
   @@index([fecha])
   @@map("mant_checklists_mantencion")
@@ -699,6 +705,7 @@ model MantChecklistMantencion {
 model MantCertificadoMantencion {
   id                   String     @id @default(uuid())
   correlativo          Int
+  anio                 Int        @default(0)
   equipo_id            String
   responsable_id       String?
   gerente_id           String?
@@ -722,6 +729,7 @@ model MantCertificadoMantencion {
   gerente              Profile?   @relation("CertMantGerente", fields: [gerente_id], references: [id])
   anulado_por          Profile?   @relation("CertMantAnuladoPor", fields: [anulado_por_id], references: [id])
 
+  @@unique([correlativo, anio])
   @@index([equipo_id])
   @@index([fecha])
   @@map("mant_certificados_mantencion")

@@ -1,9 +1,23 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { anularCertificadoMantencion } from "@/app/(operativo)/mantencion/certificado-mantencion/actions";
 
-export default function AnularCertMantButton({ id }: { id: string }) {
+// Botón genérico de anulación con motivo (trazable, no borra). Reemplaza los
+// 3 botones casi idénticos de checklist/checklist-mant/certificado-mant.
+// La server action se pasa como prop desde el Server Component de detalle.
+export default function AnularConMotivoButton({
+  id,
+  label,
+  titulo,
+  nota,
+  onAnular,
+}: {
+  id: string;
+  label: string;
+  titulo: string;
+  nota?: string;
+  onAnular: (id: string, motivo: string) => Promise<{ error?: string } | void>;
+}) {
   const [abierto, setAbierto] = useState(false);
   const [motivo, setMotivo] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +30,7 @@ export default function AnularCertMantButton({ id }: { id: string }) {
       return;
     }
     startTransition(async () => {
-      const res = await anularCertificadoMantencion(id, motivo);
+      const res = await onAnular(id, motivo);
       if (res?.error) setError(res.error);
     });
   }
@@ -28,14 +42,15 @@ export default function AnularCertMantButton({ id }: { id: string }) {
         onClick={() => setAbierto(true)}
         className="rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-[#c6352e] transition hover:bg-red-50"
       >
-        Anular certificado
+        {label}
       </button>
     );
   }
 
   return (
     <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-      <p className="text-sm font-semibold text-[#253158]">Anular certificado</p>
+      <p className="text-sm font-semibold text-[#253158]">{titulo}</p>
+      {nota && <p className="mt-1 text-xs text-gray-500">{nota}</p>}
       <textarea
         value={motivo}
         onChange={(e) => setMotivo(e.target.value)}

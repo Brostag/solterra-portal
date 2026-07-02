@@ -5,7 +5,8 @@ import { getChecklistDetalle } from "@/lib/terreno/queries";
 import { CHECKLIST_ITEMS } from "@/lib/terreno/checklist-items";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
-import AnularChecklistButton from "@/components/operacion/AnularChecklistButton";
+import AnularConMotivoButton from "@/components/terreno/AnularConMotivoButton";
+import { anularChecklist } from "@/app/(operativo)/operacion/checklists/actions";
 
 function estadoBadge(estado: string): string {
   if (estado === "Apto") return "bg-green-50 text-green-700 ring-1 ring-green-600/20";
@@ -142,7 +143,13 @@ export default async function ChecklistDetallePage({ params }: Props) {
 
       {puedeAnular && (
         <div className="flex justify-end">
-          <AnularChecklistButton id={c.id} />
+          <AnularConMotivoButton
+            id={c.id}
+            label="Anular checklist"
+            titulo="Anular checklist"
+            nota="El checklist queda registrado como anulado, con motivo y trazabilidad. No se borra."
+            onAnular={anularChecklist}
+          />
         </div>
       )}
     </div>

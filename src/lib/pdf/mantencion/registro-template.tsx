@@ -1,24 +1,16 @@
 // React.createElement siempre (bug @react-pdf/reconciler v0.23 con JSX). NO JSX.
 import React from "react";
-import { Document, Page, Text, View, StyleSheet, Font } from "@react-pdf/renderer";
-import path from "path";
+import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import {
   REGISTRO_COMPONENTES,
   type ComponentesData,
   type ValorComponente,
 } from "@/lib/terreno/registro-componentes";
+import { registerFonts, PDF_COLORS } from "./pdf-base";
 
-Font.register({
-  family: "Inter",
-  fonts: [
-    { src: path.join(process.cwd(), "public", "fonts", "Inter-Regular.ttf"), fontWeight: 400 },
-    { src: path.join(process.cwd(), "public", "fonts", "Inter-Bold.ttf"), fontWeight: 700 },
-  ],
-});
+registerFonts();
 
-const BLUE = "#253158";
-const BORDER = "#cbd5e1";
-const HEAD = "#1e3a5f";
+const { BLUE, BORDER, HEAD } = PDF_COLORS;
 
 const styles = StyleSheet.create({
   page: { fontFamily: "Inter", fontSize: 8, color: "#1a1a1a", padding: 28 },

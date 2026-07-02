@@ -11,7 +11,8 @@ import {
 } from "@/lib/terreno/checklist-mantencion-items";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
-import AnularChecklistMantButton from "@/components/mantencion/AnularChecklistMantButton";
+import AnularConMotivoButton from "@/components/terreno/AnularConMotivoButton";
+import { anularChecklistMantencion } from "@/app/(operativo)/mantencion/checklist-mantencion/actions";
 
 function fechaUTC(iso: string): string {
   return new Date(iso).toLocaleDateString("es-CL", {
@@ -173,7 +174,12 @@ export default async function ChecklistMantDetallePage({ params }: Props) {
 
       {puedeAnular && (
         <div className="flex justify-end">
-          <AnularChecklistMantButton id={c.id} />
+          <AnularConMotivoButton
+            id={c.id}
+            label="Anular check list"
+            titulo="Anular check list"
+            onAnular={anularChecklistMantencion}
+          />
         </div>
       )}
     </div>
