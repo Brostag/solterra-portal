@@ -14,6 +14,8 @@ const TIPOS: { value: ReporteTipo; label: string; conFecha: boolean }[] = [
   { value: "certificados", label: "Certificados", conFecha: false },
   { value: "partes", label: "Partes diarios", conFecha: true },
   { value: "checklists", label: "Checklists", conFecha: true },
+  { value: "checklists-mantencion", label: "Checklists de mantención", conFecha: true },
+  { value: "certificados-mantencion", label: "Certificados de mantención", conFecha: true },
 ];
 
 const inputCls =
