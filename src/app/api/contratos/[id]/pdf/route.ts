@@ -4,6 +4,7 @@ import React from "react";
 import { NextRequest, NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { getSession } from "@/lib/auth/session";
+import { canAccessModule } from "@/lib/modules";
 import { prisma } from "@/lib/prisma";
 import { ContractDocument, type ContractPDFData, type ContractEquipoFotosPDF } from "@/lib/pdf/contract-template";
 import { formatContractDisplayNumber, formatContractCorrelativo } from "@/lib/contracts";
@@ -32,6 +33,9 @@ export async function GET(
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+  if (!canAccessModule(session, "COMERCIAL")) {
+    return NextResponse.json({ error: "Sin acceso a este módulo" }, { status: 403 });
   }
 
   const { id } = await params;

@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
+import { requireModule } from "@/lib/modules";
 import { logAudit } from "@/lib/audit";
 import { clientSchema } from "@/lib/validations/client";
 import { revalidatePath, revalidateTag } from "next/cache";
@@ -12,6 +13,7 @@ import { ACTIVE_CLIENTS_TAG, CLIENT_COUNTS_TAG } from "@/lib/cache/master-lists"
 export async function createClient(formData: FormData) {
   const session = await getSession();
   if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
   if (session.rol === "USUARIO") throw new Error("Sin permisos para crear clientes");
 
   const data = clientSchema.parse({
@@ -36,6 +38,7 @@ export async function createClient(formData: FormData) {
 export async function updateClient(id: string, formData: FormData) {
   const session = await getSession();
   if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
   if (session.rol === "USUARIO") throw new Error("Sin permisos para editar clientes");
 
   const data = clientSchema.parse({
@@ -59,6 +62,7 @@ export async function updateClient(id: string, formData: FormData) {
 export async function deactivateClient(id: string) {
   const session = await getSession();
   if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
   if (session.rol !== "ADMINISTRADOR")
     throw new Error("Solo el Administrador puede desactivar clientes");
 

@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
+import { requireModule } from "@/lib/modules";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
@@ -121,6 +122,7 @@ export async function createCompany(
 ): Promise<{ id: string }> {
   const session = await getSession();
   if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
   if (session.rol !== "ADMINISTRADOR" && session.rol !== "SUPERVISOR") {
     throw new Error("Sin permisos para crear empresas.");
   }
@@ -151,6 +153,7 @@ export async function updateCompany(
 ): Promise<{ id: string }> {
   const session = await getSession();
   if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
   if (session.rol !== "ADMINISTRADOR" && session.rol !== "SUPERVISOR") {
     throw new Error("Sin permisos para editar empresas.");
   }

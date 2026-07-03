@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { getSession } from "@/lib/auth/session";
+import { requireModule } from "@/lib/modules";
 import { logAudit } from "@/lib/audit";
 import { calculateOCTotals } from "@/lib/currency";
 import { purchaseOrderSchema, annulOCSchema, type PurchaseOrderData } from "@/lib/validations/purchase-order";
@@ -144,6 +145,7 @@ async function resolveSupplierIdFromSelection(selectionId: string): Promise<stri
 export async function createPurchaseOrder(rawData: PurchaseOrderData): Promise<{ id: string }> {
   const session = await getSession();
   if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
   if (session.rol === "USUARIO") throw new Error("Sin permisos para crear órdenes de compra");
 
   const validated = purchaseOrderSchema.parse(rawData);
@@ -204,6 +206,7 @@ export async function createPurchaseOrder(rawData: PurchaseOrderData): Promise<{
 export async function updatePurchaseOrder(id: string, rawData: PurchaseOrderData): Promise<void> {
   const session = await getSession();
   if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
   if (session.rol === "USUARIO") throw new Error("Sin permisos");
 
   const oc = await prisma.purchaseOrder.findUnique({ where: { id }, select: { estado: true, numero: true } });
@@ -261,6 +264,7 @@ export async function updatePurchaseOrder(id: string, rawData: PurchaseOrderData
 export async function changeOrderStatus(id: string, newStatus: EstadoOC): Promise<void> {
   const session = await getSession();
   if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
 
   const oc = await prisma.purchaseOrder.findUnique({ where: { id }, select: { estado: true, numero: true } });
   if (!oc) throw new Error("OC no encontrada");
@@ -281,6 +285,7 @@ export async function changeOrderStatus(id: string, newStatus: EstadoOC): Promis
 export async function annulOrder(id: string, motivo: string): Promise<void> {
   const session = await getSession();
   if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
   if (session.rol !== "ADMINISTRADOR") throw new Error("Solo el administrador puede anular OCs");
 
   const { motivo_anulacion } = annulOCSchema.parse({ motivo_anulacion: motivo });

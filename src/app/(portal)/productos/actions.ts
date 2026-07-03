@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
+import { requireModule } from "@/lib/modules";
 import { logAudit } from "@/lib/audit";
 import { productSchema } from "@/lib/validations/product";
 import { revalidatePath, revalidateTag } from "next/cache";
@@ -12,6 +13,7 @@ import { ACTIVE_PRODUCTS_TAG, PRODUCT_COUNTS_TAG } from "@/lib/cache/master-list
 export async function createProduct(formData: FormData) {
   const session = await getSession();
   if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
   if (session.rol === "USUARIO") throw new Error("Sin permisos para crear servicios");
 
   const data = productSchema.parse({
@@ -34,6 +36,7 @@ export async function createProduct(formData: FormData) {
 export async function updateProduct(id: string, formData: FormData) {
   const session = await getSession();
   if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
   if (session.rol === "USUARIO") throw new Error("Sin permisos para editar servicios");
 
   const data = productSchema.parse({
@@ -55,6 +58,7 @@ export async function updateProduct(id: string, formData: FormData) {
 export async function deactivateProduct(id: string) {
   const session = await getSession();
   if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
   if (session.rol !== "ADMINISTRADOR")
     throw new Error("Solo el Administrador puede desactivar servicios");
 

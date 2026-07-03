@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
+import { requireModule } from "@/lib/modules";
 import { logAudit } from "@/lib/audit";
 import { supplierSchema } from "@/lib/validations/supplier";
 import { revalidatePath, revalidateTag } from "next/cache";
@@ -11,6 +12,7 @@ import { ACTIVE_SUPPLIERS_TAG, SUPPLIER_COUNTS_TAG } from "@/lib/cache/master-li
 export async function createSupplier(formData: FormData) {
   const session = await getSession();
   if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
   if (session.rol === "USUARIO") throw new Error("Sin permisos para crear proveedores");
 
   const data = supplierSchema.parse({
@@ -37,6 +39,7 @@ export async function createSupplier(formData: FormData) {
 export async function updateSupplier(id: string, formData: FormData) {
   const session = await getSession();
   if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
   if (session.rol === "USUARIO") throw new Error("Sin permisos para editar proveedores");
 
   const data = supplierSchema.parse({
@@ -63,6 +66,7 @@ export async function updateSupplier(id: string, formData: FormData) {
 export async function deactivateSupplier(id: string) {
   const session = await getSession();
   if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
   if (session.rol !== "ADMINISTRADOR") throw new Error("Solo el Administrador puede desactivar proveedores");
 
   const supplier = await prisma.supplier.findUnique({ where: { id }, select: { nombre: true } });

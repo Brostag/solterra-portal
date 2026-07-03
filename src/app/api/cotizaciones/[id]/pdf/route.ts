@@ -4,6 +4,7 @@ import React from "react";
 import { NextRequest, NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { getSession } from "@/lib/auth/session";
+import { canAccessModule } from "@/lib/modules";
 import { getCompanySettings } from "@/lib/company-settings";
 import { prisma } from "@/lib/prisma";
 import {
@@ -39,6 +40,9 @@ export async function GET(
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+  if (!canAccessModule(session, "COMERCIAL")) {
+    return NextResponse.json({ error: "Sin acceso a este módulo" }, { status: 403 });
   }
 
   const { id } = await params;

@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { getSession } from "@/lib/auth/session";
+import { requireModule } from "@/lib/modules";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -53,6 +54,7 @@ export type CreateQuotationInput = z.infer<typeof createSchema>;
 export async function getNextQuotationNumber(): Promise<string> {
   const session = await getSession();
   if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
 
   const year = new Date().getFullYear();
   const yShort = year % 1000;
@@ -76,6 +78,7 @@ export async function getNextQuotationNumber(): Promise<string> {
 export async function createQuotation(rawData: CreateQuotationInput): Promise<{ id: string }> {
   const session = await getSession();
   if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
   if (session.rol !== "ADMINISTRADOR" && session.rol !== "SUPERVISOR") {
     throw new Error("Sin permisos para crear cotizaciones.");
   }
@@ -174,6 +177,7 @@ export async function createQuotation(rawData: CreateQuotationInput): Promise<{ 
 export async function emitirCotizacion(id: string): Promise<void> {
   const session = await getSession();
   if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
   if (session.rol !== "ADMINISTRADOR" && session.rol !== "SUPERVISOR") {
     throw new Error("Sin permisos para emitir la cotización.");
   }

@@ -41,6 +41,14 @@ export function canAccessModule(session: SessionAccess, m: Module): boolean {
   return allowedModules(session.rol, session.area).includes(m);
 }
 
+/** Guard de área para Server Actions y route handlers: lanza si la sesión no
+ *  puede acceder al módulo. En páginas SSR el gating vive en el layout. */
+export function requireModule(session: SessionAccess, m: Module): void {
+  if (!canAccessModule(session, m)) {
+    throw new Error("No tienes acceso a este módulo.");
+  }
+}
+
 /** A dónde mandar al usuario tras el login: un solo módulo → su home; varios → selector. */
 export function landingFor(session: SessionAccess): string {
   const mods = allowedModules(session.rol, session.area);

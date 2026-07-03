@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { getSession } from "@/lib/auth/session";
+import { requireModule } from "@/lib/modules";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -137,6 +138,7 @@ export async function createContract(
 ): Promise<{ id: string; equipos: { id: string; orden: number }[] }> {
   const session = await getSession();
   if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
   if (session.rol !== "ADMINISTRADOR" && session.rol !== "SUPERVISOR") {
     throw new Error("Sin permisos para crear contratos.");
   }
@@ -281,6 +283,7 @@ export async function createContract(
 export async function marcarContratoVigente(id: string): Promise<void> {
   const session = await getSession();
   if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
   if (session.rol !== "ADMINISTRADOR" && session.rol !== "SUPERVISOR") {
     throw new Error("Sin permisos para cambiar el estado del contrato.");
   }
