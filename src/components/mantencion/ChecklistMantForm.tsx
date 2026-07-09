@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
 import {
   createChecklistMantencion,
   type ChecklistMantInput,
@@ -16,8 +17,33 @@ import {
 } from "@/lib/terreno/checklist-mantencion-items";
 import type { EquipoOption, ResponsableOption } from "@/lib/terreno/queries";
 import { inputCls, labelCls, valorBtnCls } from "@/lib/terreno/form-styles";
+import { useDraft } from "@/lib/terreno/use-draft";
+import {
+  aplicarCamposFormulario,
+  leerCamposFormulario,
+} from "@/lib/terreno/draft-form-fields";
+import DraftBanner from "@/components/terreno/DraftBanner";
 
 const VALORES: ValorItem[] = ["SI", "NO", "NA"];
+
+// Campos escalares (no controlados) incluidos en el borrador local.
+const CAMPOS_BORRADOR = [
+  "equipo_id",
+  "responsable_id",
+  "fecha",
+  "tipo_mantencion",
+  "proxima_mantencion",
+  "horometro",
+  "km",
+  "observaciones_generales",
+] as const;
+
+type ChecklistMantDraft = {
+  campos: Record<string, string>;
+  secA: Record<string, ItemValor>;
+  secB: Record<string, ItemValor>;
+  correctivas: string[];
+};
 
 function initSeccion(items: ItemMant[]): Record<string, ItemValor> {
   return items.reduce(
@@ -74,9 +100,11 @@ function Seccion({
 export default function ChecklistMantForm({
   equipos,
   responsables,
+  userId,
 }: {
   equipos: EquipoOption[];
   responsables: ResponsableOption[];
+  userId: string;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -84,6 +112,27 @@ export default function ChecklistMantForm({
   const [secB, setSecB] = useState<Record<string, ItemValor>>(() => initSeccion(SECCION_B));
   const [correctivas, setCorrectivas] = useState<string[]>([]);
   const [nuevaCorrectiva, setNuevaCorrectiva] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const draft = useDraft<ChecklistMantDraft>({
+    formType: "checklist-mant",
+    userId,
+    buildSnapshot: () => {
+      const campos = leerCamposFormulario(formRef.current, CAMPOS_BORRADOR);
+      return campos ? { campos, secA, secB, correctivas } : null;
+    },
+    applySnapshot: (s) => {
+      aplicarCamposFormulario(formRef.current, CAMPOS_BORRADOR, s.campos);
+      setSecA({ ...initSeccion(SECCION_A), ...(s.secA ?? {}) });
+      setSecB({ ...initSeccion(SECCION_B), ...(s.secB ?? {}) });
+      setCorrectivas(
+        Array.isArray(s.correctivas)
+          ? s.correctivas.filter((c): c is string => typeof c === "string")
+          : [],
+      );
+    },
+    watch: [secA, secB, correctivas],
+  });
 
   const setA = (codigo: string, valor: ValorItem) =>
     setSecA((p) => ({ ...p, [codigo]: { ...p[codigo], valor } }));
@@ -113,17 +162,39 @@ export default function ChecklistMantForm({
       observaciones_generales: g("observaciones_generales"),
       items: { seccion_a: secA, seccion_b: secB, seccion_c: correctivas },
     };
+    // beginSubmit/submitFailed: en éxito el action redirige y su promesa no
+    // resuelve; el desmontaje del form confirma el éxito y borra el borrador.
+    draft.beginSubmit();
     startTransition(async () => {
-      const res = await createChecklistMantencion(input);
-      if (res?.error) setError(res.error);
+      try {
+        const res = await createChecklistMantencion(input);
+        if (res?.error) {
+          setError(res.error);
+          draft.submitFailed();
+        }
+      } catch (e) {
+        unstable_rethrow(e); // NEXT_REDIRECT (éxito) sigue su curso
+        // Falla de red: el borrador se conserva y el autosave sigue activo.
+        setError("No se pudo enviar. Revisa tu conexión e intenta nuevamente.");
+        draft.submitFailed();
+      }
     });
   }
 
   return (
     <form
+      ref={formRef}
       onSubmit={onSubmit}
+      onChange={draft.notifyChange}
       className="space-y-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6"
     >
+      {draft.hasDraft && draft.draftSavedAt !== null && (
+        <DraftBanner
+          savedAt={draft.draftSavedAt}
+          onRestore={draft.restoreDraft}
+          onDiscard={draft.discardDraft}
+        />
+      )}
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-[#c6352e]">
           {error}

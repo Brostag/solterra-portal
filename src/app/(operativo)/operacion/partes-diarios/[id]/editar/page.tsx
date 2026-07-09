@@ -47,7 +47,7 @@ export default async function EditarPartePage({ params }: Props) {
         </p>
       </header>
 
-      <ParteForm equipos={equipos} operadores={operadores} parte={parte} />
+      <ParteForm equipos={equipos} operadores={operadores} parte={parte} userId={session.id} />
     </div>
   );
 }

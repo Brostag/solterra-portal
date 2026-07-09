@@ -34,7 +34,7 @@ export default async function NuevoPartePage() {
         </p>
       </header>
 
-      <ParteForm equipos={equipos} operadores={operadores} />
+      <ParteForm equipos={equipos} operadores={operadores} userId={session.id} />
     </div>
   );
 }

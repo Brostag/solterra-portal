@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
 import { createChecklist } from "@/app/(operativo)/operacion/checklists/actions";
 import {
   CHECKLIST_ITEMS,
@@ -11,6 +12,15 @@ import {
 } from "@/lib/terreno/checklist-items";
 import type { EquipoOption, ResponsableOption } from "@/lib/terreno/queries";
 import { inputCls, labelCls } from "@/lib/terreno/form-styles";
+import { useDraft } from "@/lib/terreno/use-draft";
+import DraftBanner from "@/components/terreno/DraftBanner";
+
+type ChecklistDraft = {
+  equipoId: string;
+  operadorId: string;
+  items: Record<ChecklistItemKey, boolean>;
+  observaciones: string;
+};
 
 function estadoBadge(estado: string): string {
   if (estado === "Apto") return "bg-green-50 text-green-700 ring-1 ring-green-600/20";
@@ -27,9 +37,11 @@ function initItems(): Record<ChecklistItemKey, boolean> {
 export default function ChecklistForm({
   equipos,
   operadores,
+  userId,
 }: {
   equipos: EquipoOption[];
   operadores: ResponsableOption[];
+  userId: string;
 }) {
   const [equipoId, setEquipoId] = useState("");
   const [operadorId, setOperadorId] = useState("");
@@ -40,6 +52,24 @@ export default function ChecklistForm({
 
   const estadoGeneral = useMemo(() => calcEstadoGeneral(items), [items]);
 
+  // Formulario 100 % controlado: watch cubre todos los cambios, sin formRef.
+  const draft = useDraft<ChecklistDraft>({
+    formType: "checklist-op",
+    userId,
+    buildSnapshot: () => ({ equipoId, operadorId, items, observaciones }),
+    applySnapshot: (s) => {
+      // Si el equipo/operador del borrador ya no existe (desactivado), volver
+      // a "Seleccionar…" en vez de enviar un id inválido.
+      setEquipoId(equipos.some((e) => e.id === s.equipoId) ? s.equipoId : "");
+      setOperadorId(operadores.some((o) => o.id === s.operadorId) ? s.operadorId : "");
+      const base = initItems();
+      for (const k of CHECKLIST_ITEM_KEYS) base[k] = s.items?.[k] !== false;
+      setItems(base);
+      setObservaciones(typeof s.observaciones === "string" ? s.observaciones : "");
+    },
+    watch: [equipoId, operadorId, items, observaciones],
+  });
+
   function toggle(key: ChecklistItemKey) {
     setItems((prev) => ({ ...prev, [key]: !prev[key] }));
   }
@@ -49,14 +79,27 @@ export default function ChecklistForm({
     setError(null);
     if (!equipoId) return setError("Debes seleccionar un equipo.");
     if (!operadorId) return setError("Debes seleccionar un operador.");
+    // beginSubmit/submitFailed: en éxito el action redirige y su promesa no
+    // resuelve; el desmontaje del form confirma el éxito y borra el borrador.
+    draft.beginSubmit();
     startTransition(async () => {
-      const res = await createChecklist({
-        equipo_id: equipoId,
-        operador_id: operadorId,
-        items,
-        observaciones,
-      });
-      if (res?.error) setError(res.error);
+      try {
+        const res = await createChecklist({
+          equipo_id: equipoId,
+          operador_id: operadorId,
+          items,
+          observaciones,
+        });
+        if (res?.error) {
+          setError(res.error);
+          draft.submitFailed();
+        }
+      } catch (e) {
+        unstable_rethrow(e); // NEXT_REDIRECT (éxito) sigue su curso
+        // Falla de red: el borrador se conserva y el autosave sigue activo.
+        setError("No se pudo enviar. Revisa tu conexión e intenta nuevamente.");
+        draft.submitFailed();
+      }
     });
   }
 
@@ -65,6 +108,14 @@ export default function ChecklistForm({
       onSubmit={onSubmit}
       className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6"
     >
+      {draft.hasDraft && draft.draftSavedAt !== null && (
+        <DraftBanner
+          savedAt={draft.draftSavedAt}
+          onRestore={draft.restoreDraft}
+          onDiscard={draft.discardDraft}
+          className="mb-5"
+        />
+      )}
       {error && (
         <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-[#c6352e]">
           {error}

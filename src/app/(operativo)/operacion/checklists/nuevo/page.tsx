@@ -34,7 +34,7 @@ export default async function NuevoChecklistPage() {
         </p>
       </header>
 
-      <ChecklistForm equipos={equipos} operadores={operadores} />
+      <ChecklistForm equipos={equipos} operadores={operadores} userId={session.id} />
     </div>
   );
 }

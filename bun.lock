@@ -12,6 +12,7 @@
         "@supabase/supabase-js": "^2.49.4",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
+        "dexie": "^4.4.4",
         "lucide-react": "^1.14.0",
         "next": "15.3.7",
         "next-themes": "^0.4.6",
@@ -583,6 +584,8 @@
     "destr": ["destr@2.0.5", "https://registry.npmmirror.com/destr/-/destr-2.0.5.tgz", {}, "sha512-ugFTXCtDZunbzasqBxrK93Ik/DRYsO6S/fedkWEMKqt04xZ4csmnmwGDBAb07QWNaGMAmnTIemsYZCksjATwsA=="],
 
     "detect-libc": ["detect-libc@2.0.4", "https://registry.npmmirror.com/detect-libc/-/detect-libc-2.0.4.tgz", {}, "sha512-3UDv+G9CsCKO1WKMGw9fwq/SWJYbI0c5Y7LU1AXYoDdbhE2AHQ6N6Nb34sG8Fj7T5APy8qXDCKuuIHd1BR0tVA=="],
+
+    "dexie": ["dexie@4.4.4", "https://registry.npmmirror.com/dexie/-/dexie-4.4.4.tgz", {}, "sha512-jIwsYI8Os2hgnqc6O49YwFDKGc5v5QjGx0wPVp543ip1F53VFAKMLthV2pQosQcVTv3eAskTWYspOx195PM0FQ=="],
 
     "dfa": ["dfa@1.2.0", "https://registry.npmmirror.com/dfa/-/dfa-1.2.0.tgz", {}, "sha512-ED3jP8saaweFTjeGX8HQPjeC1YYyZs98jGNZx6IiBvxW7JG5v492kamAQB3m2wop07CvU/RQmzcKr6bgcC5D/Q=="],
 

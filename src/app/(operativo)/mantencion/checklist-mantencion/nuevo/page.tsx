@@ -38,7 +38,7 @@ export default async function NuevoChecklistMantPage() {
         </p>
       </header>
 
-      <ChecklistMantForm equipos={equipos} responsables={responsables} />
+      <ChecklistMantForm equipos={equipos} responsables={responsables} userId={session.id} />
     </div>
   );
 }

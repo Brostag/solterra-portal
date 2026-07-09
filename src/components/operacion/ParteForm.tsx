@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
 import {
   createParte,
   updateParte,
@@ -19,8 +20,39 @@ import {
 import type { EquipoOption, ResponsableOption, ParteDetalle } from "@/lib/terreno/queries";
 import { inputCls, labelCls, valorBtnCls } from "@/lib/terreno/form-styles";
 import { toUTCDateInput } from "@/lib/terreno/format";
+import { useDraft } from "@/lib/terreno/use-draft";
+import {
+  aplicarCamposFormulario,
+  leerCamposFormulario,
+} from "@/lib/terreno/draft-form-fields";
+import DraftBanner from "@/components/terreno/DraftBanner";
 
 const VALORES: ValorComponente[] = ["SI", "NO", "NA"];
+
+// Campos escalares (no controlados) incluidos en el borrador local.
+const CAMPOS_BORRADOR = [
+  "equipo_id",
+  "operador_id",
+  "fecha",
+  "fecha_salida",
+  "estado",
+  "area_uso",
+  "centro_costo",
+  "tipo_mantencion",
+  "combustible_fraccion",
+  "nombre_responsable",
+  "rut_responsable",
+  "nombre_receptor",
+  "rut_receptor",
+  "horometro",
+  "odometro",
+  "observaciones",
+] as const;
+
+type ParteDraft = {
+  campos: Record<string, string>;
+  comp: ComponentesData;
+};
 
 function initComponentes(parte?: ParteDetalle): ComponentesData {
   const base: ComponentesData = {};
@@ -40,15 +72,44 @@ export default function ParteForm({
   equipos,
   operadores,
   parte,
+  userId,
 }: {
   equipos: EquipoOption[];
   operadores: ResponsableOption[];
   parte?: ParteDetalle;
+  userId: string;
 }) {
   const editar = Boolean(parte);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [comp, setComp] = useState<ComponentesData>(() => initComponentes(parte));
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Borradores solo al crear (el alcance offline v1 es create-only).
+  const draft = useDraft<ParteDraft>({
+    formType: "parte",
+    userId,
+    enabled: !editar,
+    buildSnapshot: () => {
+      const campos = leerCamposFormulario(formRef.current, CAMPOS_BORRADOR);
+      return campos ? { campos, comp } : null;
+    },
+    applySnapshot: (s) => {
+      aplicarCamposFormulario(formRef.current, CAMPOS_BORRADOR, s.campos);
+      const base: ComponentesData = {};
+      for (const k of REGISTRO_COMPONENTE_KEYS) {
+        const saved = s.comp?.[k];
+        base[k] = {
+          ingreso: saved?.ingreso ?? "SI",
+          salida: saved?.salida ?? "SI",
+          obs_i: saved?.obs_i ?? null,
+          obs_s: saved?.obs_s ?? null,
+        };
+      }
+      setComp(base);
+    },
+    watch: [comp],
+  });
 
   function setValor(
     key: ComponenteKey,
@@ -82,17 +143,39 @@ export default function ParteForm({
       observaciones: g("observaciones"),
       componentes: comp,
     };
+    // beginSubmit/submitFailed: en éxito el action redirige y su promesa no
+    // resuelve; el desmontaje del form confirma el éxito y borra el borrador.
+    draft.beginSubmit();
     startTransition(async () => {
-      const res = parte ? await updateParte(parte.id, input) : await createParte(input);
-      if (res?.error) setError(res.error);
+      try {
+        const res = parte ? await updateParte(parte.id, input) : await createParte(input);
+        if (res?.error) {
+          setError(res.error);
+          draft.submitFailed();
+        }
+      } catch (e) {
+        unstable_rethrow(e); // NEXT_REDIRECT (éxito) sigue su curso
+        // Falla de red: el borrador se conserva y el autosave sigue activo.
+        setError("No se pudo enviar. Revisa tu conexión e intenta nuevamente.");
+        draft.submitFailed();
+      }
     });
   }
 
   return (
     <form
+      ref={formRef}
       onSubmit={onSubmit}
+      onChange={draft.notifyChange}
       className="space-y-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6"
     >
+      {draft.hasDraft && draft.draftSavedAt !== null && (
+        <DraftBanner
+          savedAt={draft.draftSavedAt}
+          onRestore={draft.restoreDraft}
+          onDiscard={draft.discardDraft}
+        />
+      )}
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-[#c6352e]">
           {error}
