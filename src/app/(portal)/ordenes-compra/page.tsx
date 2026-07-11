@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Plus, Search, Eye, Download } from "lucide-react";
 import InstantLink from "@/components/portal/InstantLink";
+import VolverAlDashboard from "@/components/portal/VolverAlDashboard";
 import { formatCurrency } from "@/lib/currency";
 import type { EstadoOC, Moneda } from "@/types";
 
@@ -64,6 +65,8 @@ export default async function OrdenesCompraPage({ searchParams }: Props) {
 
   return (
     <div className="space-y-6">
+      <VolverAlDashboard />
+
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>

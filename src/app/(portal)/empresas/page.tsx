@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import InstantLink from "@/components/portal/InstantLink";
+import VolverAlDashboard from "@/components/portal/VolverAlDashboard";
 import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow,
@@ -85,6 +86,8 @@ export default async function EmpresasPage({ searchParams }: Props) {
 
   return (
     <div className="space-y-6">
+      <VolverAlDashboard />
+
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>

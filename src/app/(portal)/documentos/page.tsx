@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/table";
 import { FileText } from "lucide-react";
 import InstantLink from "@/components/portal/InstantLink";
+import VolverAlDashboard from "@/components/portal/VolverAlDashboard";
 import DocumentUploadForm from "@/components/portal/DocumentUploadForm";
 import DocumentDownloadButton from "@/components/portal/DocumentDownloadButton";
 import DocumentDeleteButton from "@/components/portal/DocumentDeleteButton";
@@ -97,6 +98,8 @@ export default async function DocumentosPage({ searchParams }: Props) {
 
   return (
     <div className="space-y-6">
+      <VolverAlDashboard />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

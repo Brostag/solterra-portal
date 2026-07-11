@@ -2,6 +2,7 @@ import { getPortalSessionFast } from "@/lib/auth/session";
 import { getCompanySettings } from "@/lib/company-settings";
 import { getCompanyClientsForSelector } from "@/lib/cache/master-lists";
 import { redirect } from "next/navigation";
+import VolverAlDashboard from "@/components/portal/VolverAlDashboard";
 import CotizadorForm from "./CotizadorForm";
 import { getNextQuotationNumber } from "@/app/(portal)/cotizaciones/actions";
 
@@ -25,6 +26,8 @@ export default async function CotizadorPage() {
 
   return (
     <div className="space-y-6">
+      <VolverAlDashboard />
+
       <div>
         <h1 className="text-2xl font-bold text-[#253158]">Cotizador de Arriendo</h1>
         <p className="text-gray-500 text-sm mt-1">
