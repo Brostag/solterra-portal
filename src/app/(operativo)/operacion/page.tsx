@@ -13,13 +13,21 @@ import {
   type ParteResumen,
   type ChecklistResumen,
 } from "@/lib/terreno/queries";
+import { getPortalSessionFast } from "@/lib/auth/session";
+import { canAccessModule } from "@/lib/modules";
 
 function fechaCorta(iso: string): string {
   return new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "short" });
 }
 
 export default async function OperacionDashboard() {
-  const d = await getOperacionDashboard();
+  const [d, session] = await Promise.all([
+    getOperacionDashboard(),
+    getPortalSessionFast(),
+  ]);
+
+  // Los equipos viven en Mantención: solo linkear si la sesión puede entrar ahí.
+  const veMantencion = !!session && canAccessModule(session, "MANTENCION");
 
   const hoy = new Date().toLocaleDateString("es-CL", {
     weekday: "long",
@@ -28,12 +36,44 @@ export default async function OperacionDashboard() {
     year: "numeric",
   });
 
-  const kpis = [
-    { label: "Total equipos", value: d.kpis.totalEquipos, icon: Package },
-    { label: "Equipos activos", value: d.kpis.equiposActivos, icon: ShieldCheck },
-    { label: "En mantención", value: d.kpis.equiposMantencion, icon: Settings },
-    { label: "Partes diarios hoy", value: d.kpis.partesHoy, icon: FileText },
-    { label: "Checklists hoy", value: d.kpis.checklistsHoy, icon: ClipboardList },
+  const kpis: {
+    label: string;
+    value: number;
+    icon: typeof Package;
+    href?: string;
+  }[] = [
+    {
+      label: "Total equipos",
+      value: d.kpis.totalEquipos,
+      icon: Package,
+      href: veMantencion ? "/mantencion/equipos" : undefined,
+    },
+    {
+      label: "Equipos activos",
+      value: d.kpis.equiposActivos,
+      icon: ShieldCheck,
+      href: veMantencion ? "/mantencion/equipos?estado=Activo" : undefined,
+    },
+    {
+      label: "En mantención",
+      value: d.kpis.equiposMantencion,
+      icon: Settings,
+      href: veMantencion
+        ? `/mantencion/equipos?estado=${encodeURIComponent("En Mantención")}`
+        : undefined,
+    },
+    {
+      label: "Partes diarios hoy",
+      value: d.kpis.partesHoy,
+      icon: FileText,
+      href: "/operacion/partes-diarios",
+    },
+    {
+      label: "Checklists hoy",
+      value: d.kpis.checklistsHoy,
+      icon: ClipboardList,
+      href: "/operacion/checklists",
+    },
   ];
 
   const acciones = [
@@ -59,18 +99,31 @@ export default async function OperacionDashboard() {
 
       {/* KPIs */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {kpis.map(({ label, value, icon: Icon }) => (
-          <div
-            key={label}
-            className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
-          >
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#253158]/10 text-[#253158]">
-              <Icon className="h-[18px] w-[18px]" />
-            </span>
-            <p className="mt-3 text-2xl font-bold text-[#253158]">{value}</p>
-            <p className="text-xs text-gray-500">{label}</p>
-          </div>
-        ))}
+        {kpis.map(({ label, value, icon: Icon, href }) => {
+          const contenido = (
+            <>
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#253158]/10 text-[#253158]">
+                <Icon className="h-[18px] w-[18px]" />
+              </span>
+              <p className="mt-3 text-2xl font-bold text-[#253158]">{value}</p>
+              <p className="text-xs text-gray-500">{label}</p>
+            </>
+          );
+          const base = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm";
+          return href ? (
+            <Link
+              key={label}
+              href={href}
+              className={`${base} transition hover:-translate-y-0.5 hover:border-[#253158]/30 hover:shadow-md`}
+            >
+              {contenido}
+            </Link>
+          ) : (
+            <div key={label} className={base}>
+              {contenido}
+            </div>
+          );
+        })}
       </section>
 
       {/* Acciones rápidas */}

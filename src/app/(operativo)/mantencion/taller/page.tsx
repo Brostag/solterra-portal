@@ -6,10 +6,15 @@ import PageHeader from "@/components/terreno/PageHeader";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
 
-export default async function TallerPage() {
-  const [mantenciones, session] = await Promise.all([
+export default async function TallerPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ estado?: string }>;
+}) {
+  const [mantenciones, session, { estado }] = await Promise.all([
     getMantenciones(),
     getPortalSessionFast(),
+    searchParams,
   ]);
 
   const puedeCrear =
@@ -37,7 +42,7 @@ export default async function TallerPage() {
         }
       />
 
-      <MantencionesLista mantenciones={mantenciones} />
+      <MantencionesLista mantenciones={mantenciones} filtroInicial={estado} />
     </div>
   );
 }

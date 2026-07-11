@@ -3,8 +3,15 @@ import { ChevronLeft, ShieldCheck } from "lucide-react";
 import { getReporteVencimientos } from "@/lib/terreno/queries";
 import VencimientosTabla from "@/components/mantencion/VencimientosTabla";
 
-export default async function VencimientosPage() {
-  const equipos = await getReporteVencimientos();
+export default async function VencimientosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ estado?: string }>;
+}) {
+  const [equipos, { estado }] = await Promise.all([
+    getReporteVencimientos(),
+    searchParams,
+  ]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -36,7 +43,7 @@ export default async function VencimientosPage() {
         </a>
       </header>
 
-      <VencimientosTabla equipos={equipos} />
+      <VencimientosTabla equipos={equipos} filtroInicial={estado} />
     </div>
   );
 }

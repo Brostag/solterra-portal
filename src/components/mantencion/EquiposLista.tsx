@@ -23,10 +23,20 @@ function fmt(n: number): string {
   return n.toLocaleString("es-CL");
 }
 
-export default function EquiposLista({ equipos }: { equipos: EquipoLista[] }) {
+export default function EquiposLista({
+  equipos,
+  filtroInicial,
+}: {
+  equipos: EquipoLista[];
+  filtroInicial?: string;
+}) {
   const router = useRouter();
   const [q, setQ] = useState("");
-  const [filtro, setFiltro] = useState<string>("todos");
+  const [filtro, setFiltro] = useState<string>(
+    filtroInicial && FILTROS.some((f) => f.key === filtroInicial)
+      ? filtroInicial
+      : "todos",
+  );
 
   const filtrados = useMemo(() => {
     const term = q.trim().toLowerCase();

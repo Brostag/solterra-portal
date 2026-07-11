@@ -70,12 +70,42 @@ export default async function MantencionHub() {
   });
 
   const kpis = [
-    { label: "Equipos en mantención", value: d.kpis.equiposEnMantencion, icon: Wrench },
-    { label: "Mantenciones abiertas", value: d.kpis.mantencionesAbiertas, icon: Settings },
-    { label: "Mantenciones completadas", value: d.kpis.mantencionesCompletadas, icon: CheckCircle2 },
-    { label: "Certificados vigentes", value: d.kpis.certificadosVigentes, icon: ShieldCheck },
-    { label: "Certificados por vencer", value: d.kpis.certificadosPorVencer, icon: Clock },
-    { label: "Certificados vencidos", value: d.kpis.certificadosVencidos, icon: AlertTriangle },
+    {
+      label: "Equipos en mantención",
+      value: d.kpis.equiposEnMantencion,
+      icon: Wrench,
+      href: `/mantencion/equipos?estado=${encodeURIComponent("En Mantención")}`,
+    },
+    {
+      label: "Mantenciones abiertas",
+      value: d.kpis.mantencionesAbiertas,
+      icon: Settings,
+      href: "/mantencion/taller",
+    },
+    {
+      label: "Mantenciones completadas",
+      value: d.kpis.mantencionesCompletadas,
+      icon: CheckCircle2,
+      href: "/mantencion/taller?estado=Completada",
+    },
+    {
+      label: "Certificados vigentes",
+      value: d.kpis.certificadosVigentes,
+      icon: ShieldCheck,
+      href: "/mantencion/certificados",
+    },
+    {
+      label: "Certificados por vencer",
+      value: d.kpis.certificadosPorVencer,
+      icon: Clock,
+      href: `/mantencion/certificados?estado=${encodeURIComponent("Por Vencer")}`,
+    },
+    {
+      label: "Certificados vencidos",
+      value: d.kpis.certificadosVencidos,
+      icon: AlertTriangle,
+      href: "/mantencion/certificados?estado=Vencido",
+    },
   ];
 
   return (
@@ -93,17 +123,18 @@ export default async function MantencionHub() {
 
       {/* KPIs */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        {kpis.map(({ label, value, icon: Icon }) => (
-          <div
+        {kpis.map(({ label, value, icon: Icon, href }) => (
+          <Link
             key={label}
-            className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+            href={href}
+            className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#253158]/30 hover:shadow-md"
           >
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#253158]/10 text-[#253158]">
               <Icon className="h-[18px] w-[18px]" />
             </span>
             <p className="mt-3 text-2xl font-bold text-[#253158]">{value}</p>
             <p className="text-xs text-gray-500">{label}</p>
-          </div>
+          </Link>
         ))}
       </section>
 

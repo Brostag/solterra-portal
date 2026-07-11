@@ -6,10 +6,15 @@ import PageHeader from "@/components/terreno/PageHeader";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
 
-export default async function EquiposPage() {
-  const [equipos, session] = await Promise.all([
+export default async function EquiposPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ estado?: string }>;
+}) {
+  const [equipos, session, { estado }] = await Promise.all([
     getEquipos(),
     getPortalSessionFast(),
+    searchParams,
   ]);
 
   const puedeCrear =
@@ -37,7 +42,7 @@ export default async function EquiposPage() {
         }
       />
 
-      <EquiposLista equipos={equipos} />
+      <EquiposLista equipos={equipos} filtroInicial={estado} />
     </div>
   );
 }

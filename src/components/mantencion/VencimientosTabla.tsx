@@ -45,12 +45,18 @@ function Celda({ doc }: { doc: VencimientoDoc }) {
 
 export default function VencimientosTabla({
   equipos,
+  filtroInicial,
 }: {
   equipos: EquipoVencimientos[];
+  filtroInicial?: string;
 }) {
   const router = useRouter();
   const [q, setQ] = useState("");
-  const [filtro, setFiltro] = useState<string>("todos");
+  const [filtro, setFiltro] = useState<string>(
+    filtroInicial && FILTROS.some((f) => f.key === filtroInicial)
+      ? filtroInicial
+      : "todos",
+  );
 
   const tieneEstado = (e: EquipoVencimientos, estado: string) =>
     [e.soap, e.permiso_circ, e.rev_tecnica, e.extintor].some(
