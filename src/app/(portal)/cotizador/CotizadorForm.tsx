@@ -122,6 +122,62 @@ function diasEntre(desde: string, hasta: string): number | null {
   return dias < 1 ? null : dias;
 }
 
+// Parsea "YYYY-MM-DD" como fecha LOCAL. Evita el off-by-one de
+// new Date("YYYY-MM-DD"), que interpreta el string en UTC.
+function parseFechaLocal(s: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return null;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+}
+
+// Diferencia de calendario (inicio ≤ fin) en años/meses/días. Cuando los días
+// no alcanzan, toma prestado el largo del mes de INICIO (día 0 del mes
+// siguiente = último día del mes de inicio); luego, si los meses quedan
+// negativos, baja un año. Mismo patrón usado en NuevoContratoForm.
+function desgloseSpan(inicio: Date, fin: Date): { anios: number; meses: number; dias: number } {
+  let anios = fin.getFullYear() - inicio.getFullYear();
+  let meses = fin.getMonth() - inicio.getMonth();
+  let dias = fin.getDate() - inicio.getDate();
+  if (dias < 0) {
+    meses -= 1;
+    dias += new Date(inicio.getFullYear(), inicio.getMonth() + 1, 0).getDate();
+  }
+  if (meses < 0) {
+    anios -= 1;
+    meses += 12;
+  }
+  return { anios, meses, dias };
+}
+
+// Humaniza el desglose en es-CL con singular/plural y unión natural.
+function textoSpan({ anios, meses, dias }: { anios: number; meses: number; dias: number }): string {
+  const partes: string[] = [];
+  if (anios > 0) partes.push(`${anios} ${anios === 1 ? "año" : "años"}`);
+  if (meses > 0) partes.push(`${meses} ${meses === 1 ? "mes" : "meses"}`);
+  if (dias > 0) partes.push(`${dias} ${dias === 1 ? "día" : "días"}`);
+  if (partes.length === 0) return "0 días";
+  if (partes.length === 1) return partes[0];
+  if (partes.length === 2) return `${partes[0]} y ${partes[1]}`;
+  return `${partes[0]}, ${partes[1]} y ${partes[2]}`;
+}
+
+// Texto de "Tiempo de arriendo" a partir del rango. Muestra el desglose de
+// calendario y el total de días entre paréntesis cuando el desglose no es solo
+// días (ej: "1 mes y 3 días (34 días)"). Si es solo días, deja "34 días".
+// "—" cuando no hay rango válido.
+function textoTiempoArriendo(desde: string, hasta: string): string {
+  const dias = diasEntre(desde, hasta);
+  if (dias === null) return "—";
+  const ini = parseFechaLocal(desde);
+  const fin = parseFechaLocal(hasta);
+  if (!ini || !fin) return "—";
+  const span = desgloseSpan(ini, fin);
+  const soloDias = span.anios === 0 && span.meses === 0;
+  const humano = textoSpan(span);
+  if (soloDias) return `${dias} ${dias === 1 ? "día" : "días"}`;
+  return `${humano} (${dias} ${dias === 1 ? "día" : "días"})`;
+}
+
 export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido }: Props) {
   const [items, setItems]                             = useState<CotizadorItem[]>(() => [nuevoItem()]);
   // Fechas por ítem: SEPARADO de items para no contaminar el payload (items solo lleva números).
@@ -185,14 +241,53 @@ export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido 
     setActionError(null);
   }
 
-  // Actualiza el rango de fechas del ítem y, si es válido, fija cantidadDias por
-  // defecto. El cálculo va FUERA del updater de setState (updaters puros).
+  // Actualiza el rango de fechas del ítem y, si es válido, deriva el campo del
+  // modo activo: en "dias" → cantidadDias = N; en "horas" → cantidadHoras =
+  // N × horasMinimasDiarias (solo si horasMin > 0). El cálculo va FUERA del
+  // updater de setState (updaters puros).
   function updateFecha(id: string, patch: { desde?: string; hasta?: string }) {
     const actual = fechasPorItem[id] ?? { desde: "", hasta: "" };
     const next = { ...actual, ...patch };
     setFechasPorItem((prev) => ({ ...prev, [id]: next }));
     const n = diasEntre(next.desde, next.hasta);
-    if (n !== null) updateItem(id, { cantidadDias: n });
+    if (n === null) return;
+    const item = items.find((it) => it.id === id);
+    if (!item) return;
+    if (item.tipo === "dias") {
+      updateItem(id, { cantidadDias: n });
+    } else if (item.horasMinimasDiarias > 0) {
+      updateItem(id, { cantidadHoras: n * item.horasMinimasDiarias });
+    }
+  }
+
+  // Cambia las horas mínimas diarias y, en modo "horas" con rango válido,
+  // re-deriva cantidadHoras = N × horasMin. En "dias" no toca la cantidad.
+  // Cálculo fuera del updater (updaters puros).
+  function updateHorasMin(id: string, horasMin: number) {
+    updateItem(id, { horasMinimasDiarias: horasMin });
+    const item = items.find((it) => it.id === id);
+    if (!item || item.tipo !== "horas") return;
+    const rango = fechasPorItem[id];
+    if (!rango) return;
+    const n = diasEntre(rango.desde, rango.hasta);
+    if (n !== null && horasMin > 0) updateItem(id, { cantidadHoras: n * horasMin });
+  }
+
+  // Cambia el tipo (horas↔dias) y, si hay rango válido, re-deriva el campo del
+  // modo destino: a "horas" → cantidadHoras = N × horasMin (si horasMin > 0);
+  // a "dias" → cantidadDias = N. Sin rango válido, no toca nada.
+  function updateTipo(id: string, tipo: TipoCotizacion) {
+    updateItem(id, { tipo });
+    const item = items.find((it) => it.id === id);
+    const rango = fechasPorItem[id];
+    if (!item || !rango) return;
+    const n = diasEntre(rango.desde, rango.hasta);
+    if (n === null) return;
+    if (tipo === "dias") {
+      updateItem(id, { cantidadDias: n });
+    } else if (item.horasMinimasDiarias > 0) {
+      updateItem(id, { cantidadHoras: n * item.horasMinimasDiarias });
+    }
   }
 
   function buildRequestBody() {
@@ -388,6 +483,7 @@ export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido 
                     />
                   </div>
 
+                  {/* Valor hora — a media anchura en sm, en su propia fila */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label
@@ -404,34 +500,9 @@ export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido 
                         className={inputClass}
                       />
                     </div>
-
-                    <div>
-                      <label
-                        htmlFor={`horasMin-${it.id}`}
-                        className="block text-xs font-medium text-gray-700 mb-1.5"
-                      >
-                        Horas mínimas diarias
-                      </label>
-                      <input
-                        id={`horasMin-${it.id}`}
-                        type="number"
-                        inputMode="numeric"
-                        min={0}
-                        max={24}
-                        step={1}
-                        value={it.horasMinimasDiarias || ""}
-                        onChange={(e) => {
-                          const n = Number(e.target.value);
-                          updateItem(it.id, {
-                            horasMinimasDiarias: Math.max(0, Math.min(24, Number.isFinite(n) ? n : 0)),
-                          });
-                        }}
-                        placeholder="Ej: 8"
-                        className={inputClass}
-                      />
-                    </div>
                   </div>
 
+                  {/* Tipo de cotización */}
                   <div>
                     <span className="block text-xs font-medium text-gray-700 mb-2">
                       Tipo de cotización
@@ -439,7 +510,7 @@ export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido 
                     <div className="flex gap-2 flex-wrap" role="group" aria-label="Tipo de cotización">
                       <button
                         type="button"
-                        onClick={() => updateItem(it.id, { tipo: "horas" as TipoCotizacion })}
+                        onClick={() => updateTipo(it.id, "horas")}
                         aria-pressed={it.tipo === "horas"}
                         className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
                           it.tipo === "horas"
@@ -452,7 +523,7 @@ export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido 
                       </button>
                       <button
                         type="button"
-                        onClick={() => updateItem(it.id, { tipo: "dias" as TipoCotizacion })}
+                        onClick={() => updateTipo(it.id, "dias")}
                         aria-pressed={it.tipo === "dias"}
                         className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
                           it.tipo === "dias"
@@ -466,9 +537,105 @@ export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido 
                     </div>
                   </div>
 
-                  {it.tipo === "dias" && (
+                  {/* Bloque según tipo: en ambos modos van Horas mínimas + Desde + Hasta */}
+                  {it.tipo === "horas" ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label
+                            htmlFor={`horasMin-${it.id}`}
+                            className="block text-xs font-medium text-gray-700 mb-1.5"
+                          >
+                            Horas mínimas diarias
+                          </label>
+                          <input
+                            id={`horasMin-${it.id}`}
+                            type="number"
+                            inputMode="numeric"
+                            min={0}
+                            max={24}
+                            step={1}
+                            value={it.horasMinimasDiarias || ""}
+                            onChange={(e) => {
+                              const n = Number(e.target.value);
+                              updateHorasMin(it.id, Math.max(0, Math.min(24, Number.isFinite(n) ? n : 0)));
+                            }}
+                            placeholder="Ej: 8"
+                            className={inputClass}
+                          />
+                        </div>
+                        <div>
+                          <label
+                            htmlFor={`fecha-desde-${it.id}`}
+                            className="block text-xs font-medium text-gray-700 mb-1.5"
+                          >
+                            Desde
+                          </label>
+                          <input
+                            id={`fecha-desde-${it.id}`}
+                            type="date"
+                            value={rango.desde}
+                            onChange={(e) => updateFecha(it.id, { desde: e.target.value })}
+                            className={inputClass}
+                          />
+                        </div>
+                        <div>
+                          <label
+                            htmlFor={`fecha-hasta-${it.id}`}
+                            className="block text-xs font-medium text-gray-700 mb-1.5"
+                          >
+                            Hasta
+                          </label>
+                          <input
+                            id={`fecha-hasta-${it.id}`}
+                            type="date"
+                            value={rango.hasta}
+                            onChange={(e) => updateFecha(it.id, { hasta: e.target.value })}
+                            className={inputClass}
+                          />
+                        </div>
+                      </div>
+                      {rangoInvalido && (
+                        <p className="text-xs text-[#c6352e]">
+                          La fecha hasta debe ser igual o posterior a la fecha desde.
+                        </p>
+                      )}
+                      {/* Tiempo de arriendo — solo lectura, rango humanizado */}
+                      <div>
+                        <span className="block text-xs font-medium text-gray-700 mb-1.5">
+                          Tiempo de arriendo
+                        </span>
+                        <div className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-[#253158]">
+                          {textoTiempoArriendo(rango.desde, rango.hasta)}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
                     <div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label
+                            htmlFor={`horasMin-${it.id}`}
+                            className="block text-xs font-medium text-gray-700 mb-1.5"
+                          >
+                            Horas mínimas diarias
+                          </label>
+                          <input
+                            id={`horasMin-${it.id}`}
+                            type="number"
+                            inputMode="numeric"
+                            min={0}
+                            max={24}
+                            step={1}
+                            value={it.horasMinimasDiarias || ""}
+                            onChange={(e) => {
+                              const n = Number(e.target.value);
+                              updateHorasMin(it.id, Math.max(0, Math.min(24, Number.isFinite(n) ? n : 0)));
+                            }}
+                            placeholder="Ej: 8"
+                            className={inputClass}
+                          />
+                        </div>
                         <div>
                           <label
                             htmlFor={`fecha-desde-${it.id}`}
@@ -508,6 +675,7 @@ export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido 
                     </div>
                   )}
 
+                  {/* Cantidad — editable a mano; auto-calculada desde fechas */}
                   <div>
                     <label
                       htmlFor={`cantidad-${it.id}`}
@@ -530,6 +698,16 @@ export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido 
                       placeholder="0"
                       className={inputClass}
                     />
+                    {it.tipo === "horas" && diasRango !== null && it.horasMinimasDiarias > 0 && (
+                      <p className="text-xs text-gray-400 mt-1.5">
+                        Según fechas: {diasRango} {diasRango === 1 ? "día" : "días"} × {it.horasMinimasDiarias} h/día = {diasRango * it.horasMinimasDiarias} horas
+                      </p>
+                    )}
+                    {it.tipo === "horas" && diasRango !== null && it.horasMinimasDiarias === 0 && (
+                      <p className="text-xs text-gray-400 mt-1.5">
+                        Ingresa las horas mínimas diarias para calcular las horas.
+                      </p>
+                    )}
                     {it.tipo === "dias" && diasRango !== null && (
                       <p className="text-xs text-gray-400 mt-1.5">
                         Según fechas: {diasRango} {diasRango === 1 ? "día" : "días"}
