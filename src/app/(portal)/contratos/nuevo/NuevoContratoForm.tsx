@@ -35,6 +35,27 @@ const TIPOS_FOTO: { value: string; label: string }[] = [
 const FOTO_MAX_SIZE = 5 * 1024 * 1024; // 5 MB — mismo límite del endpoint
 const FOTO_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 
+// Vigencias típicas del contrato marco. El texto elegido viaja tal cual al PDF
+// (vigencia_contrato es string libre); "Otra" revela el input manual.
+const VIGENCIAS = ["1 año", "2 años", "3 años", "4 años", "5 años"];
+const VIGENCIA_OTRA = "__otra__";
+const VIGENCIA_NINGUNA = "__ninguna__";
+
+// Duraciones de arriendo típicas. Se guarda SIEMPRE el número de meses
+// (duracion_meses Int) — el label solo agrega la equivalencia legible.
+const DURACIONES: { meses: number; label: string }[] = [
+  { meses: 1,  label: "1 mes" },
+  { meses: 2,  label: "2 meses" },
+  { meses: 3,  label: "3 meses" },
+  { meses: 6,  label: "6 meses" },
+  { meses: 12, label: "12 meses (1 año)" },
+  { meses: 18, label: "18 meses (1 año y medio)" },
+  { meses: 24, label: "24 meses (2 años)" },
+  { meses: 36, label: "36 meses (3 años)" },
+];
+const DURACION_OTRA = "__otra__";
+const DURACION_NINGUNA = "__ninguna__";
+
 interface FotoNueva {
   file: File;
   tipo: string;
@@ -99,6 +120,10 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
   // Datos del contrato / celebración
   const [ciudadCelebracion, setCiudadCelebracion] = useState("Calama");
   const [vigenciaContrato, setVigenciaContrato] = useState("");
+  // Selectores de vigencia y duración (presentación: el payload sigue siendo
+  // vigenciaContrato string y duracionMeses string→int).
+  const [vigenciaSel, setVigenciaSel] = useState("");
+  const [duracionSel, setDuracionSel] = useState("");
   const [moneda, setMoneda] = useState<Moneda>("CLP");
   // Representante del cliente
   const [representanteCliente, setRepresentanteCliente] = useState("");
@@ -354,11 +379,87 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
           </div>
           <div className="space-y-2">
             <Label>Vigencia del contrato</Label>
-            <Input value={vigenciaContrato} placeholder="2 años" onChange={(e) => setVigenciaContrato(e.target.value)} />
+            <Select
+              value={vigenciaSel}
+              onValueChange={(v) => {
+                const val = v ?? "";
+                setVigenciaSel(val);
+                if (val === VIGENCIA_OTRA || val === VIGENCIA_NINGUNA) {
+                  setVigenciaContrato("");
+                } else {
+                  setVigenciaContrato(val);
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar vigencia...">
+                  {vigenciaSel === VIGENCIA_OTRA
+                    ? "Otra vigencia (escribir)"
+                    : vigenciaSel === VIGENCIA_NINGUNA
+                      ? "Sin especificar"
+                      : vigenciaSel || null}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={VIGENCIA_NINGUNA}>Sin especificar</SelectItem>
+                {VIGENCIAS.map((v) => (
+                  <SelectItem key={v} value={v}>{v}</SelectItem>
+                ))}
+                <SelectItem value={VIGENCIA_OTRA}>Otra vigencia (escribir)</SelectItem>
+              </SelectContent>
+            </Select>
+            {vigenciaSel === VIGENCIA_OTRA && (
+              <Input
+                value={vigenciaContrato}
+                placeholder="Ej: 18 meses, indefinida..."
+                onChange={(e) => setVigenciaContrato(e.target.value)}
+              />
+            )}
+            <p className="text-xs text-gray-400">Si no se indica, el PDF usa “2 años”.</p>
           </div>
           <div className="space-y-2">
-            <Label>Duración del arriendo (meses)</Label>
-            <Input type="number" min="1" step="1" value={duracionMeses} placeholder="Opcional" onChange={(e) => setDuracionMeses(e.target.value)} />
+            <Label>Duración del arriendo</Label>
+            <Select
+              value={duracionSel}
+              onValueChange={(v) => {
+                const val = v ?? "";
+                setDuracionSel(val);
+                if (val === DURACION_OTRA || val === DURACION_NINGUNA) {
+                  setDuracionMeses("");
+                } else {
+                  setDuracionMeses(val);
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Opcional — seleccionar duración...">
+                  {duracionSel === DURACION_OTRA
+                    ? "Otra duración (meses)"
+                    : duracionSel === DURACION_NINGUNA
+                      ? "Sin especificar"
+                      : duracionSel
+                        ? (DURACIONES.find((d) => String(d.meses) === duracionSel)?.label ?? null)
+                        : null}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={DURACION_NINGUNA}>Sin especificar</SelectItem>
+                {DURACIONES.map((d) => (
+                  <SelectItem key={d.meses} value={String(d.meses)}>{d.label}</SelectItem>
+                ))}
+                <SelectItem value={DURACION_OTRA}>Otra duración (meses)</SelectItem>
+              </SelectContent>
+            </Select>
+            {duracionSel === DURACION_OTRA && (
+              <Input
+                type="number"
+                min="1"
+                step="1"
+                value={duracionMeses}
+                placeholder="N° de meses"
+                onChange={(e) => setDuracionMeses(e.target.value)}
+              />
+            )}
           </div>
           <div className="space-y-2">
             <Label>Lugar de operación / entrega</Label>
