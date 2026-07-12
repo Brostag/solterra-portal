@@ -70,8 +70,62 @@ const inputClass =
 
 type ActionId = "pdf" | "print" | "whatsapp" | "mail" | "generar";
 
+interface MoneyInputProps {
+  id:          string;
+  value:       number;
+  onChange:    (n: number) => void;
+  placeholder?: string;
+  className?:  string;
+}
+
+/**
+ * Input de moneda CLP: mientras está enfocado muestra el número crudo para
+ * digitar cómodo; al perder foco muestra el valor formateado ($43.000). El
+ * estado externo sigue siendo un `number` — CLP es entero, sin decimales.
+ */
+function MoneyInput({ id, value, onChange, placeholder, className }: MoneyInputProps) {
+  const [focused, setFocused] = useState(false);
+  const display = focused
+    ? (value || "")
+    : (value ? formatCurrency(value, "CLP") : "");
+  return (
+    <input
+      id={id}
+      type="text"
+      inputMode="numeric"
+      value={display}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      onChange={(e) => {
+        const n = Number(e.target.value.replace(/\D/g, ""));
+        onChange(Math.max(0, Number.isFinite(n) ? n : 0));
+      }}
+      placeholder={placeholder}
+      className={className}
+    />
+  );
+}
+
+/**
+ * Días entre dos fechas ISO (YYYY-MM-DD), ambos extremos inclusive.
+ * Usa Date.UTC para evitar el off-by-one por DST/UTC (nunca `new Date("YYYY-MM-DD")`).
+ * Devuelve null si alguna fecha no parsea o el rango es inválido (< 1 día).
+ */
+function diasEntre(desde: string, hasta: string): number | null {
+  const re = /^(\d{4})-(\d{2})-(\d{2})$/;
+  const md = re.exec(desde);
+  const mh = re.exec(hasta);
+  if (!md || !mh) return null;
+  const utcDesde = Date.UTC(Number(md[1]), Number(md[2]) - 1, Number(md[3]));
+  const utcHasta = Date.UTC(Number(mh[1]), Number(mh[2]) - 1, Number(mh[3]));
+  const dias = (utcHasta - utcDesde) / 86_400_000 + 1;
+  return dias < 1 ? null : dias;
+}
+
 export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido }: Props) {
   const [items, setItems]                             = useState<CotizadorItem[]>(() => [nuevoItem()]);
+  // Fechas por ítem: SEPARADO de items para no contaminar el payload (items solo lleva números).
+  const [fechasPorItem, setFechasPorItem]             = useState<Record<string, { desde: string; hasta: string }>>({});
   const [gastos, setGastos]                           = useState<GastosGenerales>(GASTOS_INICIALES);
   const [porcentajeDescuento, setPorcentajeDescuento] = useState(0);
   const [clienteId, setClienteId]                     = useState("");
@@ -107,6 +161,11 @@ export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido 
 
   function removeItem(id: string) {
     setItems((prev) => (prev.length > 1 ? prev.filter((it) => it.id !== id) : prev));
+    setFechasPorItem((prev) => {
+      if (!(id in prev)) return prev;
+      const { [id]: _omit, ...rest } = prev;
+      return rest;
+    });
   }
 
   function updateItem(id: string, patch: Partial<CotizadorItem>) {
@@ -119,10 +178,21 @@ export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido 
 
   function limpiar() {
     setItems([nuevoItem()]);
+    setFechasPorItem({});
     setGastos(GASTOS_INICIALES);
     setPorcentajeDescuento(0);
     setClienteId("");
     setActionError(null);
+  }
+
+  // Actualiza el rango de fechas del ítem y, si es válido, fija cantidadDias por
+  // defecto. El cálculo va FUERA del updater de setState (updaters puros).
+  function updateFecha(id: string, patch: { desde?: string; hasta?: string }) {
+    const actual = fechasPorItem[id] ?? { desde: "", hasta: "" };
+    const next = { ...actual, ...patch };
+    setFechasPorItem((prev) => ({ ...prev, [id]: next }));
+    const n = diasEntre(next.desde, next.hasta);
+    if (n !== null) updateItem(id, { cantidadDias: n });
   }
 
   function buildRequestBody() {
@@ -275,6 +345,10 @@ export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido 
           <div className="space-y-4">
             {items.map((it, idx) => {
               const itResult = itemResultById.get(it.id);
+              const rango = fechasPorItem[it.id] ?? { desde: "", hasta: "" };
+              const diasRango = diasEntre(rango.desde, rango.hasta);
+              const rangoInvalido =
+                rango.desde !== "" && rango.hasta !== "" && diasRango === null;
               return (
                 <div
                   key={it.id}
@@ -322,16 +396,10 @@ export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido 
                       >
                         Valor hora (CLP)
                       </label>
-                      <input
+                      <MoneyInput
                         id={`valorHora-${it.id}`}
-                        type="number"
-                        inputMode="numeric"
-                        min={0}
-                        step={1}
-                        value={it.valorHora || ""}
-                        onChange={(e) =>
-                          updateItem(it.id, { valorHora: Math.max(0, Number(e.target.value) || 0) })
-                        }
+                        value={it.valorHora}
+                        onChange={(n) => updateItem(it.id, { valorHora: n })}
                         placeholder="0"
                         className={inputClass}
                       />
@@ -398,6 +466,48 @@ export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido 
                     </div>
                   </div>
 
+                  {it.tipo === "dias" && (
+                    <div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label
+                            htmlFor={`fecha-desde-${it.id}`}
+                            className="block text-xs font-medium text-gray-700 mb-1.5"
+                          >
+                            Desde
+                          </label>
+                          <input
+                            id={`fecha-desde-${it.id}`}
+                            type="date"
+                            value={rango.desde}
+                            onChange={(e) => updateFecha(it.id, { desde: e.target.value })}
+                            className={inputClass}
+                          />
+                        </div>
+                        <div>
+                          <label
+                            htmlFor={`fecha-hasta-${it.id}`}
+                            className="block text-xs font-medium text-gray-700 mb-1.5"
+                          >
+                            Hasta
+                          </label>
+                          <input
+                            id={`fecha-hasta-${it.id}`}
+                            type="date"
+                            value={rango.hasta}
+                            onChange={(e) => updateFecha(it.id, { hasta: e.target.value })}
+                            className={inputClass}
+                          />
+                        </div>
+                      </div>
+                      {rangoInvalido && (
+                        <p className="text-xs text-[#c6352e] mt-1.5">
+                          La fecha hasta debe ser igual o posterior a la fecha desde.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   <div>
                     <label
                       htmlFor={`cantidad-${it.id}`}
@@ -420,6 +530,11 @@ export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido 
                       placeholder="0"
                       className={inputClass}
                     />
+                    {it.tipo === "dias" && diasRango !== null && (
+                      <p className="text-xs text-gray-400 mt-1.5">
+                        Según fechas: {diasRango} {diasRango === 1 ? "día" : "días"}
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-end gap-2 pt-1 text-xs text-gray-500 border-t border-gray-200">
