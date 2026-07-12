@@ -25,6 +25,10 @@ import {
   Trash2,
 } from "lucide-react";
 import PdfShareActions from "@/components/portal/PdfShareActions";
+import {
+  Select, SelectContent, SelectItem,
+  SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { useRouter } from "next/navigation";
 import { createQuotation, updateQuotation } from "@/app/(portal)/cotizaciones/actions";
 import { saveCotizadorGastosDefault } from "./actions";
@@ -33,6 +37,27 @@ interface ClienteOption {
   id:     string;
   nombre: string;
   rut:    string | null;
+}
+
+// Payload mínimo de un equipo de la flota (Mantención) para el atajo del
+// selector. El cotizador NO persiste el id: solo compone el texto de it.equipo.
+interface EquipoFlotaOption {
+  id:     string;
+  codigo: string;
+  nombre: string;
+  marca:  string | null;
+  modelo: string | null;
+}
+
+// Texto compuesto legible a partir de un equipo de la flota. Une nombre, marca
+// y modelo (partes vacías omitidas) y agrega el código entre paréntesis.
+// Ej: "Bulldozer CAT D8 (BD-001)".
+function textoEquipoFlota(e: EquipoFlotaOption): string {
+  const partes = [e.nombre, e.marca, e.modelo]
+    .map((p) => (p ?? "").trim())
+    .filter((p) => p !== "");
+  const base = partes.join(" ");
+  return base ? `${base} (${e.codigo})` : e.codigo;
 }
 
 // Valores iniciales para el modo edición. Cuando viene, el form arranca con
@@ -55,6 +80,9 @@ interface Props {
   numeroSugerido:  string;
   gastosDefault:   GastosGenerales;
   canSaveGastos:   boolean;
+  // Flota operativa (opcional). Atajo para llenar el texto del ítem desde un
+  // equipo real. Vacía o ausente → no se renderiza el selector.
+  flota?:          EquipoFlotaOption[];
   // Modo edición (opcional). Sin estas props el comportamiento es idéntico
   // al de crear una cotización nueva.
   quotationId?:    string;
@@ -66,6 +94,10 @@ type SaveGastosState = "idle" | "saving" | "ok" | "error";
 // Opciones de validez del presupuesto (días). Default 30.
 const VALIDEZ_OPCIONES = [7, 15, 30, 60] as const;
 const VALIDEZ_DEFAULT = 30;
+
+// Sentinela del selector de flota para "no elegir nada" (base-ui Select no
+// admite value vacío como ítem seleccionable). Mismo patrón que "__ninguna__".
+const FLOTA_LIBRE = "__libre__";
 
 const inputClass =
   "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#253158]/20 focus:border-[#253158] tabular-nums disabled:bg-gray-50 disabled:text-gray-400";
@@ -186,10 +218,12 @@ export default function CotizadorForm({
   numeroSugerido,
   gastosDefault,
   canSaveGastos,
+  flota,
   quotationId,
   initial,
 }: Props) {
   const isEditing = quotationId != null;
+  const hayFlota = (flota?.length ?? 0) > 0;
   const [items, setItems]                             = useState<CotizadorItem[]>(() =>
     initial ? initial.items : [nuevoItem()]
   );
@@ -199,6 +233,11 @@ export default function CotizadorForm({
   const [fechasPorItem, setFechasPorItem]             = useState<Record<string, { desde: string; hasta: string }>>(() =>
     initial?.fechasPorItem ?? {}
   );
+  // Equipo de la flota elegido por ítem (clave = it.id → id del equipo). Estado
+  // de PRESENTACIÓN del selector: no viaja al payload. El texto ya quedó en
+  // it.equipo (editable a mano). Si el usuario edita el texto, el select puede
+  // quedar como está — no bloquea.
+  const [flotaSelPorItem, setFlotaSelPorItem]         = useState<Record<string, string>>({});
   const [gastos, setGastos]                           = useState<GastosGenerales>(() =>
     initial ? initial.gastos : gastosDefault
   );
@@ -261,6 +300,23 @@ export default function CotizadorForm({
       const { [id]: _omit, ...rest } = prev;
       return rest;
     });
+    setFlotaSelPorItem((prev) => {
+      if (!(id in prev)) return prev;
+      const { [id]: _omit, ...rest } = prev;
+      return rest;
+    });
+  }
+
+  // Atajo: al elegir un equipo de la flota, compone el texto legible y lo pone
+  // en it.equipo (input libre, sigue editable). Guarda el id solo para reflejar
+  // la selección en el trigger — NO se persiste. "" limpia el select sin tocar
+  // el texto ya escrito.
+  function elegirEquipoFlota(itemId: string, equipoId: string) {
+    setFlotaSelPorItem((prev) => ({ ...prev, [itemId]: equipoId }));
+    if (!equipoId) return;
+    const eq = flota?.find((e) => e.id === equipoId);
+    if (!eq) return;
+    updateItem(itemId, { equipo: textoEquipoFlota(eq) });
   }
 
   function updateItem(id: string, patch: Partial<CotizadorItem>) {
@@ -323,6 +379,8 @@ export default function CotizadorForm({
       setValidezDias(VALIDEZ_DEFAULT);
       setFechasPorItem({});
     }
+    // El texto de flota vive en it.equipo; el select es solo presentación.
+    setFlotaSelPorItem({});
     setActionError(null);
     setSaveGastosState("idle");
     setSaveGastosError(null);
@@ -597,6 +655,52 @@ export default function CotizadorForm({
                       </button>
                     )}
                   </div>
+
+                  {hayFlota && (
+                    <div>
+                      <label
+                        htmlFor={`flota-${it.id}`}
+                        className="block text-xs font-medium text-gray-700 mb-1.5"
+                      >
+                        Equipo de la flota (opcional)
+                      </label>
+                      <Select
+                        value={flotaSelPorItem[it.id] ?? ""}
+                        onValueChange={(v) =>
+                          elegirEquipoFlota(it.id, v === FLOTA_LIBRE ? "" : (v ?? ""))
+                        }
+                      >
+                        <SelectTrigger id={`flota-${it.id}`} className="w-full">
+                          <SelectValue placeholder="Elegir de la flota o escribir libre...">
+                            {(() => {
+                              const sel = flotaSelPorItem[it.id];
+                              const eq = sel ? flota?.find((e) => e.id === sel) : null;
+                              return eq ? `${eq.codigo} · ${eq.nombre}` : null;
+                            })()}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={FLOTA_LIBRE}>Escribir libre</SelectItem>
+                          {flota?.map((e) => (
+                            <SelectItem key={e.id} value={e.id}>
+                              <span className="font-medium">
+                                {e.codigo} · {e.nombre}
+                              </span>
+                              {(e.marca || e.modelo) && (
+                                <span className="block text-xs text-gray-400 leading-tight">
+                                  {[e.marca, e.modelo].filter(Boolean).join(" ")}
+                                </span>
+                              )}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[11px] text-gray-400 mt-1.5">
+                        Atajo: llena el nombre del equipo desde la flota. Igual
+                        podés editarlo abajo.
+                      </p>
+                    </div>
+                  )}
 
                   <div>
                     <label

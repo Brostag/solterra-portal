@@ -391,6 +391,60 @@ export const getEquiposOptions = unstable_cache(
   { revalidate: 60, tags: [MANT_EQUIPOS_TAG] },
 );
 
+// ── Flota operativa para el módulo Comercial (selector cotizador/contrato) ──
+// Solo equipos operativos (estado "Activo", no borrados). Al cotizar o crear un
+// contrato, el usuario puede elegir un equipo real de la flota y los campos se
+// llenan solos. La "conversación entre módulos" es lectura compartida +
+// revalidateTag: las actions de equipos en Mantención ya invalidan
+// MANT_EQUIPOS_TAG, así que este selector se refresca al tiro tras cualquier
+// alta/edición/cambio de estado/borrado de equipo, sin polling ni websockets.
+
+export type EquipoFlotaSelector = {
+  id: string;
+  codigo: string;
+  nombre: string;
+  tipo: string;
+  marca: string | null;
+  modelo: string | null;
+  patente: string | null;
+  anio: number | null;
+  horometro_actual: number;
+};
+
+export const getEquiposFlotaSelector = unstable_cache(
+  async (): Promise<EquipoFlotaSelector[]> => {
+    const rows = await prisma.mantEquipo.findMany({
+      where: { deleted_at: null, estado: "Activo" },
+      orderBy: { codigo: "asc" },
+      select: {
+        id: true,
+        codigo: true,
+        nombre: true,
+        tipo: true,
+        marca: true,
+        modelo: true,
+        patente: true,
+        anio: true,
+        horometro_actual: true,
+      },
+    });
+    // Decimal de Prisma -> number dentro del callback del cache (serializable).
+    return rows.map((e) => ({
+      id: e.id,
+      codigo: e.codigo,
+      nombre: e.nombre,
+      tipo: e.tipo,
+      marca: e.marca,
+      modelo: e.modelo,
+      patente: e.patente,
+      anio: e.anio,
+      horometro_actual: Number(e.horometro_actual),
+    }));
+  },
+  ["mant-equipos-flota-selector"],
+  { revalidate: 120, tags: [MANT_EQUIPOS_TAG] },
+);
+
 // ── Mantenciones (listado del Taller) ──────────────────────
 
 export const MANT_MANTENCIONES_TAG = "mant-mantenciones";

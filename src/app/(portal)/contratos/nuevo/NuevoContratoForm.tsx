@@ -137,6 +137,21 @@ function emptyEquipo(): Equipo {
   };
 }
 
+// Equipo operativo de la flota (Mantención) para prellenar una card. Solo se
+// leen campos que EXISTEN en el equipo — chasis/motor/color no están en
+// mant_equipos, así que no se tocan.
+interface EquipoFlotaOption {
+  id: string;
+  codigo: string;
+  nombre: string;
+  tipo: string;
+  marca: string | null;
+  modelo: string | null;
+  patente: string | null;
+  anio: number | null;
+  horometro_actual: number;
+}
+
 interface Props {
   clients: {
     id: string;
@@ -146,9 +161,17 @@ interface Props {
     rut_representante: string | null;
   }[];
   cotizaciones: { id: string; numero: string; cliente: string | null; fecha: string }[];
+  // Flota operativa (opcional). Atajo por card para prellenar los campos del
+  // equipo. Vacía o ausente → no se renderiza el selector.
+  flota?: EquipoFlotaOption[];
 }
 
-export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
+// Sentinela del selector de flota para "no elegir nada" (base-ui Select no
+// admite value vacío como ítem seleccionable). Mismo patrón que VIGENCIA_NINGUNA.
+const FLOTA_NINGUNA = "__ninguna__";
+
+export default function NuevoContratoForm({ clients, cotizaciones, flota }: Props) {
+  const hayFlota = (flota?.length ?? 0) > 0;
   const router = useRouter();
   const [clientId, setClientId] = useState("");
   const [fechaInicio, setFechaInicio] = useState("");
@@ -175,6 +198,10 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
   const [cotizacionSel, setCotizacionSel] = useState("");
   const [correoNotificaciones, setCorreoNotificaciones] = useState("");
   const [equipos, setEquipos] = useState<Equipo[]>([emptyEquipo()]);
+  // Equipo de la flota elegido por card (clave = índice → id del equipo).
+  // Estado de PRESENTACIÓN del selector: no viaja al payload (que sigue
+  // enviando los strings de la card). Solo refleja la elección en el trigger.
+  const [flotaSelPorCard, setFlotaSelPorCard] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(false);
   const [uploadMsg, setUploadMsg] = useState<string | null>(null);
   // Si el contrato se creó pero alguna foto falló, se ofrece ir al detalle
@@ -377,6 +404,8 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
         const nuevos = mapCotizacionAEquipos(q.items);
         if (equiposPristinos(equipos)) {
           setEquipos(nuevos);
+          // Los equipos vienen de la cotización, no de la flota: limpia el select.
+          setFlotaSelPorCard({});
         } else {
           setEquiposPendientes(nuevos);
         }
@@ -390,14 +419,83 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
 
   // Confirmación del diálogo de reemplazo de equipos.
   function confirmarReemplazoEquipos(reemplazar: boolean) {
-    if (reemplazar && equiposPendientes) setEquipos(equiposPendientes);
+    if (reemplazar && equiposPendientes) {
+      setEquipos(equiposPendientes);
+      // Los equipos vienen de la cotización, no de la flota: limpia el select.
+      setFlotaSelPorCard({});
+    }
     setEquiposPendientes(null);
   }
 
   function addEquipo() { setEquipos([...equipos, emptyEquipo()]); }
-  function removeEquipo(idx: number) { setEquipos(equipos.filter((_, i) => i !== idx)); }
+  function removeEquipo(idx: number) {
+    setEquipos(equipos.filter((_, i) => i !== idx));
+    // Reindexa el select por card: los índices > idx se corren uno hacia atrás.
+    setFlotaSelPorCard((prev) => {
+      const next: Record<number, string> = {};
+      for (const [k, v] of Object.entries(prev)) {
+        const i = Number(k);
+        if (i === idx) continue;
+        next[i > idx ? i - 1 : i] = v;
+      }
+      return next;
+    });
+  }
   function updateEquipo(idx: number, field: keyof Equipo, value: string | number) {
     setEquipos(equipos.map((eq, i) => (i === idx ? { ...eq, [field]: value } : eq)));
+  }
+
+  // ¿Una card está prístina? Todos sus campos string vacíos y sin fotos: el
+  // prefill puede pisar todo. Si tiene algo escrito, el prefill es conservador
+  // (solo campos vacíos).
+  function cardPristina(eq: Equipo): boolean {
+    if (eq.fotos.length > 0) return false;
+    return (Object.keys(eq) as (keyof Equipo)[]).every((k) => {
+      if (k === "fotos") return true;
+      return String(eq[k]).trim() === "";
+    });
+  }
+
+  // Elige un equipo de la flota para la card idx y prellena SOLO los campos que
+  // existen en mant_equipos (descripcion, marca, modelo, patente, anio,
+  // horometro_inicial). chasis/motor/color NO se tocan (no existen en la flota).
+  // Merge conservador: si la card no está prístina, solo rellena los campos que
+  // el usuario aún no escribió; nunca pisa lo escrito. Todo queda editable.
+  function elegirEquipoFlotaEnCard(idx: number, equipoId: string) {
+    setFlotaSelPorCard((prev) => ({ ...prev, [idx]: equipoId }));
+    if (!equipoId) return;
+    const e = flota?.find((f) => f.id === equipoId);
+    if (!e) return;
+
+    const descripcion = [e.nombre, e.tipo]
+      .map((p) => (p ?? "").trim())
+      .filter((p) => p !== "")
+      .join(" — ");
+    const prefill: Partial<Record<keyof Equipo, string>> = {
+      descripcion,
+      marca: e.marca ?? "",
+      modelo: e.modelo ?? "",
+      patente: e.patente ?? "",
+      anio: String(e.anio ?? ""),
+      horometro_inicial: e.horometro_actual ? String(e.horometro_actual) : "",
+    };
+
+    setEquipos((prev) =>
+      prev.map((eq, i) => {
+        if (i !== idx) return eq;
+        const pristina = cardPristina(eq);
+        const merged = { ...eq };
+        for (const [k, v] of Object.entries(prefill) as [keyof Equipo, string][]) {
+          if (!v) continue; // no escribir un campo vacío del equipo
+          // Card prístina → pisa; card con datos → solo campos vacíos (merge
+          // conservador, no pisa lo escrito).
+          if (pristina || String(eq[k]).trim() === "") {
+            (merged[k] as string) = v;
+          }
+        }
+        return merged;
+      }),
+    );
   }
 
   // ── Fotos de respaldo por equipo ──────────────────────────────────────────
@@ -915,6 +1013,45 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
+
+            {hayFlota && (
+              <div className="space-y-1.5">
+                <Label>Elegir de la flota (opcional)</Label>
+                <Select
+                  value={flotaSelPorCard[idx] ?? ""}
+                  onValueChange={(v) =>
+                    elegirEquipoFlotaEnCard(idx, v === FLOTA_NINGUNA ? "" : (v ?? ""))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar equipo de la flota...">
+                      {(() => {
+                        const sel = flotaSelPorCard[idx];
+                        const e = sel ? flota?.find((f) => f.id === sel) : null;
+                        return e ? `${e.codigo} · ${e.nombre}` : null;
+                      })()}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={FLOTA_NINGUNA}>Sin equipo de la flota</SelectItem>
+                    {flota?.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        <span className="font-medium">{e.codigo} · {e.nombre}</span>
+                        {(e.marca || e.modelo) && (
+                          <span className="block text-xs text-gray-400 leading-tight">
+                            {[e.marca, e.modelo].filter(Boolean).join(" ")}
+                          </span>
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-400">
+                  Atajo: prellena descripción, marca, modelo, patente, año y
+                  horómetro. Todo queda editable y no pisa lo que ya escribiste.
+                </p>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <Label>Equipo / descripción <span className="text-[#c6352e]">*</span></Label>

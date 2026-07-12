@@ -6,13 +6,17 @@ import VolverAlDashboard from "@/components/portal/VolverAlDashboard";
 import CotizadorForm from "./CotizadorForm";
 import { getNextQuotationNumber } from "@/app/(portal)/cotizaciones/actions";
 import { GASTOS_INICIALES, normalizarGastos } from "@/lib/cotizador";
+import { getEquiposFlotaSelector } from "@/lib/terreno/queries";
 
 export default async function CotizadorPage() {
-  const [session, config, empresas, numeroSugerido] = await Promise.all([
+  const [session, config, empresas, numeroSugerido, flotaRaw] = await Promise.all([
     getPortalSessionFast(),
     getCompanySettings(),
     getCompanyClientsForSelector(),
     getNextQuotationNumber(),
+    // Flota operativa (equipos "Activo") para el atajo "Equipo de la flota".
+    // Se refresca al tiro cuando Mantención cambia un equipo (MANT_EQUIPOS_TAG).
+    getEquiposFlotaSelector(),
   ]);
   if (!session) redirect("/login");
 
@@ -33,6 +37,16 @@ export default async function CotizadorPage() {
     rut: e.rut,
   }));
 
+  // Payload mínimo de la flota para el form: solo lo que compone el texto del
+  // ítem (nombre + marca + modelo + código). El cotizador no persiste el id.
+  const flota = flotaRaw.map((e) => ({
+    id: e.id,
+    codigo: e.codigo,
+    nombre: e.nombre,
+    marca: e.marca,
+    modelo: e.modelo,
+  }));
+
   return (
     <div className="space-y-6">
       <VolverAlDashboard />
@@ -49,6 +63,7 @@ export default async function CotizadorPage() {
         numeroSugerido={numeroSugerido}
         gastosDefault={gastosDefault}
         canSaveGastos={canSaveGastos}
+        flota={flota}
       />
     </div>
   );

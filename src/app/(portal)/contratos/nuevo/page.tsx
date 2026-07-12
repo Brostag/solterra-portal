@@ -1,6 +1,7 @@
 import { getCompanyClientsForSelector } from "@/lib/cache/master-lists";
 import { prisma } from "@/lib/prisma";
 import { getPortalSessionFast } from "@/lib/auth/session";
+import { getEquiposFlotaSelector } from "@/lib/terreno/queries";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ export default async function NuevoContratoPage() {
   if (!session) redirect("/login");
   if (session.rol === "USUARIO") redirect("/contratos");
 
-  const [empresas, cotizacionesRaw] = await Promise.all([
+  const [empresas, cotizacionesRaw, flota] = await Promise.all([
     getCompanyClientsForSelector(),
     // Cotizaciones del sistema para ligar el contrato (campo N° de cotización).
     // Solo no anuladas, las 100 más recientes, payload mínimo para el selector.
@@ -24,6 +25,9 @@ export default async function NuevoContratoPage() {
         id: true, numero: true, cliente_nombre_snapshot: true, fecha_emision: true,
       },
     }),
+    // Flota operativa (equipos "Activo") para prellenar cada equipo del contrato.
+    // Se refresca al tiro cuando Mantención cambia un equipo (MANT_EQUIPOS_TAG).
+    getEquiposFlotaSelector(),
   ]);
   // Empresas con rol cliente/arrendataria, adaptadas a la forma del selector.
   const clients = empresas.map((e) => ({
@@ -56,7 +60,7 @@ export default async function NuevoContratoPage() {
           </Button>
         </Link>
       </div>
-      <NuevoContratoForm clients={clients} cotizaciones={cotizaciones} />
+      <NuevoContratoForm clients={clients} cotizaciones={cotizaciones} flota={flota} />
     </div>
   );
 }
