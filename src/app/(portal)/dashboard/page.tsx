@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { formatCurrency } from "@/lib/currency";
 import { formatContractDisplayNumber } from "@/lib/contracts";
 import Link from "next/link";
+import KpiCard from "@/components/portal/KpiCard";
 import {
   FileText,
   Building2,
@@ -13,7 +14,6 @@ import {
   Plus,
   Calculator,
   Upload,
-  ArrowRight,
   Eye,
 } from "lucide-react";
 
@@ -205,53 +205,51 @@ export default async function DashboardPage() {
   };
 
   return (
-    <div className="space-y-5 sm:space-y-6">
-      {/* Saludo */}
-      <div>
-        <p className="text-[11px] sm:text-xs text-gray-400 mb-0.5 sm:mb-1">{getFechaHoy()}</p>
-        <h1 className="text-lg sm:text-2xl font-bold text-[#253158] leading-tight">
+    <div className="mx-auto max-w-6xl space-y-5">
+      {/* Encabezado */}
+      <header>
+        <p className="text-xs font-semibold uppercase tracking-widest text-[#c6352e]">
+          Módulo Comercial
+        </p>
+        <h1 className="mt-1 text-2xl font-bold text-[#253158] leading-tight">
           {getGreeting()}, {session.nombre}
         </h1>
-      </div>
+        <p className="mt-1 text-sm text-gray-400">{getFechaHoy()}</p>
+      </header>
 
-      {/* Cards principales */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      {/* KPIs */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {CARDS.map((c) => {
-          const Icon = c.icon;
           const d = cardData[c.key];
           return (
-            <Link key={c.key} href={c.href} className="group block">
-              <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 hover:border-[#253158] hover:shadow-md transition-all duration-200 h-full">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="p-2 sm:p-2.5 bg-[#253158]/10 rounded-lg">
-                    <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-[#253158]" />
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-[#253158] group-hover:translate-x-0.5 transition-all" />
-                </div>
-                <p className="text-2xl sm:text-3xl font-bold text-[#253158] tabular-nums leading-none">{d.value}</p>
-                <p className="text-xs sm:text-sm font-semibold text-gray-700 mt-1 leading-tight">
-                  {"short" in c && c.short ? (
-                    <>
-                      <span className="sm:hidden">{c.short}</span>
-                      <span className="hidden sm:inline">{c.label}</span>
-                    </>
-                  ) : (
-                    c.label
-                  )}
-                </p>
-                <p className="text-[11px] sm:text-xs text-gray-400 mt-1.5 leading-tight">{d.sub}</p>
-              </div>
-            </Link>
+            <KpiCard
+              key={c.key}
+              icon={c.icon}
+              value={d.value}
+              label={
+                "short" in c && c.short ? (
+                  <>
+                    <span className="sm:hidden">{c.short}</span>
+                    <span className="hidden sm:inline">{c.label}</span>
+                  </>
+                ) : (
+                  c.label
+                )
+              }
+              sub={d.sub}
+              href={c.href}
+              showArrow
+            />
           );
         })}
       </div>
 
       {/* Acciones rápidas */}
-      <div className="bg-white rounded-xl p-4 sm:p-5 border border-gray-100">
-        <p className="text-[10px] sm:text-xs font-semibold tracking-widest uppercase text-gray-400 mb-3">
+      <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
+        <p className="text-[11px] font-semibold tracking-widest uppercase text-gray-400 mb-3">
           Acciones rápidas
         </p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
           {ACTIONS.map((a) => {
             const Icon = a.icon;
             const primary = "primary" in a && a.primary;
@@ -259,16 +257,16 @@ export default async function DashboardPage() {
               <Link
                 key={a.href + a.label}
                 href={a.href}
-                className={`flex items-center gap-2.5 rounded-lg px-3 py-3 min-h-[52px] transition-colors ${
+                className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 min-h-[48px] transition-colors duration-150 ${
                   primary
-                    ? "bg-[#253158] hover:bg-[#1d2a4f] active:bg-[#1d2a4f]"
+                    ? "bg-[#253158] hover:bg-[#1e305e] active:bg-[#1e305e]"
                     : "bg-white border border-gray-200 hover:border-[#253158] hover:bg-[#253158]/5 active:bg-[#253158]/5"
                 }`}
               >
-                <div className={`p-1.5 rounded-md flex-shrink-0 ${primary ? "bg-white/20" : "bg-gray-100"}`}>
+                <span className={`inline-flex h-7 w-7 items-center justify-center rounded-md flex-shrink-0 ${primary ? "bg-white/20" : "bg-gray-100"}`}>
                   <Icon className={`h-4 w-4 ${primary ? "text-white" : "text-[#253158]"}`} />
-                </div>
-                <span className={`text-[13px] sm:text-sm font-semibold leading-tight ${primary ? "text-white" : "text-[#253158]"}`}>
+                </span>
+                <span className={`text-[13px] font-semibold leading-tight ${primary ? "text-white" : "text-[#253158]"}`}>
                   {a.label}
                 </span>
               </Link>
@@ -278,7 +276,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Últimos contratos + Últimas OC */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Últimos contratos marco */}
         <section className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-gray-100">
@@ -286,7 +284,10 @@ export default async function DashboardPage() {
             <Link href="/contratos" className="text-xs text-[#253158] hover:underline">Ver todos</Link>
           </div>
           {stats.ultimosContratos.length === 0 ? (
-            <p className="text-sm text-gray-400 px-4 sm:px-5 py-8 text-center">Aún no hay contratos.</p>
+            <div className="flex flex-col items-center gap-2 px-5 py-7">
+              <FileText className="h-7 w-7 text-gray-400 opacity-35" />
+              <p className="text-[13px] text-gray-400">Aún no hay contratos.</p>
+            </div>
           ) : (
             <>
               {/* Desktop */}
@@ -330,7 +331,10 @@ export default async function DashboardPage() {
             <Link href="/ordenes-compra" className="text-xs text-[#253158] hover:underline">Ver todas</Link>
           </div>
           {stats.ultimasOC.length === 0 ? (
-            <p className="text-sm text-gray-400 px-4 sm:px-5 py-8 text-center">Aún no hay órdenes de compra.</p>
+            <div className="flex flex-col items-center gap-2 px-5 py-7">
+              <ShoppingCart className="h-7 w-7 text-gray-400 opacity-35" />
+              <p className="text-[13px] text-gray-400">Aún no hay órdenes de compra.</p>
+            </div>
           ) : (
             <>
               {/* Desktop */}
@@ -378,7 +382,10 @@ export default async function DashboardPage() {
           <Link href="/empresas" className="text-xs text-[#253158] hover:underline">Ver todas</Link>
         </div>
         {stats.empresasRecientes.length === 0 ? (
-          <p className="text-sm text-gray-400 px-4 sm:px-5 py-8 text-center">Aún no hay empresas.</p>
+          <div className="flex flex-col items-center gap-2 px-5 py-7">
+            <Building2 className="h-7 w-7 text-gray-400 opacity-35" />
+            <p className="text-[13px] text-gray-400">Aún no hay empresas.</p>
+          </div>
         ) : (
           <>
             {/* Desktop */}

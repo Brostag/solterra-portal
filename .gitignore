@@ -43,6 +43,7 @@ next-env.d.ts
 
 # design reference (temporary, do not commit)
 claude desing/
+design_handoff_dashboards/
 
 # módulo de mantención antiguo — referencia temporal para portar (NO build, NO commit)
 solterra-manteniemiento/
