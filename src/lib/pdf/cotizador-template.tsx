@@ -211,18 +211,11 @@ export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
   const hasDesc = input.porcentajeDescuento > 0;
   const clienteNombre = cliente?.nombre?.trim() ? cliente.nombre : "Cliente no especificado";
 
-  const gastoRows: { key: string; label: string; value: number }[] = [
-    { key: "combustible", label: "Combustible", value: input.gastos.combustible },
-    { key: "operador",    label: "Operador",    value: input.gastos.operador },
-    { key: "traslado",    label: "Traslado",    value: input.gastos.traslado },
-    { key: "peajes",      label: "Peajes",      value: input.gastos.peajes },
-    { key: "viaticos",    label: "Viáticos",    value: input.gastos.viaticos },
-    { key: "alojamiento", label: "Alojamiento", value: input.gastos.alojamiento },
-    { key: "mantencion",  label: "Mantención",  value: input.gastos.mantencion },
-    { key: "seguro",      label: "Seguro",      value: input.gastos.seguro },
-    { key: "otros",       label: "Otros",       value: input.gastos.otros },
-  ];
-  const gastoRowsVisibles = gastoRows.filter((g) => g.value > 0);
+  // Lista dinámica de gastos: solo se muestran los de monto > 0 (mismo criterio
+  // que la versión de 9 claves fijas). La clave del render es el id del gasto.
+  const gastoRowsVisibles = input.gastos
+    .map((g) => ({ key: g.id, label: g.label, value: g.monto }))
+    .filter((g) => g.value > 0);
 
   const fechaStr = fecha.toLocaleDateString("es-CL", { day: "2-digit", month: "2-digit", year: "numeric" });
 

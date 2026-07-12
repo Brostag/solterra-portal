@@ -9,17 +9,17 @@
 
 export type TipoCotizacion = "horas" | "dias";
 
-export interface GastosGenerales {
-  combustible: number;
-  operador:    number;
-  traslado:    number;
-  peajes:      number;
-  viaticos:    number;
-  alojamiento: number;
-  mantencion:  number;
-  seguro:      number;
-  otros:       number;
-}
+/**
+ * Un gasto general del cotizador. Lista dinámica: el usuario nombra cada gasto
+ * y le asigna un monto. Reemplaza al antiguo record fijo de 9 claves.
+ */
+export type GastoGeneral = {
+  id:    string;
+  label: string;
+  monto: number;
+};
+
+export type GastosGenerales = GastoGeneral[];
 
 export interface CotizadorItem {
   id:                  string;
@@ -59,35 +59,80 @@ export interface CotizadorResult {
   total:                number;
 }
 
-export const GASTOS_INICIALES: GastosGenerales = {
-  combustible: 0,
-  operador:    0,
-  traslado:    0,
-  peajes:      0,
-  viaticos:    0,
-  alojamiento: 0,
-  mantencion:  0,
-  seguro:      0,
-  otros:       0,
-};
+// Etiquetas de los 9 gastos históricos, en orden. Se usan como lista inicial
+// por defecto y como diccionario para migrar el shape antiguo (record fijo)
+// guardado en cotizaciones anteriores a la lista dinámica.
+const GASTOS_LEGACY_LABELS: { id: string; label: string }[] = [
+  { id: "combustible", label: "Combustible" },
+  { id: "operador",    label: "Operador" },
+  { id: "traslado",    label: "Traslado" },
+  { id: "peajes",      label: "Peajes" },
+  { id: "viaticos",    label: "Viáticos" },
+  { id: "alojamiento", label: "Alojamiento" },
+  { id: "mantencion",  label: "Mantención" },
+  { id: "seguro",      label: "Seguro" },
+  { id: "otros",       label: "Otros" },
+];
+
+export const GASTOS_INICIALES: GastosGenerales = GASTOS_LEGACY_LABELS.map(
+  ({ id, label }) => ({ id, label, monto: 0 })
+);
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 const safe   = (n: number) => (Number.isFinite(n) && n > 0 ? n : 0);
 
-export function sumarGastos(g: GastosGenerales): number {
-  return round2(
-    safe(g.combustible) + safe(g.operador)    + safe(g.traslado) +
-    safe(g.peajes)      + safe(g.viaticos)    + safe(g.alojamiento) +
-    safe(g.mantencion)  + safe(g.seguro)      + safe(g.otros)
-  );
+function randomId(prefix: string): string {
+  const c = (globalThis as { crypto?: { randomUUID?: () => string } }).crypto;
+  return typeof c?.randomUUID === "function"
+    ? c.randomUUID()
+    : `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+export function sumarGastos(gastos: GastosGenerales): number {
+  return round2(gastos.reduce((acc, g) => acc + safe(g.monto), 0));
+}
+
+/**
+ * Adapter de compatibilidad. Acepta:
+ *  - una lista nueva (array de GastoGeneral) → filtra/normaliza cada ítem.
+ *  - el shape antiguo (record fijo { combustible, operador, ... }) guardado en
+ *    cotizaciones previas → lo convierte a lista con las etiquetas por defecto.
+ *  - cualquier otra cosa → lista vacía.
+ * Nunca lanza: normaliza en silencio para no romper el render de datos viejos.
+ */
+export function normalizarGastos(raw: unknown): GastosGenerales {
+  if (Array.isArray(raw)) {
+    const out: GastosGenerales = [];
+    for (const item of raw) {
+      if (typeof item !== "object" || item === null) continue;
+      const o = item as Record<string, unknown>;
+      const label = typeof o.label === "string" ? o.label.trim() : "";
+      if (label === "") continue;
+      const monto = typeof o.monto === "number" && Number.isFinite(o.monto) && o.monto >= 0 ? o.monto : 0;
+      const id = typeof o.id === "string" && o.id.trim() !== "" ? o.id : randomId("gasto");
+      out.push({ id, label, monto });
+    }
+    return out;
+  }
+
+  if (typeof raw === "object" && raw !== null) {
+    const g = raw as Record<string, unknown>;
+    return GASTOS_LEGACY_LABELS.map(({ id, label }) => {
+      const v = g[id];
+      const monto = typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : 0;
+      return { id, label, monto };
+    });
+  }
+
+  return [];
+}
+
+export function nuevoGasto(label = ""): GastoGeneral {
+  return { id: randomId("gasto"), label, monto: 0 };
 }
 
 export function nuevoItem(): CotizadorItem {
-  const c = (globalThis as { crypto?: { randomUUID?: () => string } }).crypto;
-  const id =
-    typeof c?.randomUUID === "function"
-      ? c.randomUUID()
-      : `item-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+  const id = randomId("item");
   return {
     id,
     equipo:              "",

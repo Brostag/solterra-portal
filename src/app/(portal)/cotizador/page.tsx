@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import VolverAlDashboard from "@/components/portal/VolverAlDashboard";
 import CotizadorForm from "./CotizadorForm";
 import { getNextQuotationNumber } from "@/app/(portal)/cotizaciones/actions";
+import { GASTOS_INICIALES, normalizarGastos } from "@/lib/cotizador";
 
 export default async function CotizadorPage() {
   const [session, config, empresas, numeroSugerido] = await Promise.all([
@@ -16,6 +17,14 @@ export default async function CotizadorPage() {
   if (!session) redirect("/login");
 
   const ivaPorcentaje = config ? Number(config.iva_porcentaje) : 19;
+
+  // Gastos por defecto guardados por la empresa. Si no hay lista guardada
+  // (o está vacía tras normalizar), se parte con los 9 gastos históricos.
+  const gastosGuardados = config ? normalizarGastos(config.cotizador_gastos_default) : [];
+  const gastosDefault = gastosGuardados.length > 0 ? gastosGuardados : GASTOS_INICIALES;
+
+  // Solo ADMIN/SUPERVISOR pueden persistir la lista como default de la empresa.
+  const canSaveGastos = session.rol === "ADMINISTRADOR" || session.rol === "SUPERVISOR";
 
   // Empresas (rol cliente/arrendataria) adaptadas a la forma del selector.
   const clientes = empresas.map((e) => ({
@@ -34,7 +43,13 @@ export default async function CotizadorPage() {
           Calcula presupuestos rápidos para arriendo de maquinaria y servicios.
         </p>
       </div>
-      <CotizadorForm ivaPorcentaje={ivaPorcentaje} clientes={clientes} numeroSugerido={numeroSugerido} />
+      <CotizadorForm
+        ivaPorcentaje={ivaPorcentaje}
+        clientes={clientes}
+        numeroSugerido={numeroSugerido}
+        gastosDefault={gastosDefault}
+        canSaveGastos={canSaveGastos}
+      />
     </div>
   );
 }

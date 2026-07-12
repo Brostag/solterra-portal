@@ -71,6 +71,7 @@ model CompanySettings {
   logo_url         String?
   moneda_principal Moneda   @default(CLP)
   iva_porcentaje   Decimal  @default(19)
+  cotizador_gastos_default Json?
   created_at       DateTime @default(now())
   updated_at       DateTime @updatedAt
 

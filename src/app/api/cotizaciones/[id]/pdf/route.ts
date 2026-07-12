@@ -9,29 +9,11 @@ import { getCompanySettings } from "@/lib/company-settings";
 import { prisma } from "@/lib/prisma";
 import {
   calcularCotizacion,
-  GASTOS_INICIALES,
+  normalizarGastos,
   type CotizadorInput,
-  type GastosGenerales,
   type TipoCotizacion,
 } from "@/lib/cotizador";
 import { CotizadorDocument } from "@/lib/pdf/cotizador-template";
-
-// Normaliza el JSON de gastos guardado a la forma fija GastosGenerales (fallback 0).
-function normalizarGastos(raw: unknown): GastosGenerales {
-  const g = (raw ?? {}) as Record<string, unknown>;
-  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
-  return {
-    combustible: num(g.combustible),
-    operador:    num(g.operador),
-    traslado:    num(g.traslado),
-    peajes:      num(g.peajes),
-    viaticos:    num(g.viaticos),
-    alojamiento: num(g.alojamiento),
-    mantencion:  num(g.mantencion),
-    seguro:      num(g.seguro),
-    otros:       num(g.otros),
-  };
-}
 
 export async function GET(
   _req: NextRequest,
@@ -68,7 +50,9 @@ export async function GET(
       cantidadHoras: Number(it.cantidad_horas),
       cantidadDias: Number(it.cantidad_dias),
     })),
-    gastos: cotizacion.items.length ? normalizarGastos(cotizacion.gastos) : GASTOS_INICIALES,
+    // normalizarGastos soporta ambos shapes: record fijo (cotizaciones viejas)
+    // y lista dinámica (nuevas). Es la fuente única para reconstruir los gastos.
+    gastos: normalizarGastos(cotizacion.gastos),
     porcentajeDescuento: Number(cotizacion.descuento_porcentaje),
     ivaPorcentaje: Number(cotizacion.iva_porcentaje),
   };

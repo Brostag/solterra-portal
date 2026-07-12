@@ -10,17 +10,15 @@ import { prisma } from "@/lib/prisma";
 import { calcularCotizacion, type CotizadorInput } from "@/lib/cotizador";
 import { CotizadorDocument } from "@/lib/pdf/cotizador-template";
 
-const gastosSchema = z.object({
-  combustible: z.number().min(0).default(0),
-  operador:    z.number().min(0).default(0),
-  traslado:    z.number().min(0).default(0),
-  peajes:      z.number().min(0).default(0),
-  viaticos:    z.number().min(0).default(0),
-  alojamiento: z.number().min(0).default(0),
-  mantencion:  z.number().min(0).default(0),
-  seguro:      z.number().min(0).default(0),
-  otros:       z.number().min(0).default(0),
-});
+const gastosSchema = z
+  .array(
+    z.object({
+      id:    z.string().max(40),
+      label: z.string().trim().min(1).max(60),
+      monto: z.number().min(0),
+    })
+  )
+  .max(30);
 
 const itemSchema = z.object({
   id:                  z.string().min(1).max(100),

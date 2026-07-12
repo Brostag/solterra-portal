@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/table";
 import { ArrowLeft, FileDown } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { normalizarGastos } from "@/lib/cotizador";
 import PdfShareActions from "@/components/portal/PdfShareActions";
 import PrintPdfButton from "@/components/portal/PrintPdfButton";
 import QuotationStatusActions from "./QuotationStatusActions";
@@ -27,20 +28,16 @@ const ESTADO_COLORS: Record<EstadoCotizacion, string> = {
   ANULADA:  "bg-red-50 text-red-500 border border-red-200",
 };
 
-const GASTOS_LABELS: Record<string, string> = {
-  combustible: "Combustible", operador: "Operador", traslado: "Traslado",
-  peajes: "Peajes", viaticos: "Viáticos", alojamiento: "Alojamiento",
-  mantencion: "Mantención", seguro: "Seguro", otros: "Otros",
-};
-
 function fmtDate(d: Date | null): string {
   return d ? new Date(d).toLocaleDateString("es-CL") : "—";
 }
 
-function gastosNoCero(raw: unknown): { label: string; value: number }[] {
-  const g = (raw ?? {}) as Record<string, unknown>;
-  return Object.keys(GASTOS_LABELS)
-    .map((k) => ({ label: GASTOS_LABELS[k], value: typeof g[k] === "number" ? (g[k] as number) : 0 }))
+// Soporta AMBOS shapes vía normalizarGastos: cotizaciones antiguas guardadas
+// con el record fijo { combustible, operador, ... } y las nuevas con lista
+// dinámica de { id, label, monto }. Filtra los de monto > 0.
+function gastosNoCero(raw: unknown): { id: string; label: string; value: number }[] {
+  return normalizarGastos(raw)
+    .map((g) => ({ id: g.id, label: g.label, value: g.monto }))
     .filter((x) => x.value > 0);
 }
 
@@ -154,7 +151,7 @@ export default async function CotizacionDetallePage({ params }: Props) {
               <p className="text-xs text-gray-400 uppercase tracking-wide mb-1.5">Gastos generales</p>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
                 {gastos.map((g) => (
-                  <span key={g.label} className="text-gray-600">{g.label}: <span className="tabular-nums text-gray-800">{formatCurrency(g.value, "CLP")}</span></span>
+                  <span key={g.id} className="text-gray-600">{g.label}: <span className="tabular-nums text-gray-800">{formatCurrency(g.value, "CLP")}</span></span>
                 ))}
               </div>
             </div>

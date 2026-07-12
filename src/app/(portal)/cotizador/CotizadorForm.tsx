@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/currency";
 import {
   calcularCotizacion,
-  GASTOS_INICIALES,
+  nuevoGasto,
   nuevoItem,
   type CotizadorItem,
   type CotizadorItemResult,
@@ -13,27 +13,21 @@ import {
   type TipoCotizacion,
 } from "@/lib/cotizador";
 import {
-  BedDouble,
   CalendarDays,
+  Check,
   Clock,
   FileCheck,
-  Fuel,
-  HardHat,
   Loader2,
-  MapPin,
-  Plus,
   PlusCircle,
   Printer,
   RotateCcw,
-  Shield,
+  Save,
   Trash2,
-  Truck,
-  UtensilsCrossed,
-  Wrench,
 } from "lucide-react";
 import PdfShareActions from "@/components/portal/PdfShareActions";
 import { useRouter } from "next/navigation";
 import { createQuotation } from "@/app/(portal)/cotizaciones/actions";
+import { saveCotizadorGastosDefault } from "./actions";
 
 interface ClienteOption {
   id:     string;
@@ -45,25 +39,11 @@ interface Props {
   ivaPorcentaje:   number;
   clientes:        ClienteOption[];
   numeroSugerido:  string;
+  gastosDefault:   GastosGenerales;
+  canSaveGastos:   boolean;
 }
 
-interface GastoConfig {
-  key:   keyof GastosGenerales;
-  label: string;
-  icon:  typeof Fuel;
-}
-
-const GASTOS_CONFIG: GastoConfig[] = [
-  { key: "combustible", label: "Combustible", icon: Fuel },
-  { key: "operador",    label: "Operador",    icon: HardHat },
-  { key: "traslado",    label: "Traslado",    icon: Truck },
-  { key: "peajes",      label: "Peajes",      icon: MapPin },
-  { key: "viaticos",    label: "Viáticos",    icon: UtensilsCrossed },
-  { key: "alojamiento", label: "Alojamiento", icon: BedDouble },
-  { key: "mantencion",  label: "Mantención",  icon: Wrench },
-  { key: "seguro",      label: "Seguro",      icon: Shield },
-  { key: "otros",       label: "Otros",       icon: Plus },
-];
+type SaveGastosState = "idle" | "saving" | "ok" | "error";
 
 const inputClass =
   "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#253158]/20 focus:border-[#253158] tabular-nums disabled:bg-gray-50 disabled:text-gray-400";
@@ -178,31 +158,48 @@ function textoTiempoArriendo(desde: string, hasta: string): string {
   return `${humano} (${dias} ${dias === 1 ? "día" : "días"})`;
 }
 
-export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido }: Props) {
+export default function CotizadorForm({
+  ivaPorcentaje,
+  clientes,
+  numeroSugerido,
+  gastosDefault,
+  canSaveGastos,
+}: Props) {
   const [items, setItems]                             = useState<CotizadorItem[]>(() => [nuevoItem()]);
   // Fechas por ítem: SEPARADO de items para no contaminar el payload (items solo lleva números).
   const [fechasPorItem, setFechasPorItem]             = useState<Record<string, { desde: string; hasta: string }>>({});
-  const [gastos, setGastos]                           = useState<GastosGenerales>(GASTOS_INICIALES);
+  const [gastos, setGastos]                           = useState<GastosGenerales>(() => gastosDefault);
   const [porcentajeDescuento, setPorcentajeDescuento] = useState(0);
   const [clienteId, setClienteId]                     = useState("");
   const [busyAction, setBusyAction]                   = useState<ActionId | null>(null);
   const [actionError, setActionError]                 = useState<string | null>(null);
   const [numero, setNumero]                           = useState(numeroSugerido);
+  const [saveGastosState, setSaveGastosState]         = useState<SaveGastosState>("idle");
+  const [saveGastosError, setSaveGastosError]         = useState<string | null>(null);
   const router = useRouter();
 
   const clienteSel = clientes.find((c) => c.id === clienteId) ?? null;
 
   const resumenRef = useRef<HTMLDivElement>(null);
 
+  // Gastos que se envían al servidor: solo los que tienen nombre. El estado
+  // `gastos` puede tener uno recién agregado con label en blanco, y el schema
+  // server-side exige label no vacío. El total no cambia: sumarGastos ignora
+  // montos ≤ 0 y estos gastos-en-blanco parten en 0.
+  const gastosPayload = useMemo<GastosGenerales>(
+    () => gastos.map((g) => ({ ...g, label: g.label.trim() })).filter((g) => g.label !== ""),
+    [gastos]
+  );
+
   const result = useMemo(
     () =>
       calcularCotizacion({
         items,
-        gastos,
+        gastos: gastosPayload,
         porcentajeDescuento,
         ivaPorcentaje,
       }),
-    [items, gastos, porcentajeDescuento, ivaPorcentaje]
+    [items, gastosPayload, porcentajeDescuento, ivaPorcentaje]
   );
 
   const itemResultById = useMemo<Map<string, CotizadorItemResult>>(() => {
@@ -228,17 +225,51 @@ export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido 
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
   }
 
-  function updateGasto(key: keyof GastosGenerales, value: number) {
-    setGastos((prev) => ({ ...prev, [key]: value }));
+  function updateGastoMonto(id: string, monto: number) {
+    setGastos((prev) => prev.map((g) => (g.id === id ? { ...g, monto } : g)));
+    setSaveGastosState("idle");
+  }
+
+  function updateGastoLabel(id: string, label: string) {
+    setGastos((prev) => prev.map((g) => (g.id === id ? { ...g, label } : g)));
+    setSaveGastosState("idle");
+  }
+
+  function addGasto() {
+    setGastos((prev) => [...prev, nuevoGasto()]);
+    setSaveGastosState("idle");
+  }
+
+  function removeGasto(id: string) {
+    setGastos((prev) => prev.filter((g) => g.id !== id));
+    setSaveGastosState("idle");
+  }
+
+  async function guardarGastosDefault() {
+    setSaveGastosError(null);
+    setSaveGastosState("saving");
+    try {
+      // Solo gastos con nombre no vacío se persisten como default.
+      const limpios = gastos
+        .map((g) => ({ id: g.id, label: g.label.trim(), monto: g.monto }))
+        .filter((g) => g.label !== "");
+      await saveCotizadorGastosDefault(limpios);
+      setSaveGastosState("ok");
+    } catch (err) {
+      setSaveGastosError(err instanceof Error ? err.message : "No se pudieron guardar los gastos.");
+      setSaveGastosState("error");
+    }
   }
 
   function limpiar() {
     setItems([nuevoItem()]);
     setFechasPorItem({});
-    setGastos(GASTOS_INICIALES);
+    setGastos(gastosDefault);
     setPorcentajeDescuento(0);
     setClienteId("");
     setActionError(null);
+    setSaveGastosState("idle");
+    setSaveGastosError(null);
   }
 
   // Actualiza el rango de fechas del ítem y, si es válido, deriva el campo del
@@ -291,7 +322,7 @@ export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido 
   }
 
   function buildRequestBody() {
-    return { items, gastos, porcentajeDescuento, ivaPorcentaje, clienteId: clienteId || null };
+    return { items, gastos: gastosPayload, porcentajeDescuento, ivaPorcentaje, clienteId: clienteId || null };
   }
 
   function buildSummaryText(): string {
@@ -367,7 +398,7 @@ export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido 
         numero: numero.trim(),
         clienteId: clienteId || null,
         items,
-        gastos,
+        gastos: gastosPayload,
         porcentajeDescuento,
         ivaPorcentaje,
       });
@@ -766,35 +797,112 @@ export default function CotizadorForm({ ivaPorcentaje, clientes, numeroSugerido 
 
         {/* Gastos generales */}
         <section className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-          <h2 className="text-xs font-semibold text-[#253158] uppercase tracking-wider">
-            Gastos generales
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {GASTOS_CONFIG.map(({ key, label, icon: Icon }) => (
-              <div key={key}>
-                <label
-                  htmlFor={`gasto-${key}`}
-                  className="block text-xs font-medium text-gray-700 mb-1.5"
-                >
-                  <span className="inline-flex items-center gap-1.5">
-                    <Icon className="h-3.5 w-3.5 text-gray-400" />
-                    {label}
-                  </span>
-                </label>
-                <input
-                  id={`gasto-${key}`}
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  step={1}
-                  value={gastos[key] || ""}
-                  onChange={(e) => updateGasto(key, Math.max(0, Number(e.target.value) || 0))}
-                  placeholder="0"
-                  className={inputClass}
-                />
-              </div>
-            ))}
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-xs font-semibold text-[#253158] uppercase tracking-wider">
+              Gastos generales
+            </h2>
+            <span className="text-[11px] text-gray-400">
+              {gastos.length} {gastos.length === 1 ? "gasto" : "gastos"}
+            </span>
           </div>
+
+          {gastos.length === 0 ? (
+            <p className="text-sm text-gray-400">
+              Sin gastos generales. Agrega uno para incluirlo en el presupuesto.
+            </p>
+          ) : (
+            <div className="space-y-2.5">
+              {gastos.map((g, idx) => (
+                <div key={g.id} className="flex items-end gap-2">
+                  <div className="flex-1 min-w-0">
+                    {idx === 0 && (
+                      <span className="block text-xs font-medium text-gray-700 mb-1.5">
+                        Nombre del gasto
+                      </span>
+                    )}
+                    <input
+                      type="text"
+                      value={g.label}
+                      onChange={(e) => updateGastoLabel(g.id, e.target.value)}
+                      placeholder="Nombre del gasto"
+                      maxLength={60}
+                      autoComplete="off"
+                      aria-label={`Nombre del gasto ${idx + 1}`}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div className="w-32 sm:w-40 flex-shrink-0">
+                    {idx === 0 && (
+                      <span className="block text-xs font-medium text-gray-700 mb-1.5">
+                        Monto (CLP)
+                      </span>
+                    )}
+                    <MoneyInput
+                      id={`gasto-monto-${g.id}`}
+                      value={g.monto}
+                      onChange={(n) => updateGastoMonto(g.id, n)}
+                      placeholder="0"
+                      className={inputClass}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeGasto(g.id)}
+                    aria-label={`Eliminar gasto ${idx + 1}`}
+                    className="text-gray-400 hover:text-[#c6352e] p-2 rounded transition-colors flex-shrink-0"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <Button
+            type="button"
+            onClick={addGasto}
+            variant="outline"
+            className="w-full gap-2 border-dashed border-[#253158]/30 text-[#253158] hover:bg-[#253158]/5"
+          >
+            <PlusCircle className="h-4 w-4" />
+            Agregar gasto
+          </Button>
+
+          {canSaveGastos && (
+            <div className="pt-3 border-t border-gray-100 space-y-1.5">
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  onClick={guardarGastosDefault}
+                  disabled={saveGastosState === "saving"}
+                  variant="outline"
+                  className="gap-2 border-[#253158]/30 text-[#253158] hover:bg-[#253158]/5 disabled:opacity-60"
+                  aria-busy={saveGastosState === "saving"}
+                >
+                  {saveGastosState === "saving" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                  Guardar mis gastos
+                </Button>
+                {saveGastosState === "ok" && (
+                  <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                    <Check className="h-3.5 w-3.5" />
+                    Guardado
+                  </span>
+                )}
+              </div>
+              {saveGastosState === "error" && saveGastosError && (
+                <p role="alert" className="text-xs text-[#c6352e]">
+                  {saveGastosError}
+                </p>
+              )}
+              <p className="text-[11px] text-gray-400">
+                Guarda esta lista como predeterminada para las próximas cotizaciones.
+              </p>
+            </div>
+          )}
         </section>
       </div>
 
