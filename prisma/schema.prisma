@@ -463,6 +463,7 @@ model Quotation {
   iva_monto                  Decimal          @db.Decimal(14, 2)
   total                      Decimal          @db.Decimal(14, 2)
   estado                     EstadoCotizacion @default(BORRADOR)
+  validez_dias               Int?
   observaciones              String?
   condiciones                String?
   user_id                    String

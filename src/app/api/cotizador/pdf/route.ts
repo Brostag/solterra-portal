@@ -39,6 +39,8 @@ const inputSchema = z.object({
   // N° de cotización mostrado en el encabezado del PDF (solo presentación:
   // no se persiste desde aquí; la cotización formal valida el suyo aparte).
   numero:              z.string().trim().max(30).nullish(),
+  // Validez del presupuesto en días (solo presentación en la vista previa).
+  validezDias:         z.number().int().min(1).max(365).nullish(),
 });
 
 export async function POST(req: NextRequest) {
@@ -104,6 +106,7 @@ export async function POST(req: NextRequest) {
         fecha: new Date(),
         cliente,
         numero: parsed.numero ?? undefined,
+        validezDias: parsed.validezDias ?? undefined,
         company: {
           razon_social: config?.razon_social ?? "Solterra",
           rut:          config?.rut ?? "—",

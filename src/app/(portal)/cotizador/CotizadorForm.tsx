@@ -45,6 +45,10 @@ interface Props {
 
 type SaveGastosState = "idle" | "saving" | "ok" | "error";
 
+// Opciones de validez del presupuesto (días). Default 30.
+const VALIDEZ_OPCIONES = [7, 15, 30, 60] as const;
+const VALIDEZ_DEFAULT = 30;
+
 const inputClass =
   "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#253158]/20 focus:border-[#253158] tabular-nums disabled:bg-gray-50 disabled:text-gray-400";
 
@@ -174,6 +178,7 @@ export default function CotizadorForm({
   const [busyAction, setBusyAction]                   = useState<ActionId | null>(null);
   const [actionError, setActionError]                 = useState<string | null>(null);
   const [numero, setNumero]                           = useState(numeroSugerido);
+  const [validezDias, setValidezDias]                 = useState<number>(VALIDEZ_DEFAULT);
   const [saveGastosState, setSaveGastosState]         = useState<SaveGastosState>("idle");
   const [saveGastosError, setSaveGastosError]         = useState<string | null>(null);
   const router = useRouter();
@@ -267,6 +272,7 @@ export default function CotizadorForm({
     setGastos(gastosDefault);
     setPorcentajeDescuento(0);
     setClienteId("");
+    setValidezDias(VALIDEZ_DEFAULT);
     setActionError(null);
     setSaveGastosState("idle");
     setSaveGastosError(null);
@@ -331,6 +337,8 @@ export default function CotizadorForm({
       // N° visible en el encabezado del PDF de vista previa (mismo dato que
       // viaja a createQuotation al generar la cotización formal).
       numero: numero.trim() || null,
+      // Validez del presupuesto en días (se refleja en el PDF de vista previa).
+      validezDias,
     };
   }
 
@@ -410,6 +418,7 @@ export default function CotizadorForm({
         gastos: gastosPayload,
         porcentajeDescuento,
         ivaPorcentaje,
+        validez_dias: validezDias,
       });
       router.push(`/cotizaciones/${id}`);
     } catch (err) {
@@ -448,21 +457,43 @@ export default function CotizadorForm({
               Opcional. Si no seleccionás un cliente, el presupuesto se genera igual.
             </p>
           </div>
-          <div className="max-w-md">
-            <label htmlFor="numero" className="block text-xs font-medium text-gray-700 mb-1.5">
-              N° de cotización
-            </label>
-            <input
-              id="numero"
-              type="text"
-              value={numero}
-              onChange={(e) => setNumero(e.target.value)}
-              placeholder="001 R0/026"
-              className={inputClass}
-            />
-            <p className="text-[11px] text-gray-400 mt-1.5">
-              Editable. Formato Solterra: NNN R0/AA (ej. 177 R2/025).
-            </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
+            <div>
+              <label htmlFor="numero" className="block text-xs font-medium text-gray-700 mb-1.5">
+                N° de cotización
+              </label>
+              <input
+                id="numero"
+                type="text"
+                value={numero}
+                onChange={(e) => setNumero(e.target.value)}
+                placeholder="001 R0/026"
+                className={inputClass}
+              />
+              <p className="text-[11px] text-gray-400 mt-1.5">
+                Editable. Formato Solterra: NNN R0/AA (ej. 177 R2/025).
+              </p>
+            </div>
+            <div>
+              <label htmlFor="validez" className="block text-xs font-medium text-gray-700 mb-1.5">
+                Validez de la cotización
+              </label>
+              <select
+                id="validez"
+                value={String(validezDias)}
+                onChange={(e) => setValidezDias(Number(e.target.value) || VALIDEZ_DEFAULT)}
+                className={inputClass}
+              >
+                {VALIDEZ_OPCIONES.map((d) => (
+                  <option key={d} value={d}>
+                    {d} días
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] text-gray-400 mt-1.5">
+                Días de vigencia del presupuesto desde la emisión.
+              </p>
+            </div>
           </div>
         </section>
 

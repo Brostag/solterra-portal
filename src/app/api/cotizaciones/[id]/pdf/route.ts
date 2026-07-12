@@ -77,6 +77,7 @@ export async function GET(
         result,
         numero: cotizacion.numero,
         fecha: cotizacion.fecha_emision,
+        validezDias: cotizacion.validez_dias ?? undefined,
         cliente,
         company: {
           razon_social: config?.razon_social ?? "Solterra",

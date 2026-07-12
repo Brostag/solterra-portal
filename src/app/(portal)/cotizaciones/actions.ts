@@ -38,6 +38,7 @@ const createSchema = z.object({
   gastos:              gastosSchema,
   porcentajeDescuento: z.number().min(0).max(100),
   ivaPorcentaje:       z.number().min(0).max(100),
+  validez_dias:        z.number().int().min(1).max(365).nullish(),
   observaciones:       z.string().trim().max(2000).optional().nullable(),
   condiciones:         z.string().trim().max(2000).optional().nullable(),
 });
@@ -135,6 +136,7 @@ export async function createQuotation(rawData: CreateQuotationInput): Promise<{ 
         iva_monto: result.iva,
         total: result.total,
         estado: "BORRADOR",
+        validez_dias: data.validez_dias ?? null,
         observaciones: data.observaciones || null,
         condiciones: data.condiciones || null,
         user_id: session.id,

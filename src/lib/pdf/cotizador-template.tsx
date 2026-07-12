@@ -133,6 +133,9 @@ export interface CotizadorPDFData {
   result: CotizadorResult;
   fecha:  Date;
   numero?: string;
+  // Validez del presupuesto en días. Si viene, se muestra en la fila "Validez"
+  // y en la nota legal; si no, se usan los textos genéricos (cotizaciones viejas).
+  validezDias?: number;
   cliente?: {
     nombre:     string;
     rut?:       string | null;
@@ -196,7 +199,7 @@ function dataRowGasto(label: string, value: number, key: string) {
 }
 
 export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
-  const { input, result, fecha, company, cliente, numero } = data;
+  const { input, result, fecha, company, cliente, numero, validezDias } = data;
   const hasDesc = input.porcentajeDescuento > 0;
   const clienteNombre = cliente?.nombre?.trim() ? cliente.nombre : "Cliente no especificado";
 
@@ -206,8 +209,29 @@ export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
     .map((g) => ({ key: g.id, label: g.label, value: g.monto }))
     .filter((g) => g.value > 0);
 
-  const fechaStr = fecha.toLocaleDateString("es-CL", { day: "2-digit", month: "2-digit", year: "numeric" });
+  // Mismo formato y criterio de zona horaria para ambas fechas: la de emisión y,
+  // cuando hay validez, la fecha límite (emisión + N días).
+  const fmtFecha = (d: Date) =>
+    d.toLocaleDateString("es-CL", { day: "2-digit", month: "2-digit", year: "numeric" });
+  const fechaStr = fmtFecha(fecha);
   const numeroStr = numero?.trim() ? numero.trim() : null;
+
+  // Fila "Validez" y nota legal: si hay validezDias, se calcula la fecha límite
+  // sumando N días al timestamp de emisión (mismo formato que la emisión).
+  const validez = validezDias && validezDias > 0 ? validezDias : null;
+  const validezFechaLimiteStr = validez
+    ? fmtFecha(new Date(fecha.getTime() + validez * 86_400_000))
+    : null;
+  const validezFilaTexto = validez
+    ? `${validez} días desde la emisión (hasta ${validezFechaLimiteStr})`
+    : "Referencial a la fecha de emisión";
+  const notaImportanteTexto = validez
+    ? `Este presupuesto es referencial y válido por ${validez} días desde su fecha de emisión. ` +
+      "Los valores pueden variar según disponibilidad, condiciones del servicio y fecha de contratación. " +
+      "No constituye factura ni documento tributario."
+    : "Este presupuesto es referencial y válido a la fecha de emisión. Los valores pueden variar " +
+      "según disponibilidad, condiciones del servicio y fecha de contratación. No constituye factura " +
+      "ni documento tributario.";
 
   return ce(Document, null,
     ce(Page, { size: "A4", style: styles.page },
@@ -278,7 +302,7 @@ export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
         ce(View, { style: styles.infoRight },
           ce(Text, { style: styles.infoTitle }, "Datos del presupuesto"),
           numero ? ce(View, { style: styles.infoRow },
-            ce(Text, { style: styles.infoLabelR }, "Cotización Solterra N°:"),
+            ce(Text, { style: styles.infoLabelR }, "N° cotización:"),
             ce(Text, { style: styles.infoValue }, numero),
           ) : null,
           ce(View, { style: styles.infoRow },
@@ -305,7 +329,7 @@ export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
           ),
           ce(View, { style: styles.infoRow },
             ce(Text, { style: styles.infoLabelR }, "Validez:"),
-            ce(Text, { style: styles.infoValue }, "Referencial a la fecha de emisión"),
+            ce(Text, { style: styles.infoValue }, validezFilaTexto),
           ),
         ),
       ),
@@ -369,11 +393,7 @@ export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
       // ── NOTA LEGAL ───────────────────────────────────────────────────────
       ce(View, { style: styles.legalNote, wrap: false },
         ce(Text, { style: styles.legalLabel }, "Importante"),
-        ce(Text, { style: styles.legalText },
-          "Este presupuesto es referencial y válido a la fecha de emisión. Los valores pueden variar " +
-          "según disponibilidad, condiciones del servicio y fecha de contratación. No constituye factura " +
-          "ni documento tributario.",
-        ),
+        ce(Text, { style: styles.legalText }, notaImportanteTexto),
       ),
 
       // ── FOOTER ───────────────────────────────────────────────────────────

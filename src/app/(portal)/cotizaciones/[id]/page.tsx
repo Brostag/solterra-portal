@@ -144,6 +144,9 @@ export default async function CotizacionDetallePage({ params }: Props) {
             )}
             <div className="flex justify-between"><dt className="text-gray-500">Neto</dt><dd className="text-gray-800 tabular-nums">{formatCurrency(Number(cotizacion.neto), "CLP")}</dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">IVA ({ivaPct}%)</dt><dd className="text-gray-800 tabular-nums">{formatCurrency(Number(cotizacion.iva_monto), "CLP")}</dd></div>
+            {cotizacion.validez_dias != null && (
+              <div className="flex justify-between"><dt className="text-gray-500">Validez</dt><dd className="text-gray-800 tabular-nums">{cotizacion.validez_dias} días</dd></div>
+            )}
             <div className="flex justify-between pt-2 border-t border-gray-100"><dt className="font-semibold text-[#253158]">Total</dt><dd className="font-bold text-[#253158] tabular-nums">{formatCurrency(Number(cotizacion.total), "CLP")}</dd></div>
           </dl>
           {gastos.length > 0 && (
