@@ -322,7 +322,16 @@ export default function CotizadorForm({
   }
 
   function buildRequestBody() {
-    return { items, gastos: gastosPayload, porcentajeDescuento, ivaPorcentaje, clienteId: clienteId || null };
+    return {
+      items,
+      gastos: gastosPayload,
+      porcentajeDescuento,
+      ivaPorcentaje,
+      clienteId: clienteId || null,
+      // N° visible en el encabezado del PDF de vista previa (mismo dato que
+      // viaja a createQuotation al generar la cotización formal).
+      numero: numero.trim() || null,
+    };
   }
 
   function buildSummaryText(): string {

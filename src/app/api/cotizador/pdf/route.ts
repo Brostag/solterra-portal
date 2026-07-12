@@ -36,6 +36,9 @@ const inputSchema = z.object({
   porcentajeDescuento: z.number().min(0).max(100),
   ivaPorcentaje:       z.number().min(0).max(100),
   clienteId:           z.string().min(1).max(100).nullish(),
+  // N° de cotización mostrado en el encabezado del PDF (solo presentación:
+  // no se persiste desde aquí; la cotización formal valida el suyo aparte).
+  numero:              z.string().trim().max(30).nullish(),
 });
 
 export async function POST(req: NextRequest) {
@@ -100,6 +103,7 @@ export async function POST(req: NextRequest) {
         result,
         fecha: new Date(),
         cliente,
+        numero: parsed.numero ?? undefined,
         company: {
           razon_social: config?.razon_social ?? "Solterra",
           rut:          config?.rut ?? "—",

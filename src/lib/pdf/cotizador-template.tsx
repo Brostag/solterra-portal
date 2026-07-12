@@ -26,17 +26,17 @@ const LGRAY  = "#9ca3af";
 const BORDER = "#d1d5db";
 const HEADDIV = "#454f73";
 
-// Filas mínimas del cuerpo de la tabla de equipos: con pocos equipos se
-// rellena con filas vacías para conservar el aspecto de documento formal.
-const MIN_FILAS = 5;
+// Sin filas de relleno: la tabla muestra solo los equipos reales. El relleno
+// vacío antiguo desbordaba el documento típico (1 equipo) a una 2ª página casi
+// vacía. Los bordes completos de la tabla conservan el aspecto de documento.
 
 const styles = StyleSheet.create({
-  page: { fontFamily: "Inter", fontSize: 10, color: "#1a1a1a", padding: 36, paddingBottom: 70 },
+  page: { fontFamily: "Inter", fontSize: 10, color: "#1a1a1a", padding: 36, paddingBottom: 46 },
 
   // ── Encabezado ──
-  topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
+  topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 },
   emisorCol: { flex: 1, paddingRight: 16 },
-  emisorLogo: { width: 135, height: 44, objectFit: "contain", marginBottom: 6 },
+  emisorLogo: { width: 135, height: 44, objectFit: "contain", marginBottom: 4 },
   emisorName: { fontSize: 12.5, fontWeight: 700, color: BLUE, marginBottom: 2 },
   emisorLine: { fontSize: 8.5, color: GRAY, marginBottom: 1 },
 
@@ -44,6 +44,7 @@ const styles = StyleSheet.create({
   docBox: { border: `2px solid ${BLUE}`, width: 200 },
   docBoxTop: { padding: "7 10", alignItems: "center" },
   docTipo: { fontSize: 11, fontWeight: 700, color: BLUE, textAlign: "center" },
+  docNum: { fontSize: 9.5, fontWeight: 700, color: RED, textAlign: "center", marginTop: 4 },
   docSub: { fontSize: 8, color: LGRAY, textAlign: "center", marginTop: 3 },
   docFootWrap: { borderTop: `1px solid ${BORDER}`, padding: "5 9" },
   docFootRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
@@ -51,28 +52,28 @@ const styles = StyleSheet.create({
   docFootValue: { fontSize: 7.5, color: "#1a1a1a", fontWeight: 700 },
 
   // ── Caja datos presupuesto / condiciones ──
-  infoBox: { flexDirection: "row", border: `1px solid ${BORDER}`, marginBottom: 10 },
-  infoLeft: { flex: 1, padding: "8 10", borderRight: `1px solid ${BORDER}` },
-  infoRight: { width: 230, padding: "8 10" },
-  infoTitle: { fontSize: 7.5, fontWeight: 700, color: LGRAY, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 5 },
-  infoRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 3 },
+  infoBox: { flexDirection: "row", border: `1px solid ${BORDER}`, marginBottom: 8 },
+  infoLeft: { flex: 1, padding: "6 10", borderRight: `1px solid ${BORDER}` },
+  infoRight: { width: 230, padding: "6 10" },
+  infoTitle: { fontSize: 7.5, fontWeight: 700, color: LGRAY, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 4 },
+  infoRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 2 },
   infoLabel: { fontSize: 8.5, color: GRAY, width: 76 },
   infoLabelR: { fontSize: 8.5, color: GRAY, width: 88 },
   infoValue: { fontSize: 8.5, color: "#1a1a1a", fontWeight: 700, flex: 1 },
   infoName: { fontSize: 8.5, color: BLUE, fontWeight: 700, flex: 1 },
 
   // ── Títulos de sección ──
-  sectionTitle: { fontSize: 8, fontWeight: 700, color: BLUE, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 5, marginTop: 4 },
-  sectionTitleGap: { fontSize: 8, fontWeight: 700, color: BLUE, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 5, marginTop: 12 },
+  sectionTitle: { fontSize: 8, fontWeight: 700, color: BLUE, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 4, marginTop: 2 },
+  sectionTitleGap: { fontSize: 8, fontWeight: 700, color: BLUE, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 4, marginTop: 7 },
 
   // ── Tablas (bordes completos) ──
   tableBox: { borderTopWidth: 1, borderLeftWidth: 1, borderRightWidth: 1, borderColor: BORDER, borderStyle: "solid" },
   tableHeadRow: { flexDirection: "row", backgroundColor: BLUE, borderBottom: `1px solid ${BORDER}` },
-  tableRow: { flexDirection: "row", borderBottom: `1px solid ${BORDER}`, minHeight: 24 },
-  thCell: { fontSize: 8, color: "#ffffff", fontWeight: 700, paddingVertical: 6, paddingHorizontal: 5 },
-  tdCell: { fontSize: 9, color: "#374151", paddingVertical: 6, paddingHorizontal: 5 },
-  tdCellBold: { fontSize: 9, color: "#1a1a1a", fontWeight: 700, paddingVertical: 6, paddingHorizontal: 5 },
-  tdCellMuted: { fontSize: 9, color: LGRAY, paddingVertical: 6, paddingHorizontal: 5 },
+  tableRow: { flexDirection: "row", borderBottom: `1px solid ${BORDER}`, minHeight: 20 },
+  thCell: { fontSize: 8, color: "#ffffff", fontWeight: 700, paddingVertical: 5, paddingHorizontal: 5 },
+  tdCell: { fontSize: 9, color: "#374151", paddingVertical: 4, paddingHorizontal: 5 },
+  tdCellBold: { fontSize: 9, color: "#1a1a1a", fontWeight: 700, paddingVertical: 4, paddingHorizontal: 5 },
+  tdCellMuted: { fontSize: 9, color: LGRAY, paddingVertical: 4, paddingHorizontal: 5 },
   cellDiv: { borderRight: `1px solid ${BORDER}` },
   cellDivH: { borderRight: `1px solid ${HEADDIV}` },
 
@@ -90,19 +91,19 @@ const styles = StyleSheet.create({
   colMonto: { width: 130, textAlign: "right" },
 
   // ── Resumen / totales ──
-  totalsArea: { flexDirection: "row", justifyContent: "flex-end", marginTop: 10 },
+  totalsArea: { flexDirection: "row", justifyContent: "flex-end", marginTop: 8 },
   totalsBox: { width: 240, border: `1px solid ${BORDER}` },
-  totalRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 5, paddingHorizontal: 10, borderBottom: `1px solid ${BORDER}` },
+  totalRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 3, paddingHorizontal: 10, borderBottom: `1px solid ${BORDER}` },
   totalLabel: { fontSize: 9, color: GRAY },
   totalValue: { fontSize: 9, color: "#1a1a1a", fontWeight: 700 },
-  grandRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 7, paddingHorizontal: 10, backgroundColor: BLUE },
+  grandRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 6, paddingHorizontal: 10, backgroundColor: BLUE },
   grandLabel: { fontSize: 10.5, fontWeight: 700, color: "#ffffff" },
   grandValue: { fontSize: 12.5, fontWeight: 700, color: "#ffffff" },
 
   // ── Nota legal ──
-  legalNote: { marginTop: 10, padding: "7 10", borderRadius: 3, backgroundColor: "#fffbeb", border: `1px solid #fcd34d` },
+  legalNote: { marginTop: 8, padding: "6 10", borderRadius: 3, backgroundColor: "#fffbeb", border: `1px solid #fcd34d` },
   legalLabel: { fontSize: 8, fontWeight: 700, color: "#92400e", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 3 },
-  legalText: { fontSize: 9, color: "#374151", lineHeight: 1.4 },
+  legalText: { fontSize: 9, color: "#374151", lineHeight: 1.35 },
 
   // ── Footer ──
   footer: { position: "absolute", bottom: 22, left: 36, right: 36, borderTop: `1px solid ${BORDER}`, paddingTop: 5 },
@@ -180,18 +181,6 @@ function dataRowEquipo(it: CotizadorItemResult, index: number) {
   );
 }
 
-function emptyRowEquipo(index: number) {
-  return ce(View, { key: `e${index}`, style: styles.tableRow, wrap: false },
-    ce(View, { style: [styles.colNum, styles.cellDiv] }),
-    ce(View, { style: [styles.colEquipo, styles.cellDiv] }),
-    ce(View, { style: [styles.colTipo, styles.cellDiv] }),
-    ce(View, { style: [styles.colVHora, styles.cellDiv] }),
-    ce(View, { style: [styles.colHMin, styles.cellDiv] }),
-    ce(View, { style: [styles.colCant, styles.cellDiv] }),
-    ce(View, { style: [styles.colSub] }),
-  );
-}
-
 function headerRowGastos() {
   return ce(View, { style: styles.tableHeadRow, wrap: false },
     ce(Text, { style: [styles.thCell, styles.colGasto, styles.cellDivH] }, "Concepto"),
@@ -218,11 +207,7 @@ export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
     .filter((g) => g.value > 0);
 
   const fechaStr = fecha.toLocaleDateString("es-CL", { day: "2-digit", month: "2-digit", year: "numeric" });
-
-  const emptyRows: React.ReactElement[] = [];
-  for (let k = result.items.length; k < MIN_FILAS; k++) {
-    emptyRows.push(emptyRowEquipo(k));
-  }
+  const numeroStr = numero?.trim() ? numero.trim() : null;
 
   return ce(Document, null,
     ce(Page, { size: "A4", style: styles.page },
@@ -243,6 +228,7 @@ export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
           ce(View, { style: styles.docBoxTop },
             ce(Text, { style: styles.docTipo }, "PRESUPUESTO"),
             ce(Text, { style: styles.docTipo }, "DE ARRIENDO"),
+            numeroStr ? ce(Text, { style: styles.docNum }, `N° ${numeroStr}`) : null,
             ce(Text, { style: styles.docSub }, "Documento referencial"),
           ),
           ce(View, { style: styles.docFootWrap },
@@ -255,7 +241,7 @@ export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
       ),
 
       // ── CAJA DATOS DEL CLIENTE / DEL PRESUPUESTO ─────────────────────────
-      ce(View, { style: styles.infoBox },
+      ce(View, { style: styles.infoBox, wrap: false },
 
         ce(View, { style: styles.infoLeft },
           ce(Text, { style: styles.infoTitle }, "Datos del cliente"),
@@ -329,7 +315,6 @@ export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
       ce(View, { style: styles.tableBox },
         headerRowEquipos(),
         ...result.items.map((it, i) => dataRowEquipo(it, i)),
-        ...emptyRows,
       ),
 
       // ── GASTOS GENERALES ─────────────────────────────────────────────────
@@ -346,7 +331,7 @@ export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
       ),
 
       // ── RESUMEN ──────────────────────────────────────────────────────────
-      ce(View, { style: styles.totalsArea },
+      ce(View, { style: styles.totalsArea, wrap: false },
         ce(View, { style: styles.totalsBox },
           ce(View, { style: styles.totalRow },
             ce(Text, { style: styles.totalLabel }, "Subtotal equipos"),
@@ -382,7 +367,7 @@ export function CotizadorDocument({ data }: { data: CotizadorPDFData }) {
       ),
 
       // ── NOTA LEGAL ───────────────────────────────────────────────────────
-      ce(View, { style: styles.legalNote },
+      ce(View, { style: styles.legalNote, wrap: false },
         ce(Text, { style: styles.legalLabel }, "Importante"),
         ce(Text, { style: styles.legalText },
           "Este presupuesto es referencial y válido a la fecha de emisión. Los valores pueden variar " +
