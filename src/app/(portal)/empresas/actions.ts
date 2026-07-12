@@ -148,6 +148,62 @@ export async function createCompany(
   return { id: company.id };
 }
 
+// Actualiza SOLO el representante legal y su cédula. La usa el formulario de
+// nuevo contrato cuando el usuario ingresa un representante distinto al de la
+// ficha y confirma actualizar la empresa. No hace mass-assignment: toca esos
+// 2 campos y nada más.
+const updateCompanyRepresentanteSchema = z.object({
+  id: z.string().trim().uuid(),
+  representante_legal: z.string().trim().max(200).optional().nullable(),
+  rut_representante: z.string().trim().max(20).optional().nullable(),
+});
+
+export type UpdateCompanyRepresentanteInput = z.infer<
+  typeof updateCompanyRepresentanteSchema
+>;
+
+export async function updateCompanyRepresentante(
+  rawData: UpdateCompanyRepresentanteInput,
+): Promise<{ id: string }> {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
+  if (session.rol !== "ADMINISTRADOR" && session.rol !== "SUPERVISOR") {
+    throw new Error("Sin permisos para editar empresas.");
+  }
+
+  const data = updateCompanyRepresentanteSchema.parse(rawData);
+
+  const existing = await prisma.company.findUnique({
+    where: { id: data.id },
+    select: { id: true, nombre_razon_social: true },
+  });
+  if (!existing) {
+    throw new Error("La empresa no existe.");
+  }
+
+  await prisma.company.update({
+    where: { id: data.id },
+    data: {
+      representante_legal: data.representante_legal || null,
+      rut_representante: data.rut_representante || null,
+    },
+  });
+
+  await logAudit(
+    session.id,
+    "empresa_editada",
+    "empresas",
+    `${existing.nombre_razon_social} | Representante actualizado: ${data.representante_legal || "(sin nombre)"}${data.rut_representante ? ` (${data.rut_representante})` : ""}`,
+  );
+
+  revalidatePath("/empresas");
+  revalidatePath(`/empresas/${data.id}`);
+  // Obligatorio: el selector cacheado ahora transporta estos 2 campos.
+  revalidateTag(ACTIVE_COMPANY_CLIENTS_TAG);
+  return { id: data.id };
+}
+
 export async function updateCompany(
   rawData: UpdateCompanyInput,
 ): Promise<{ id: string }> {

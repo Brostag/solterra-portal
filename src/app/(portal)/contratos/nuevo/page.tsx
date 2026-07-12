@@ -30,6 +30,10 @@ export default async function NuevoContratoPage() {
     id: e.id,
     nombre: e.nombre_razon_social,
     rut: e.rut,
+    // Datos del representante guardados en la empresa: prellenan el bloque
+    // "Representante del cliente" del formulario (editables).
+    representante_legal: e.representante_legal,
+    rut_representante: e.rut_representante,
   }));
   const cotizaciones = cotizacionesRaw.map((q) => ({
     id: q.id,

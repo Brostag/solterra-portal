@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createContract, type CreateContractInput } from "../actions";
+import { updateCompanyRepresentante } from "../../empresas/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +11,8 @@ import {
   Select, SelectContent, SelectItem,
   SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Camera, ImagePlus, X } from "lucide-react";
+import { Plus, Trash2, Camera, ImagePlus, X, AlertTriangle, Loader2 } from "lucide-react";
+import { createPortal } from "react-dom";
 import Stepper from "@/components/portal/Stepper";
 
 // Pasos del asistente de creación (presentación pura, mismo payload).
@@ -135,7 +137,13 @@ function emptyEquipo(): Equipo {
 }
 
 interface Props {
-  clients: { id: string; nombre: string; rut: string | null }[];
+  clients: {
+    id: string;
+    nombre: string;
+    rut: string | null;
+    representante_legal: string | null;
+    rut_representante: string | null;
+  }[];
   cotizaciones: { id: string; numero: string; cliente: string | null; fecha: string }[];
 }
 
@@ -174,8 +182,33 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
   const [errors, setErrors] = useState<string[]>([]);
   // Paso visible del asistente (presentación pura: no afecta el payload).
   const [step, setStep] = useState(1);
+  // Diálogo: representante ingresado distinto al guardado en la empresa.
+  const [confirmRepOpen, setConfirmRepOpen] = useState(false);
 
   const selectedClient = clients.find((c) => c.id === clientId);
+
+  // Escape cierra el diálogo del representante, salvo mientras se procesa
+  // (loading): así no se puede abortar a mitad de la creación. Mismo criterio
+  // que ConfirmDialog.
+  useEffect(() => {
+    if (!confirmRepOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !loading) setConfirmRepOpen(false);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [confirmRepOpen, loading]);
+
+  // Bloquea el scroll del body mientras el diálogo está abierto (mismo
+  // comportamiento que ConfirmDialog).
+  useEffect(() => {
+    if (!confirmRepOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [confirmRepOpen]);
 
   // Desglose de las fechas para el helper de la duración (solo display).
   // null si faltan fechas o el rango es inválido (fin ≤ inicio).
@@ -211,6 +244,16 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
     const meses = mesesCompletos(span);
     setDuracionMeses(meses > 0 ? String(meses) : "");
     if (pisarVigencia) setVigenciaContrato(textoSpan(span));
+  }
+
+  // Cambio de cliente: los campos de representante pertenecen al cliente
+  // elegido, así que se prellenan (sobrescriben) desde su ficha de empresa.
+  function handleClientChange(v: string | null) {
+    const id = v ?? "";
+    setClientId(id);
+    const c = clients.find((cl) => cl.id === id);
+    setRepresentanteCliente(c?.representante_legal ?? "");
+    setRutRepresentante(c?.rut_representante ?? "");
   }
 
   function addEquipo() { setEquipos([...equipos, emptyEquipo()]); }
@@ -292,9 +335,55 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
     return errs.length === 0;
   }
 
-  async function handleSubmit() {
+  // ¿El representante ingresado difiere del guardado en la empresa? Solo se
+  // pregunta si hay nombre ingresado (no vacío) y el nombre o la cédula cambió
+  // respecto de la ficha del cliente (null se compara como "").
+  function representanteDifiere(): boolean {
+    if (!selectedClient) return false;
+    const nombre = representanteCliente.trim();
+    if (!nombre) return false;
+    const rut = rutRepresentante.trim();
+    const nombreGuardado = (selectedClient.representante_legal ?? "").trim();
+    const rutGuardado = (selectedClient.rut_representante ?? "").trim();
+    return nombre !== nombreGuardado || rut !== rutGuardado;
+  }
+
+  // Click en "Crear": valida y, si el representante difiere del de la empresa,
+  // abre el diálogo antes de crear. Si no, crea directamente sin actualizar.
+  function handleSubmit() {
     if (!validate()) return;
+    if (representanteDifiere()) {
+      setConfirmRepOpen(true);
+      return;
+    }
+    void crearContrato(false);
+  }
+
+  // Confirmación del diálogo: "Sí, actualizar empresa" → crea el contrato y
+  // además actualiza la ficha. "No, solo este contrato" → solo crea.
+  // Igual que ConfirmDialog: NO cierra de inmediato. Activa loading (bloquea
+  // ambos botones del diálogo y muestra "Procesando..."), mantiene el diálogo
+  // abierto hasta que crearContrato termine, y recién entonces lo cierra. En
+  // el camino feliz crearContrato hace router.push y ya no volvemos; en error
+  // (o fotos/empresa fallidas) crearContrato deja loading=false y los mensajes
+  // en la página, por lo que al cerrar el diálogo quedan visibles.
+  async function confirmarConActualizacion(actualizarEmpresa: boolean) {
+    if (loading) return;
     setLoading(true);
+    try {
+      await crearContrato(actualizarEmpresa);
+    } finally {
+      setConfirmRepOpen(false);
+    }
+  }
+
+  // Crea el contrato (payload byte a byte idéntico). Si actualizarEmpresa es
+  // true, además sincroniza el representante en la ficha de la empresa; un
+  // fallo de ese update NUNCA impide ni duplica la creación del contrato.
+  async function crearContrato(actualizarEmpresa: boolean) {
+    setLoading(true);
+    // Aviso no bloqueante si el update de empresa falla (el contrato ya existe).
+    let avisoEmpresa: string | null = null;
     const payload: CreateContractInput = {
       company_id: clientId,
       moneda,
@@ -333,6 +422,22 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
     try {
       const result = await createContract(payload);
 
+      // Sincroniza el representante en la ficha de la empresa si el usuario lo
+      // confirmó. El contrato YA existe: un fallo aquí no lo revierte ni lo
+      // duplica — se informa como aviso no bloqueante.
+      if (actualizarEmpresa && selectedClient) {
+        try {
+          await updateCompanyRepresentante({
+            id: selectedClient.id,
+            representante_legal: representanteCliente.trim() || null,
+            rut_representante: rutRepresentante.trim() || null,
+          });
+        } catch {
+          avisoEmpresa =
+            "El contrato se creó, pero no se pudo actualizar el representante de la empresa. Puedes editarlo desde su ficha.";
+        }
+      }
+
       // Subir las fotos de respaldo adjuntadas contra el endpoint existente
       // (mismas validaciones que en el detalle). El contrato ya existe: si
       // alguna foto falla, se informa y puede reintentarse desde el detalle.
@@ -370,12 +475,22 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
         if (fallidas.length > 0) {
           setCreatedId(result.id);
           setErrors([
+            ...(avisoEmpresa ? [avisoEmpresa] : []),
             "El contrato se creó correctamente, pero estas fotos no se pudieron subir (puedes reintentar desde el detalle del contrato):",
             ...fallidas,
           ]);
           setLoading(false);
           return;
         }
+      }
+
+      // Si el update de empresa falló, no redirigimos: mostramos el aviso y
+      // ofrecemos ir al contrato ya creado (evita perder el mensaje).
+      if (avisoEmpresa) {
+        setCreatedId(result.id);
+        setErrors([avisoEmpresa]);
+        setLoading(false);
+        return;
       }
 
       router.push(`/contratos/${result.id}`);
@@ -400,7 +515,7 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2 space-y-2">
             <Label>Cliente / Arrendatario <span className="text-[#c6352e]">*</span></Label>
-            <Select value={clientId} onValueChange={(v) => setClientId(v ?? "")}>
+            <Select value={clientId} onValueChange={handleClientChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar cliente...">
                   {selectedClient
@@ -554,7 +669,7 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
       {/* Bloque 2 — Cliente / representante */}
       <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 space-y-4">
         <h2 className="font-semibold text-[#253158]">Representante del cliente</h2>
-        <p className="text-xs text-gray-400 -mt-2">La razón social, RUT y dirección se toman del cliente seleccionado (snapshot al crear).</p>
+        <p className="text-xs text-gray-400 -mt-2">Se autocompletan desde la ficha del cliente seleccionado y quedan editables. La razón social, RUT y dirección se toman del cliente (snapshot al crear).</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Representante legal</Label>
@@ -803,6 +918,71 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
           )}
         </div>
       </div>
+
+      {/* Diálogo: el representante ingresado difiere del guardado en la empresa.
+          Replica el patrón visual de ConfirmDialog, pero con dos acciones que
+          AMBAS crean el contrato — la elección solo decide si además se
+          actualiza la ficha. Mientras se procesa (loading) el diálogo se
+          mantiene abierto con ambos botones bloqueados y "Procesando...", y
+          Escape/overlay no cierran. Sin procesar, Escape/overlay abortan sin
+          crear. */}
+      {confirmRepOpen && selectedClient && createPortal(
+        <>
+          <div
+            aria-hidden="true"
+            className="fixed inset-0 z-[200] bg-slate-900/40 animate-in fade-in duration-150"
+            onClick={() => { if (!loading) setConfirmRepOpen(false); }}
+          />
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="rep-dialog-title"
+            aria-describedby="rep-dialog-description"
+            className="fixed inset-0 z-[201] flex items-center justify-center p-4 pointer-events-none"
+          >
+            <div className="pointer-events-auto w-full max-w-md bg-white rounded-xl shadow-2xl border border-gray-200 animate-in fade-in zoom-in-95 duration-150">
+              <div className="h-1 w-full rounded-t-xl bg-[#253158]" />
+              <div className="px-6 pt-5 pb-6">
+                <div className="flex items-start gap-4 mb-3">
+                  <div className="flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center bg-[#253158]/10">
+                    <AlertTriangle className="h-5 w-5 text-[#253158]" />
+                  </div>
+                  <div className="flex-1 min-w-0 pt-1">
+                    <h2 id="rep-dialog-title" className="text-base font-semibold text-gray-900 leading-tight">
+                      Representante distinto al registrado
+                    </h2>
+                  </div>
+                </div>
+                <p id="rep-dialog-description" className="text-sm text-gray-500 leading-relaxed ml-14">
+                  El representante ingresado no coincide con el guardado en la ficha de{" "}
+                  <span className="font-medium text-gray-700">{selectedClient.nombre}</span>.
+                  ¿Quieres actualizar también la ficha de la empresa con estos datos?
+                </p>
+                <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => confirmarConActualizacion(false)}
+                    disabled={loading}
+                    className="h-9 px-4 text-sm font-medium rounded-lg border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    No, solo este contrato
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => confirmarConActualizacion(true)}
+                    disabled={loading}
+                    className="h-9 px-4 text-sm font-medium rounded-lg text-white bg-[#253158] hover:bg-[#1e2a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    {loading ? "Procesando..." : "Sí, actualizar empresa"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
     </div>
   );
 }
