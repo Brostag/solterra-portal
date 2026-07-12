@@ -460,6 +460,9 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
                 sincronizarDesdeFechas(fechaInicio, val, { pisarVigencia: !manual });
               }}
             />
+            {fechaInicio && fechaTermino && !spanFechas && (
+              <p className="text-xs text-[#c6352e]">La fecha de término debe ser posterior al inicio.</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label>Ciudad de celebración</Label>
@@ -536,22 +539,6 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
                 ? "Según fechas de inicio y término. Si eliges un plazo, la fecha de término se ajusta."
                 : "Si no se indica, el PDF usa “2 años”."}
             </p>
-          </div>
-          <div className="space-y-2">
-            <Label>Duración del arriendo (meses)</Label>
-            <Input
-              type="number"
-              min="1"
-              step="1"
-              value={duracionMeses}
-              placeholder="N° de meses"
-              onChange={(e) => setDuracionMeses(e.target.value)}
-            />
-            {spanFechas ? (
-              <p className="text-xs text-gray-400">Según fechas: {textoSpan(spanFechas)}</p>
-            ) : fechaInicio && fechaTermino ? (
-              <p className="text-xs text-[#c6352e]">La fecha de término debe ser posterior al inicio.</p>
-            ) : null}
           </div>
           <div className="space-y-2">
             <Label>Lugar de operación / entrega</Label>
