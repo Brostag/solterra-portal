@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createContract, type CreateContractInput } from "../actions";
 import { Button } from "@/components/ui/button";
@@ -41,21 +41,6 @@ const VIGENCIAS = ["1 año", "2 años", "3 años", "4 años", "5 años"];
 const VIGENCIA_OTRA = "__otra__";
 const VIGENCIA_NINGUNA = "__ninguna__";
 
-// Duraciones de arriendo típicas. Se guarda SIEMPRE el número de meses
-// (duracion_meses Int) — el label solo agrega la equivalencia legible.
-const DURACIONES: { meses: number; label: string }[] = [
-  { meses: 1,  label: "1 mes" },
-  { meses: 2,  label: "2 meses" },
-  { meses: 3,  label: "3 meses" },
-  { meses: 6,  label: "6 meses" },
-  { meses: 12, label: "12 meses (1 año)" },
-  { meses: 18, label: "18 meses (1 año y medio)" },
-  { meses: 24, label: "24 meses (2 años)" },
-  { meses: 36, label: "36 meses (3 años)" },
-];
-const DURACION_OTRA = "__otra__";
-const DURACION_NINGUNA = "__ninguna__";
-
 interface FotoNueva {
   file: File;
   tipo: string;
@@ -72,6 +57,52 @@ function parseNum(s: string): number {
 function fmtMonto(n: number, moneda: Moneda): string {
   if (moneda === "CLP") return `$${Math.round(n).toLocaleString("es-CL")}`;
   return `${moneda} ${n.toLocaleString("es-CL", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+}
+
+// Parsea "YYYY-MM-DD" como fecha LOCAL. Evita el bug off-by-one de
+// new Date("YYYY-MM-DD"), que interpreta el string en UTC.
+function parseFechaLocal(s: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return null;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+}
+
+// Diferencia de calendario entre dos fechas (inicio ≤ fin) en años/meses/días.
+// Cuando los días no alcanzan, toma prestado el largo del mes de INICIO (el mes
+// del día que se resta), no el mes previo al de fin: así un inicio a fin de mes
+// (ej: 31-ene → 01-mar) nunca produce un día negativo.
+function desgloseSpan(inicio: Date, fin: Date): { anios: number; meses: number; dias: number } {
+  let anios = fin.getFullYear() - inicio.getFullYear();
+  let meses = fin.getMonth() - inicio.getMonth();
+  let dias = fin.getDate() - inicio.getDate();
+  if (dias < 0) {
+    meses -= 1;
+    // Días del mes de inicio (día 0 del mes siguiente = último día del mes de
+    // inicio). Es el mínimo que garantiza dias >= 0 al bajar un mes.
+    dias += new Date(inicio.getFullYear(), inicio.getMonth() + 1, 0).getDate();
+  }
+  if (meses < 0) {
+    anios -= 1;
+    meses += 12;
+  }
+  return { anios, meses, dias };
+}
+
+// Humaniza el desglose en es-CL con singular/plural y unión natural.
+function textoSpan({ anios, meses, dias }: { anios: number; meses: number; dias: number }): string {
+  const partes: string[] = [];
+  if (anios > 0) partes.push(`${anios} ${anios === 1 ? "año" : "años"}`);
+  if (meses > 0) partes.push(`${meses} ${meses === 1 ? "mes" : "meses"}`);
+  if (dias > 0) partes.push(`${dias} ${dias === 1 ? "día" : "días"}`);
+  if (partes.length === 0) return "0 días";
+  if (partes.length === 1) return partes[0];
+  if (partes.length === 2) return `${partes[0]} y ${partes[1]}`;
+  return `${partes[0]}, ${partes[1]} y ${partes[2]}`;
+}
+
+// Meses completos del desglose (los días sueltos no suman al entero de meses).
+function mesesCompletos({ anios, meses }: { anios: number; meses: number }): number {
+  return anios * 12 + meses;
 }
 
 interface Equipo {
@@ -120,10 +151,9 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
   // Datos del contrato / celebración
   const [ciudadCelebracion, setCiudadCelebracion] = useState("Calama");
   const [vigenciaContrato, setVigenciaContrato] = useState("");
-  // Selectores de vigencia y duración (presentación: el payload sigue siendo
+  // Selector de vigencia (presentación: el payload sigue siendo
   // vigenciaContrato string y duracionMeses string→int).
   const [vigenciaSel, setVigenciaSel] = useState("");
-  const [duracionSel, setDuracionSel] = useState("");
   const [moneda, setMoneda] = useState<Moneda>("CLP");
   // Representante del cliente
   const [representanteCliente, setRepresentanteCliente] = useState("");
@@ -146,6 +176,42 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
   const [step, setStep] = useState(1);
 
   const selectedClient = clients.find((c) => c.id === clientId);
+
+  // Desglose de las fechas para el helper de la duración (solo display).
+  // null si faltan fechas o el rango es inválido (fin ≤ inicio).
+  const spanFechas = useMemo(() => {
+    const ini = parseFechaLocal(fechaInicio);
+    const fin = parseFechaLocal(fechaTermino);
+    if (!ini || !fin || fin <= ini) return null;
+    return desgloseSpan(ini, fin);
+  }, [fechaInicio, fechaTermino]);
+
+  // Las fechas mandan: al tener inicio y término válidos, deriva la duración
+  // en meses y (si corresponde) sincroniza el texto de vigencia. Si el rango
+  // está incompleto o invertido en modo auto, limpia los derivados para no
+  // dejar duración/vigencia fantasma en el payload (ej: borrar la fecha de
+  // término tras haber elegido un plazo).
+  function sincronizarDesdeFechas(
+    inicioStr: string,
+    finStr: string,
+    { pisarVigencia }: { pisarVigencia: boolean },
+  ) {
+    const ini = parseFechaLocal(inicioStr);
+    const fin = parseFechaLocal(finStr);
+    if (!ini || !fin || fin <= ini) {
+      // Solo el modo auto (las fechas mandan) puede tocar estos derivados; en
+      // modo manual el usuario los define aparte y no se pisan.
+      if (pisarVigencia) {
+        setDuracionMeses("");
+        setVigenciaContrato("");
+      }
+      return;
+    }
+    const span = desgloseSpan(ini, fin);
+    const meses = mesesCompletos(span);
+    setDuracionMeses(meses > 0 ? String(meses) : "");
+    if (pisarVigencia) setVigenciaContrato(textoSpan(span));
+  }
 
   function addEquipo() { setEquipos([...equipos, emptyEquipo()]); }
   function removeEquipo(idx: number) { setEquipos(equipos.filter((_, i) => i !== idx)); }
@@ -367,11 +433,33 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
           </div>
           <div className="space-y-2">
             <Label>Fecha de inicio <span className="text-[#c6352e]">*</span></Label>
-            <Input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} />
+            <Input
+              type="date"
+              value={fechaInicio}
+              onChange={(e) => {
+                const val = e.target.value;
+                setFechaInicio(val);
+                // Modo manual (Otra/Sin especificar) no pisa el texto de vigencia.
+                const manual = vigenciaSel === VIGENCIA_OTRA || vigenciaSel === VIGENCIA_NINGUNA;
+                // Si había un plazo elegido (años), vuelve a modo auto: las fechas mandan.
+                if (!manual && vigenciaSel !== "") setVigenciaSel("");
+                sincronizarDesdeFechas(val, fechaTermino, { pisarVigencia: !manual });
+              }}
+            />
           </div>
           <div className="space-y-2">
             <Label>Fecha de término</Label>
-            <Input type="date" value={fechaTermino} onChange={(e) => setFechaTermino(e.target.value)} />
+            <Input
+              type="date"
+              value={fechaTermino}
+              onChange={(e) => {
+                const val = e.target.value;
+                setFechaTermino(val);
+                const manual = vigenciaSel === VIGENCIA_OTRA || vigenciaSel === VIGENCIA_NINGUNA;
+                if (!manual && vigenciaSel !== "") setVigenciaSel("");
+                sincronizarDesdeFechas(fechaInicio, val, { pisarVigencia: !manual });
+              }}
+            />
           </div>
           <div className="space-y-2">
             <Label>Ciudad de celebración</Label>
@@ -385,9 +473,34 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
                 const val = v ?? "";
                 setVigenciaSel(val);
                 if (val === VIGENCIA_OTRA || val === VIGENCIA_NINGUNA) {
+                  // Modo manual: las fechas dejan de pisar la vigencia. La
+                  // duración se recalcula desde las fechas actuales para no
+                  // dejar meses fantasma de un plazo elegido antes; si el rango
+                  // está incompleto o invertido, queda vacía.
                   setVigenciaContrato("");
+                  const ini = parseFechaLocal(fechaInicio);
+                  const fin = parseFechaLocal(fechaTermino);
+                  if (ini && fin && fin > ini) {
+                    const meses = mesesCompletos(desgloseSpan(ini, fin));
+                    setDuracionMeses(meses > 0 ? String(meses) : "");
+                  } else {
+                    setDuracionMeses("");
+                  }
                 } else {
+                  // Plazo en años elegido: el texto viaja tal cual y la fecha
+                  // de término se ajusta a inicio + N años (si hay inicio).
                   setVigenciaContrato(val);
+                  const n = parseInt(val, 10);
+                  const ini = parseFechaLocal(fechaInicio);
+                  if (ini && Number.isFinite(n)) {
+                    // new Date normaliza 29-feb a 28-feb si el año destino no es bisiesto.
+                    const fin = new Date(ini.getFullYear() + n, ini.getMonth(), ini.getDate());
+                    const y = fin.getFullYear();
+                    const mm = String(fin.getMonth() + 1).padStart(2, "0");
+                    const dd = String(fin.getDate()).padStart(2, "0");
+                    setFechaTermino(`${y}-${mm}-${dd}`);
+                  }
+                  setDuracionMeses(String(n * 12));
                 }
               }}
             >
@@ -397,7 +510,10 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
                     ? "Otra vigencia (escribir)"
                     : vigenciaSel === VIGENCIA_NINGUNA
                       ? "Sin especificar"
-                      : vigenciaSel || null}
+                      : vigenciaSel
+                        ? vigenciaSel
+                        // Modo auto: muestra el texto calculado desde las fechas.
+                        : (vigenciaContrato || null)}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -415,51 +531,27 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
                 onChange={(e) => setVigenciaContrato(e.target.value)}
               />
             )}
-            <p className="text-xs text-gray-400">Si no se indica, el PDF usa “2 años”.</p>
+            <p className="text-xs text-gray-400">
+              {vigenciaSel === "" && vigenciaContrato
+                ? "Según fechas de inicio y término. Si eliges un plazo, la fecha de término se ajusta."
+                : "Si no se indica, el PDF usa “2 años”."}
+            </p>
           </div>
           <div className="space-y-2">
-            <Label>Duración del arriendo</Label>
-            <Select
-              value={duracionSel}
-              onValueChange={(v) => {
-                const val = v ?? "";
-                setDuracionSel(val);
-                if (val === DURACION_OTRA || val === DURACION_NINGUNA) {
-                  setDuracionMeses("");
-                } else {
-                  setDuracionMeses(val);
-                }
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Opcional — seleccionar duración...">
-                  {duracionSel === DURACION_OTRA
-                    ? "Otra duración (meses)"
-                    : duracionSel === DURACION_NINGUNA
-                      ? "Sin especificar"
-                      : duracionSel
-                        ? (DURACIONES.find((d) => String(d.meses) === duracionSel)?.label ?? null)
-                        : null}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={DURACION_NINGUNA}>Sin especificar</SelectItem>
-                {DURACIONES.map((d) => (
-                  <SelectItem key={d.meses} value={String(d.meses)}>{d.label}</SelectItem>
-                ))}
-                <SelectItem value={DURACION_OTRA}>Otra duración (meses)</SelectItem>
-              </SelectContent>
-            </Select>
-            {duracionSel === DURACION_OTRA && (
-              <Input
-                type="number"
-                min="1"
-                step="1"
-                value={duracionMeses}
-                placeholder="N° de meses"
-                onChange={(e) => setDuracionMeses(e.target.value)}
-              />
-            )}
+            <Label>Duración del arriendo (meses)</Label>
+            <Input
+              type="number"
+              min="1"
+              step="1"
+              value={duracionMeses}
+              placeholder="N° de meses"
+              onChange={(e) => setDuracionMeses(e.target.value)}
+            />
+            {spanFechas ? (
+              <p className="text-xs text-gray-400">Según fechas: {textoSpan(spanFechas)}</p>
+            ) : fechaInicio && fechaTermino ? (
+              <p className="text-xs text-[#c6352e]">La fecha de término debe ser posterior al inicio.</p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <Label>Lugar de operación / entrega</Label>
