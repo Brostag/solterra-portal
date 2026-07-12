@@ -91,7 +91,7 @@ export default async function CotizacionDetallePage({ params }: Props) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 pl-10 sm:pl-0">
-          <QuotationStatusActions id={cotizacion.id} estado={cotizacion.estado as EstadoCotizacion} canManage={canManage} />
+          <QuotationStatusActions id={cotizacion.id} numero={cotizacion.numero} estado={cotizacion.estado as EstadoCotizacion} canManage={canManage} />
           <a href={pdfUrl} download={pdfFileName}>
             <Button size="sm" className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
               <FileDown className="h-4 w-4" />

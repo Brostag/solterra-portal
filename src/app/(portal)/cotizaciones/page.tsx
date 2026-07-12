@@ -7,9 +7,10 @@ import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, Eye, Calculator, Download } from "lucide-react";
+import { Plus, Search, Eye, Calculator, Download, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/currency";
+import DeleteQuotationButton from "./DeleteQuotationButton";
 
 type EstadoCotizacion = "BORRADOR" | "EMITIDA" | "ANULADA";
 
@@ -145,8 +146,8 @@ export default async function CotizacionesPage({ searchParams }: Props) {
                   <span className="text-xs text-gray-300">·</span>
                   <span className="text-sm font-semibold text-gray-800 tabular-nums">{formatCurrency(Number(c.total), "CLP")}</span>
                 </div>
-                <div className="flex gap-2">
-                  <InstantLink href={`/cotizaciones/${c.id}`} className="flex-1">
+                <div className="flex flex-wrap gap-2">
+                  <InstantLink href={`/cotizaciones/${c.id}`} className="flex-1 min-w-[88px]">
                     <button type="button" className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#253158] border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
                       <Eye className="h-3.5 w-3.5" />
                       Ver
@@ -155,13 +156,26 @@ export default async function CotizacionesPage({ searchParams }: Props) {
                   <a
                     href={`/api/cotizaciones/${c.id}/pdf`}
                     download={pdfFileName(c.numero)}
-                    className="flex-1"
+                    className="flex-1 min-w-[88px]"
                   >
                     <button type="button" className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
                       <Download className="h-3.5 w-3.5" />
                       Descargar
                     </button>
                   </a>
+                  {c.estado === "BORRADOR" && (
+                    <InstantLink href={`/cotizaciones/${c.id}/editar`} className="flex-1 min-w-[88px]">
+                      <button type="button" className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#253158] border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
+                        <Pencil className="h-3.5 w-3.5" />
+                        Editar
+                      </button>
+                    </InstantLink>
+                  )}
+                  {c.estado !== "EMITIDA" && (
+                    <div className="flex-1 min-w-[88px]">
+                      <DeleteQuotationButton id={c.id} numero={c.numero} variant="button" />
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -219,6 +233,16 @@ export default async function CotizacionesPage({ searchParams }: Props) {
                           <Download className="h-4 w-4" />
                         </button>
                       </a>
+                      {c.estado === "BORRADOR" && (
+                        <InstantLink href={`/cotizaciones/${c.id}/editar`}>
+                          <button type="button" className="p-1.5 rounded-md text-gray-400 hover:text-[#253158] hover:bg-gray-100 transition-colors" title="Editar cotización">
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        </InstantLink>
+                      )}
+                      {c.estado !== "EMITIDA" && (
+                        <DeleteQuotationButton id={c.id} numero={c.numero} />
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

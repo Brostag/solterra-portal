@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import PdfShareActions from "@/components/portal/PdfShareActions";
 import { useRouter } from "next/navigation";
-import { createQuotation } from "@/app/(portal)/cotizaciones/actions";
+import { createQuotation, updateQuotation } from "@/app/(portal)/cotizaciones/actions";
 import { saveCotizadorGastosDefault } from "./actions";
 
 interface ClienteOption {
@@ -35,12 +35,27 @@ interface ClienteOption {
   rut:    string | null;
 }
 
+// Valores iniciales para el modo edición. Cuando viene, el form arranca con
+// estos datos y guarda con updateQuotation en vez de createQuotation.
+interface InitialCotizacion {
+  numero:              string;
+  validezDias:         number | null;
+  clienteId:          string | null;
+  porcentajeDescuento: number;
+  items:               CotizadorItem[];
+  gastos:              GastosGenerales;
+}
+
 interface Props {
   ivaPorcentaje:   number;
   clientes:        ClienteOption[];
   numeroSugerido:  string;
   gastosDefault:   GastosGenerales;
   canSaveGastos:   boolean;
+  // Modo edición (opcional). Sin estas props el comportamiento es idéntico
+  // al de crear una cotización nueva.
+  quotationId?:    string;
+  initial?:        InitialCotizacion;
 }
 
 type SaveGastosState = "idle" | "saving" | "ok" | "error";
@@ -168,17 +183,33 @@ export default function CotizadorForm({
   numeroSugerido,
   gastosDefault,
   canSaveGastos,
+  quotationId,
+  initial,
 }: Props) {
-  const [items, setItems]                             = useState<CotizadorItem[]>(() => [nuevoItem()]);
+  const isEditing = quotationId != null;
+  const [items, setItems]                             = useState<CotizadorItem[]>(() =>
+    initial ? initial.items : [nuevoItem()]
+  );
   // Fechas por ítem: SEPARADO de items para no contaminar el payload (items solo lleva números).
+  // En edición no se reconstruyen fechas (los items ya traen cantidades resueltas).
   const [fechasPorItem, setFechasPorItem]             = useState<Record<string, { desde: string; hasta: string }>>({});
-  const [gastos, setGastos]                           = useState<GastosGenerales>(() => gastosDefault);
-  const [porcentajeDescuento, setPorcentajeDescuento] = useState(0);
-  const [clienteId, setClienteId]                     = useState("");
+  const [gastos, setGastos]                           = useState<GastosGenerales>(() =>
+    initial ? initial.gastos : gastosDefault
+  );
+  const [porcentajeDescuento, setPorcentajeDescuento] = useState(() =>
+    initial ? initial.porcentajeDescuento : 0
+  );
+  const [clienteId, setClienteId]                     = useState(() =>
+    initial ? (initial.clienteId ?? "") : ""
+  );
   const [busyAction, setBusyAction]                   = useState<ActionId | null>(null);
   const [actionError, setActionError]                 = useState<string | null>(null);
-  const [numero, setNumero]                           = useState(numeroSugerido);
-  const [validezDias, setValidezDias]                 = useState<number>(VALIDEZ_DEFAULT);
+  const [numero, setNumero]                           = useState(() =>
+    initial ? initial.numero : numeroSugerido
+  );
+  const [validezDias, setValidezDias]                 = useState<number>(() =>
+    initial ? (initial.validezDias ?? VALIDEZ_DEFAULT) : VALIDEZ_DEFAULT
+  );
   const [saveGastosState, setSaveGastosState]         = useState<SaveGastosState>("idle");
   const [saveGastosError, setSaveGastosError]         = useState<string | null>(null);
   const router = useRouter();
@@ -267,12 +298,24 @@ export default function CotizadorForm({
   }
 
   function limpiar() {
-    setItems([nuevoItem()]);
+    // En edición "Limpiar" descarta cambios y vuelve al estado original de la
+    // cotización; al crear, deja el formulario vacío.
+    if (initial) {
+      setItems(initial.items);
+      setGastos(initial.gastos);
+      setPorcentajeDescuento(initial.porcentajeDescuento);
+      setClienteId(initial.clienteId ?? "");
+      setNumero(initial.numero);
+      setValidezDias(initial.validezDias ?? VALIDEZ_DEFAULT);
+    } else {
+      setItems([nuevoItem()]);
+      setGastos(gastosDefault);
+      setPorcentajeDescuento(0);
+      setClienteId("");
+      setNumero(numeroSugerido);
+      setValidezDias(VALIDEZ_DEFAULT);
+    }
     setFechasPorItem({});
-    setGastos(gastosDefault);
-    setPorcentajeDescuento(0);
-    setClienteId("");
-    setValidezDias(VALIDEZ_DEFAULT);
     setActionError(null);
     setSaveGastosState("idle");
     setSaveGastosError(null);
@@ -410,19 +453,25 @@ export default function CotizadorForm({
       return;
     }
     setBusyAction("generar");
+    const payload = {
+      numero: numero.trim(),
+      clienteId: clienteId || null,
+      items,
+      gastos: gastosPayload,
+      porcentajeDescuento,
+      ivaPorcentaje,
+      validez_dias: validezDias,
+    };
     try {
-      const { id } = await createQuotation({
-        numero: numero.trim(),
-        clienteId: clienteId || null,
-        items,
-        gastos: gastosPayload,
-        porcentajeDescuento,
-        ivaPorcentaje,
-        validez_dias: validezDias,
-      });
+      const { id } = quotationId
+        ? await updateQuotation({ id: quotationId, ...payload })
+        : await createQuotation(payload);
       router.push(`/cotizaciones/${id}`);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "No se pudo generar la cotización.");
+      const fallback = quotationId
+        ? "No se pudieron guardar los cambios."
+        : "No se pudo generar la cotización.";
+      setActionError(err instanceof Error ? err.message : fallback);
       setBusyAction(null);
     }
   }
@@ -1023,8 +1072,8 @@ export default function CotizadorForm({
             >
               {busyAction === "generar"
                 ? <Loader2 className="h-4 w-4 animate-spin" />
-                : <FileCheck className="h-4 w-4" />}
-              Generar cotización
+                : isEditing ? <Save className="h-4 w-4" /> : <FileCheck className="h-4 w-4" />}
+              {isEditing ? "Guardar cambios" : "Generar cotización"}
             </Button>
 
             <div className="pt-3 mt-1 border-t border-gray-100 space-y-2">

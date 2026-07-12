@@ -45,6 +45,12 @@ const createSchema = z.object({
 
 export type CreateQuotationInput = z.infer<typeof createSchema>;
 
+const updateSchema = createSchema.extend({
+  id: z.string().min(1).max(100),
+});
+
+export type UpdateQuotationInput = z.infer<typeof updateSchema>;
+
 /**
  * Número por defecto sugerido (NNN R0/YYY del año actual). Best-effort: parsea
  * los números existentes del año y toma el máximo correlativo + 1. El campo es
@@ -197,4 +203,181 @@ export async function emitirCotizacion(id: string): Promise<void> {
 
   revalidatePath("/cotizaciones");
   revalidatePath(`/cotizaciones/${id}`);
+}
+
+/**
+ * Edita una cotización EN BORRADOR. Mismo pipeline que create: re-resuelve la
+ * empresa desde la DB, re-congela snapshots, re-ejecuta el cálculo server-side
+ * y reemplaza los items. Solo BORRADOR (una emitida ya salió al cliente).
+ */
+export async function updateQuotation(rawData: UpdateQuotationInput): Promise<{ id: string }> {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
+  if (session.rol !== "ADMINISTRADOR" && session.rol !== "SUPERVISOR") {
+    throw new Error("Sin permisos para editar cotizaciones.");
+  }
+
+  const data = updateSchema.parse(rawData);
+
+  const existente = await prisma.quotation.findUnique({
+    where: { id: data.id },
+    select: { id: true, estado: true },
+  });
+  if (!existente) throw new Error("La cotización no existe.");
+  if (existente.estado !== "BORRADOR") {
+    throw new Error("Solo una cotización en borrador puede editarse.");
+  }
+
+  // Receptor: se re-resuelve SIEMPRE desde la DB con el id (Company). Nunca se
+  // confía en datos del navegador. Los valores quedan congelados en snapshot.
+  const empresa = data.clienteId
+    ? await prisma.company.findUnique({
+        where: { id: data.clienteId },
+        select: {
+          id: true, nombre_razon_social: true, rut: true, giro: true,
+          email: true, telefono: true, direccion: true,
+          comuna: true, ciudad: true, region: true, correo_notificaciones: true,
+        },
+      })
+    : null;
+
+  const direccionSnapshot = empresa
+    ? [empresa.direccion, empresa.comuna, empresa.ciudad, empresa.region]
+        .filter((v) => v && v.trim() !== "")
+        .join(", ") || null
+    : null;
+
+  // Re-ejecuta el cálculo server-side (fuente de verdad de los montos).
+  const input: CotizadorInput = {
+    items: data.items,
+    gastos: data.gastos,
+    porcentajeDescuento: data.porcentajeDescuento,
+    ivaPorcentaje: data.ivaPorcentaje,
+  };
+  const result = calcularCotizacion(input);
+
+  // Número editable: si viene, trim y usar; si no, se conserva el existente
+  // (getNextQuotationNumber NUNCA se invoca aquí — no se renumera al editar).
+  const numero = data.numero?.trim() || undefined;
+
+  try {
+    await prisma.$transaction([
+      prisma.quotation.update({
+        where: { id: data.id },
+        data: {
+          ...(numero ? { numero } : {}),
+          company_id: empresa?.id ?? null,
+          cliente_nombre_snapshot:    empresa?.nombre_razon_social ?? null,
+          cliente_rut_snapshot:       empresa?.rut ?? null,
+          cliente_giro_snapshot:      empresa?.giro ?? null,
+          cliente_email_snapshot:     empresa?.email ?? empresa?.correo_notificaciones ?? null,
+          cliente_telefono_snapshot:  empresa?.telefono ?? null,
+          cliente_direccion_snapshot: direccionSnapshot,
+          moneda: "CLP",
+          iva_porcentaje: data.ivaPorcentaje,
+          descuento_porcentaje: data.porcentajeDescuento,
+          gastos: data.gastos as unknown as Prisma.InputJsonValue,
+          subtotal: result.subtotal,
+          descuento_monto: result.descuentoMonto,
+          neto: result.neto,
+          iva_monto: result.iva,
+          total: result.total,
+          validez_dias: data.validez_dias ?? null,
+          observaciones: data.observaciones || null,
+          condiciones: data.condiciones || null,
+        },
+      }),
+      prisma.quotationItem.deleteMany({ where: { quotation_id: data.id } }),
+      prisma.quotationItem.createMany({
+        data: data.items.map((it, idx) => ({
+          quotation_id: data.id,
+          orden: idx + 1,
+          descripcion: it.equipo.trim() || "Equipo o servicio no especificado",
+          tipo: it.tipo,
+          valor_hora: it.valorHora,
+          horas_minimas_diarias: it.horasMinimasDiarias,
+          cantidad_horas: it.cantidadHoras,
+          cantidad_dias: it.cantidadDias,
+          subtotal: result.items[idx]?.subtotal ?? 0,
+        })),
+      }),
+    ]);
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      throw new Error(`El número de cotización "${numero}" ya existe. Usa otro.`);
+    }
+    throw err;
+  }
+
+  await logAudit(
+    session.id,
+    "cotizacion_editada",
+    "cotizaciones",
+    `Nº ${numero ?? "(sin cambio)"} | Total: ${result.total}`
+  );
+
+  revalidatePath("/cotizaciones");
+  revalidatePath(`/cotizaciones/${data.id}`);
+  return { id: data.id };
+}
+
+/** Transición EMITIDA → ANULADA. Solo ADMIN/SUPERVISOR. Deja el registro. */
+export async function anularCotizacion(id: string): Promise<void> {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
+  if (session.rol !== "ADMINISTRADOR" && session.rol !== "SUPERVISOR") {
+    throw new Error("Sin permisos para anular la cotización.");
+  }
+
+  const cot = await prisma.quotation.findUnique({
+    where: { id },
+    select: { id: true, estado: true, numero: true },
+  });
+  if (!cot) throw new Error("La cotización no existe.");
+  if (cot.estado !== "EMITIDA") {
+    throw new Error("Solo una cotización emitida puede anularse. Un borrador se elimina, no se anula.");
+  }
+
+  await prisma.quotation.update({ where: { id }, data: { estado: "ANULADA" } });
+
+  await logAudit(session.id, "cotizacion_anulada", "cotizaciones", `Nº ${cot.numero} anulada`);
+
+  revalidatePath("/cotizaciones");
+  revalidatePath(`/cotizaciones/${id}`);
+}
+
+/**
+ * Elimina una cotización. Solo BORRADOR o ANULADA (una emitida se anula, no se
+ * borra: queda el registro). Los items caen por onDelete: Cascade.
+ * El correlativo NO se renumera: eliminar deja un hueco histórico.
+ */
+export async function deleteQuotation(id: string): Promise<void> {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
+  if (session.rol !== "ADMINISTRADOR" && session.rol !== "SUPERVISOR") {
+    throw new Error("Sin permisos para eliminar la cotización.");
+  }
+
+  const cot = await prisma.quotation.findUnique({
+    where: { id },
+    select: { id: true, estado: true, numero: true, total: true },
+  });
+  if (!cot) throw new Error("La cotización no existe.");
+  if (cot.estado === "EMITIDA") {
+    throw new Error("Una cotización emitida no se elimina: anúlala primero.");
+  }
+
+  await prisma.quotation.delete({ where: { id } });
+
+  await logAudit(
+    session.id,
+    "cotizacion_eliminada",
+    "cotizaciones",
+    `Nº ${cot.numero} | Estado previo: ${cot.estado} | Total: ${Number(cot.total)}`
+  );
+
+  revalidatePath("/cotizaciones");
 }
