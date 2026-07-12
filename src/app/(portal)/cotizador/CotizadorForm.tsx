@@ -44,6 +44,9 @@ interface InitialCotizacion {
   porcentajeDescuento: number;
   items:               CotizadorItem[];
   gastos:              GastosGenerales;
+  // Fechas por ítem guardadas (clave = it.id). Opcional: cotizaciones viejas
+  // sin fechas no la traen y el form arranca sin rangos.
+  fechasPorItem?:      Record<string, { desde: string; hasta: string }>;
 }
 
 interface Props {
@@ -190,9 +193,12 @@ export default function CotizadorForm({
   const [items, setItems]                             = useState<CotizadorItem[]>(() =>
     initial ? initial.items : [nuevoItem()]
   );
-  // Fechas por ítem: SEPARADO de items para no contaminar el payload (items solo lleva números).
-  // En edición no se reconstruyen fechas (los items ya traen cantidades resueltas).
-  const [fechasPorItem, setFechasPorItem]             = useState<Record<string, { desde: string; hasta: string }>>({});
+  // Fechas por ítem: SEPARADO de items para no contaminar el payload del PDF
+  // (buildRequestBody solo lleva números). Sí se persisten al guardar la
+  // cotización. En edición arrancan desde initial.fechasPorItem si viene.
+  const [fechasPorItem, setFechasPorItem]             = useState<Record<string, { desde: string; hasta: string }>>(() =>
+    initial?.fechasPorItem ?? {}
+  );
   const [gastos, setGastos]                           = useState<GastosGenerales>(() =>
     initial ? initial.gastos : gastosDefault
   );
@@ -307,6 +313,7 @@ export default function CotizadorForm({
       setClienteId(initial.clienteId ?? "");
       setNumero(initial.numero);
       setValidezDias(initial.validezDias ?? VALIDEZ_DEFAULT);
+      setFechasPorItem(initial.fechasPorItem ?? {});
     } else {
       setItems([nuevoItem()]);
       setGastos(gastosDefault);
@@ -314,8 +321,8 @@ export default function CotizadorForm({
       setClienteId("");
       setNumero(numeroSugerido);
       setValidezDias(VALIDEZ_DEFAULT);
+      setFechasPorItem({});
     }
-    setFechasPorItem({});
     setActionError(null);
     setSaveGastosState("idle");
     setSaveGastosError(null);
@@ -456,7 +463,13 @@ export default function CotizadorForm({
     const payload = {
       numero: numero.trim(),
       clienteId: clienteId || null,
-      items,
+      // Solo el payload de GUARDAR gana las fechas por ítem (buildRequestBody
+      // del PDF no cambia). null cuando el ítem no tiene rango definido.
+      items: items.map((it) => ({
+        ...it,
+        fecha_desde: fechasPorItem[it.id]?.desde || null,
+        fecha_hasta: fechasPorItem[it.id]?.hasta || null,
+      })),
       gastos: gastosPayload,
       porcentajeDescuento,
       ivaPorcentaje,

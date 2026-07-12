@@ -486,6 +486,8 @@ model QuotationItem {
   horas_minimas_diarias Int       @default(0)
   cantidad_horas        Decimal   @default(0) @db.Decimal(12, 2)
   cantidad_dias         Decimal   @default(0) @db.Decimal(12, 2)
+  fecha_desde           DateTime? @db.Date
+  fecha_hasta           DateTime? @db.Date
   subtotal              Decimal   @db.Decimal(14, 2)
   created_at            DateTime  @default(now())
   updated_at            DateTime  @updatedAt

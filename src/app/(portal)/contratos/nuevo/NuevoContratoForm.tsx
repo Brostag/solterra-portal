@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createContract, type CreateContractInput } from "../actions";
 import { updateCompanyRepresentante } from "../../empresas/actions";
+import { getQuotationForContract } from "../../cotizaciones/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -184,6 +185,13 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
   const [step, setStep] = useState(1);
   // Diálogo: representante ingresado distinto al guardado en la empresa.
   const [confirmRepOpen, setConfirmRepOpen] = useState(false);
+  // Auto-relleno desde la cotización asociada.
+  const [autofillLoading, setAutofillLoading] = useState(false);
+  // Hint ámbar: la cotización pertenece a un cliente distinto al ya elegido.
+  const [clienteMismatchHint, setClienteMismatchHint] = useState<string | null>(null);
+  // Equipos derivados de la cotización pendientes de confirmar reemplazo cuando
+  // el formulario ya tiene equipos con datos escritos (null = sin pendiente).
+  const [equiposPendientes, setEquiposPendientes] = useState<Equipo[] | null>(null);
 
   const selectedClient = clients.find((c) => c.id === clientId);
 
@@ -209,6 +217,26 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
       document.body.style.overflow = prev;
     };
   }, [confirmRepOpen]);
+
+  // Escape cierra el diálogo de reemplazo de equipos manteniendo los actuales.
+  useEffect(() => {
+    if (!equiposPendientes) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setEquiposPendientes(null);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [equiposPendientes]);
+
+  // Bloquea el scroll del body mientras el diálogo de equipos está abierto.
+  useEffect(() => {
+    if (!equiposPendientes) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [equiposPendientes]);
 
   // Desglose de las fechas para el helper de la duración (solo display).
   // null si faltan fechas o el rango es inválido (fin ≤ inicio).
@@ -254,6 +282,116 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
     const c = clients.find((cl) => cl.id === id);
     setRepresentanteCliente(c?.representante_legal ?? "");
     setRutRepresentante(c?.rut_representante ?? "");
+  }
+
+  // Aplica una fecha de inicio replicando EXACTAMENTE el onChange manual del
+  // input: en modo auto vuelve a "las fechas mandan" (limpia el plazo elegido)
+  // y sincroniza vigencia/duración; en modo manual no pisa la vigencia. La usan
+  // el input y el auto-relleno desde la cotización.
+  function aplicarFechaInicio(val: string) {
+    setFechaInicio(val);
+    const manual = vigenciaSel === VIGENCIA_OTRA || vigenciaSel === VIGENCIA_NINGUNA;
+    if (!manual && vigenciaSel !== "") setVigenciaSel("");
+    sincronizarDesdeFechas(val, fechaTermino, { pisarVigencia: !manual });
+  }
+
+  function aplicarFechaTermino(val: string) {
+    setFechaTermino(val);
+    const manual = vigenciaSel === VIGENCIA_OTRA || vigenciaSel === VIGENCIA_NINGUNA;
+    if (!manual && vigenciaSel !== "") setVigenciaSel("");
+    sincronizarDesdeFechas(fechaInicio, val, { pisarVigencia: !manual });
+  }
+
+  // ¿La lista de equipos está prístina? Un solo equipo, todos sus campos string
+  // vacíos y sin fotos: se puede reemplazar sin preguntar. Cualquier dato escrito
+  // (o más de un equipo, o fotos) exige confirmación.
+  function equiposPristinos(list: Equipo[]): boolean {
+    if (list.length !== 1) return false;
+    const eq = list[0];
+    if (eq.fotos.length > 0) return false;
+    return (Object.keys(eq) as (keyof Equipo)[]).every((k) => {
+      if (k === "fotos") return true;
+      return String(eq[k]).trim() === "";
+    });
+  }
+
+  // Mapea los ítems de la cotización a equipos del contrato. Convención aprobada:
+  // horas mínimas mensuales = diarias × 30 (editable); 0 → "". Resto de campos
+  // parte de emptyEquipo (vacíos).
+  function mapCotizacionAEquipos(
+    items: { descripcion: string; valorHora: number; horasMinimasDiarias: number }[],
+  ): Equipo[] {
+    return items.map((it) => ({
+      ...emptyEquipo(),
+      descripcion: it.descripcion,
+      valor_hora: String(it.valorHora),
+      horas_minimas_mensuales: it.horasMinimasDiarias > 0 ? String(it.horasMinimasDiarias * 30) : "",
+    }));
+  }
+
+  // Selección de una cotización real (id): además de fijar el N° de cotización,
+  // trae sus datos y auto-rellena cliente, fechas y equipos. Error no bloqueante
+  // (el N° ya quedó puesto; el resto es una comodidad).
+  async function autofillDesdeCotizacion(id: string) {
+    setClienteMismatchHint(null);
+    setAutofillLoading(true);
+    try {
+      const q = await getQuotationForContract(id);
+      if (!q) return;
+
+      // a. Cliente: si está vacío y la cotización trae una empresa que existe en
+      // la lista, se elige (reusando handleClientChange → prefill representante).
+      // Si ya hay un cliente distinto, no se pisa: solo se avisa.
+      if (!clientId) {
+        if (q.companyId && clients.some((c) => c.id === q.companyId)) {
+          handleClientChange(q.companyId);
+        }
+      } else if (q.companyId && q.companyId !== clientId) {
+        setClienteMismatchHint(
+          `Ojo: esta cotización pertenece a ${q.clienteNombre ?? "otro cliente"}.`,
+        );
+      }
+
+      // b. Fechas: si la cotización trae inicio y/o término, se aplican en una
+      // sola pasada. NO se encadenan aplicarFechaInicio + aplicarFechaTermino:
+      // ambos leen el OTRO campo desde el estado de este render (aún stale, los
+      // setState no re-renderizan entre llamadas), así que en un formulario nuevo
+      // la sincronización de vigencia/duración quedaba en blanco. Aquí se setean
+      // ambas fechas y se sincroniza UNA vez con los strings crudos de la
+      // cotización (no el estado), replicando el efecto de los handlers manuales
+      // (en modo auto se vuelve a "las fechas mandan" limpiando el plazo elegido;
+      // en modo manual la vigencia no se pisa).
+      if (q.fechaInicio || q.fechaTermino) {
+        const nuevoInicio = q.fechaInicio ?? fechaInicio;
+        const nuevoTermino = q.fechaTermino ?? fechaTermino;
+        if (q.fechaInicio) setFechaInicio(q.fechaInicio);
+        if (q.fechaTermino) setFechaTermino(q.fechaTermino);
+        const manual = vigenciaSel === VIGENCIA_OTRA || vigenciaSel === VIGENCIA_NINGUNA;
+        if (!manual && vigenciaSel !== "") setVigenciaSel("");
+        sincronizarDesdeFechas(nuevoInicio, nuevoTermino, { pisarVigencia: !manual });
+      }
+
+      // c. Equipos: reemplazo directo si están prístinos; si hay datos escritos,
+      // se abre el diálogo de confirmación (el resto del autofill ya se aplicó).
+      if (q.items.length > 0) {
+        const nuevos = mapCotizacionAEquipos(q.items);
+        if (equiposPristinos(equipos)) {
+          setEquipos(nuevos);
+        } else {
+          setEquiposPendientes(nuevos);
+        }
+      }
+    } catch {
+      // No bloqueante: el N° de cotización ya quedó asignado.
+    } finally {
+      setAutofillLoading(false);
+    }
+  }
+
+  // Confirmación del diálogo de reemplazo de equipos.
+  function confirmarReemplazoEquipos(reemplazar: boolean) {
+    if (reemplazar && equiposPendientes) setEquipos(equiposPendientes);
+    setEquiposPendientes(null);
   }
 
   function addEquipo() { setEquipos([...equipos, emptyEquipo()]); }
@@ -551,15 +689,7 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
             <Input
               type="date"
               value={fechaInicio}
-              onChange={(e) => {
-                const val = e.target.value;
-                setFechaInicio(val);
-                // Modo manual (Otra/Sin especificar) no pisa el texto de vigencia.
-                const manual = vigenciaSel === VIGENCIA_OTRA || vigenciaSel === VIGENCIA_NINGUNA;
-                // Si había un plazo elegido (años), vuelve a modo auto: las fechas mandan.
-                if (!manual && vigenciaSel !== "") setVigenciaSel("");
-                sincronizarDesdeFechas(val, fechaTermino, { pisarVigencia: !manual });
-              }}
+              onChange={(e) => aplicarFechaInicio(e.target.value)}
             />
           </div>
           <div className="space-y-2">
@@ -567,13 +697,7 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
             <Input
               type="date"
               value={fechaTermino}
-              onChange={(e) => {
-                const val = e.target.value;
-                setFechaTermino(val);
-                const manual = vigenciaSel === VIGENCIA_OTRA || vigenciaSel === VIGENCIA_NINGUNA;
-                if (!manual && vigenciaSel !== "") setVigenciaSel("");
-                sincronizarDesdeFechas(fechaInicio, val, { pisarVigencia: !manual });
-              }}
+              onChange={(e) => aplicarFechaTermino(e.target.value)}
             />
             {fechaInicio && fechaTermino && !spanFechas && (
               <p className="text-xs text-[#c6352e]">La fecha de término debe ser posterior al inicio.</p>
@@ -707,9 +831,13 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
                 setCotizacionSel(val);
                 if (val === "__manual__" || val === "__ninguna__" || val === "") {
                   setNumeroCotizacion("");
+                  // Sin cotización asociada: limpia el aviso de cliente distinto.
+                  setClienteMismatchHint(null);
                 } else {
                   const cot = cotizaciones.find((c) => c.id === val);
                   setNumeroCotizacion(cot?.numero ?? "");
+                  // Además del N°, auto-rellena cliente, fechas y equipos.
+                  void autofillDesdeCotizacion(val);
                 }
               }}
             >
@@ -743,6 +871,18 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
                 placeholder="Ej: 177 R2/025"
                 onChange={(e) => setNumeroCotizacion(e.target.value)}
               />
+            )}
+            {autofillLoading && (
+              <p className="flex items-center gap-1.5 text-xs text-gray-400">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Trayendo datos de la cotización...
+              </p>
+            )}
+            {clienteMismatchHint && (
+              <p className="flex items-start gap-1.5 text-xs text-amber-600">
+                <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                <span>{clienteMismatchHint}</span>
+              </p>
             )}
           </div>
           <div className="space-y-2">
@@ -860,6 +1000,9 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
                   onChange={(e) => { addFotos(idx, e.target.files); e.target.value = ""; }}
                 />
               </label>
+              <p className="text-xs text-gray-400">
+                Se suben al crear el contrato. También puedes agregar más después desde el detalle.
+              </p>
             </div>
           </div>
         ))}
@@ -870,20 +1013,7 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
         </Button>
       </div>
 
-      {/* Bloque 5 — Nota sobre el respaldo fotográfico */}
-      <div className="bg-white rounded-lg border border-dashed border-gray-300 p-4 sm:p-6">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-gray-50 rounded-md flex-shrink-0"><Camera className="h-5 w-5 text-gray-400" /></div>
-          <div>
-            <h2 className="font-semibold text-[#253158]">Respaldo fotográfico del equipo</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Adjunta las fotos en la sección «Fotos de respaldo» de cada equipo: se subirán
-              automáticamente al crear el contrato. También puedes agregar más después desde el detalle.
-            </p>
-          </div>
-        </div>
-      </div>
-      {/* Cierre paso 3 (Bloques 4 y 5) */}
+      {/* Cierre paso 3 (Bloque 4) */}
       </>)}
 
       {errors.length > 0 && (
@@ -975,6 +1105,64 @@ export default function NuevoContratoForm({ clients, cotizaciones }: Props) {
                   >
                     {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                     {loading ? "Procesando..." : "Sí, actualizar empresa"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
+
+      {/* Diálogo: reemplazar los equipos del formulario con los de la cotización.
+          Se abre solo cuando el formulario ya tiene equipos con datos escritos.
+          Ambas opciones conservan el resto del auto-relleno (cliente y fechas ya
+          se aplicaron): la elección solo decide si se pisan los equipos. */}
+      {equiposPendientes && createPortal(
+        <>
+          <div
+            aria-hidden="true"
+            className="fixed inset-0 z-[200] bg-slate-900/40 animate-in fade-in duration-150"
+            onClick={() => confirmarReemplazoEquipos(false)}
+          />
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="equipos-dialog-title"
+            aria-describedby="equipos-dialog-description"
+            className="fixed inset-0 z-[201] flex items-center justify-center p-4 pointer-events-none"
+          >
+            <div className="pointer-events-auto w-full max-w-md bg-white rounded-xl shadow-2xl border border-gray-200 animate-in fade-in zoom-in-95 duration-150">
+              <div className="h-1 w-full rounded-t-xl bg-[#253158]" />
+              <div className="px-6 pt-5 pb-6">
+                <div className="flex items-start gap-4 mb-3">
+                  <div className="flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center bg-[#253158]/10">
+                    <AlertTriangle className="h-5 w-5 text-[#253158]" />
+                  </div>
+                  <div className="flex-1 min-w-0 pt-1">
+                    <h2 id="equipos-dialog-title" className="text-base font-semibold text-gray-900 leading-tight">
+                      Reemplazar equipos del formulario
+                    </h2>
+                  </div>
+                </div>
+                <p id="equipos-dialog-description" className="text-sm text-gray-500 leading-relaxed ml-14">
+                  ¿Reemplazar los equipos del formulario con los{" "}
+                  <span className="font-medium text-gray-700">{equiposPendientes.length}</span> de la cotización?
+                </p>
+                <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => confirmarReemplazoEquipos(false)}
+                    className="h-9 px-4 text-sm font-medium rounded-lg border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                  >
+                    No, mantener los actuales
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => confirmarReemplazoEquipos(true)}
+                    className="h-9 px-4 text-sm font-medium rounded-lg text-white bg-[#253158] hover:bg-[#1e2a4a] transition-colors"
+                  >
+                    Sí, reemplazar
                   </button>
                 </div>
               </div>

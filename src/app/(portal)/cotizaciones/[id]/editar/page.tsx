@@ -63,6 +63,19 @@ export default async function EditarCotizacionPage({ params }: Props) {
     cantidadDias:        Number(it.cantidad_dias),
   }));
 
+  // Fechas guardadas por ítem → forma que consume el form (clave = it.id, el
+  // mismo id de cada CotizadorItem). Columnas @db.Date: se leen en UTC con
+  // toISOString().slice(0,10) para evitar el off-by-one. Solo se incluye el
+  // ítem si trae al menos una fecha (cotizaciones viejas quedan sin entrada).
+  const fechasPorItem: Record<string, { desde: string; hasta: string }> = {};
+  for (const it of cotizacion.items) {
+    if (!it.fecha_desde && !it.fecha_hasta) continue;
+    fechasPorItem[it.id] = {
+      desde: it.fecha_desde ? it.fecha_desde.toISOString().slice(0, 10) : "",
+      hasta: it.fecha_hasta ? it.fecha_hasta.toISOString().slice(0, 10) : "",
+    };
+  }
+
   const initial = {
     numero:              cotizacion.numero,
     validezDias:         cotizacion.validez_dias,
@@ -70,6 +83,7 @@ export default async function EditarCotizacionPage({ params }: Props) {
     porcentajeDescuento: Number(cotizacion.descuento_porcentaje),
     items,
     gastos:              normalizarGastos(cotizacion.gastos),
+    fechasPorItem,
   };
 
   return (

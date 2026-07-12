@@ -29,7 +29,20 @@ const itemSchema = z.object({
   horasMinimasDiarias: z.number().int().min(0).max(24),
   cantidadHoras:       z.number().min(0).max(100_000),
   cantidadDias:        z.number().min(0).max(10_000),
+  fecha_desde:         z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
+  fecha_hasta:         z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
 });
+
+/**
+ * "YYYY-MM-DD" → Date a medianoche UTC, para columnas @db.Date (evita el
+ * off-by-one del repo: NUNCA new Date("YYYY-MM-DD")). null/undefined → null.
+ */
+function fechaDateUTC(s: string | null | undefined): Date | null {
+  if (!s) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return null;
+  return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+}
 
 const createSchema = z.object({
   numero:              z.string().trim().max(60).optional().nullable(),
@@ -155,6 +168,8 @@ export async function createQuotation(rawData: CreateQuotationInput): Promise<{ 
             horas_minimas_diarias: it.horasMinimasDiarias,
             cantidad_horas: it.cantidadHoras,
             cantidad_dias: it.cantidadDias,
+            fecha_desde: fechaDateUTC(it.fecha_desde),
+            fecha_hasta: fechaDateUTC(it.fecha_hasta),
             subtotal: result.items[idx]?.subtotal ?? 0,
           })),
         },
@@ -299,6 +314,8 @@ export async function updateQuotation(rawData: UpdateQuotationInput): Promise<{ 
           horas_minimas_diarias: it.horasMinimasDiarias,
           cantidad_horas: it.cantidadHoras,
           cantidad_dias: it.cantidadDias,
+          fecha_desde: fechaDateUTC(it.fecha_desde),
+          fecha_hasta: fechaDateUTC(it.fecha_hasta),
           subtotal: result.items[idx]?.subtotal ?? 0,
         })),
       }),
@@ -380,4 +397,76 @@ export async function deleteQuotation(id: string): Promise<void> {
   );
 
   revalidatePath("/cotizaciones");
+}
+
+/** Datos de una cotización para auto-rellenar el contrato al asociarla. */
+export interface QuotationForContract {
+  numero:         string;
+  companyId:      string | null;
+  clienteNombre:  string | null;
+  fechaInicio:    string | null;
+  fechaTermino:   string | null;
+  items:          { descripcion: string; valorHora: number; horasMinimasDiarias: number }[];
+}
+
+/**
+ * Lectura para el auto-relleno del contrato desde una cotización. Gate ligero:
+ * sesión + módulo COMERCIAL (sin gate de rol — es solo lectura). Devuelve un
+ * objeto plano serializable. fechaInicio = mínima fecha_desde de los ítems,
+ * fechaTermino = máxima fecha_hasta ("YYYY-MM-DD" leído en UTC); null si ningún
+ * ítem tiene fechas. Decimal → Number.
+ */
+export async function getQuotationForContract(id: string): Promise<QuotationForContract | null> {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  requireModule(session, "COMERCIAL");
+
+  const cot = await prisma.quotation.findUnique({
+    where: { id },
+    select: {
+      numero: true,
+      company_id: true,
+      cliente_nombre_snapshot: true,
+      items: {
+        orderBy: { orden: "asc" },
+        select: {
+          descripcion: true,
+          valor_hora: true,
+          horas_minimas_diarias: true,
+          fecha_desde: true,
+          fecha_hasta: true,
+        },
+      },
+    },
+  });
+  if (!cot) return null;
+
+  // Columnas @db.Date: se leen en UTC (toISOString().slice(0,10)) para evitar el
+  // off-by-one. Mín/máx por comparación lexicográfica de "YYYY-MM-DD" (equivale
+  // al orden cronológico en ese formato).
+  let fechaInicio: string | null = null;
+  let fechaTermino: string | null = null;
+  for (const it of cot.items) {
+    if (it.fecha_desde) {
+      const d = it.fecha_desde.toISOString().slice(0, 10);
+      if (fechaInicio === null || d < fechaInicio) fechaInicio = d;
+    }
+    if (it.fecha_hasta) {
+      const h = it.fecha_hasta.toISOString().slice(0, 10);
+      if (fechaTermino === null || h > fechaTermino) fechaTermino = h;
+    }
+  }
+
+  return {
+    numero: cot.numero,
+    companyId: cot.company_id,
+    clienteNombre: cot.cliente_nombre_snapshot,
+    fechaInicio,
+    fechaTermino,
+    items: cot.items.map((it) => ({
+      descripcion: it.descripcion,
+      valorHora: Number(it.valor_hora),
+      horasMinimasDiarias: it.horas_minimas_diarias,
+    })),
+  };
 }
