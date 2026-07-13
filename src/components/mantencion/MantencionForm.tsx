@@ -28,7 +28,7 @@ export type MantencionFormValues = {
   observaciones: string | null;
 };
 
-const TIPOS = ["Preventiva", "Correctiva", "Emergencia"];
+const TIPOS = ["Según Fabricante", "Preventiva", "Correctiva", "Emergencia"];
 const ESTADOS = ["Programada", "En Proceso", "Completada"];
 
 export default function MantencionForm({

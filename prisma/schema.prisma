@@ -103,6 +103,7 @@ model Profile {
   mant_certs_mant_encargado MantCertificadoMantencion[] @relation("CertMantEncargado")
   mant_certs_mant_gerente   MantCertificadoMantencion[] @relation("CertMantGerente")
   mant_certs_mant_anulado   MantCertificadoMantencion[] @relation("CertMantAnuladoPor")
+  mant_planes_responsable   MantPlanMantencion[]        @relation("PlanMantResponsable")
 
   @@map("profiles")
 }
@@ -530,6 +531,7 @@ model MantEquipo {
   certificados     MantCertificado[]
   checklists_mantencion   MantChecklistMantencion[]
   certificados_mantencion MantCertificadoMantencion[]
+  planes_mantencion       MantPlanMantencion[]
 
   @@index([estado])
   @@index([updated_at])
@@ -575,6 +577,7 @@ model MantParteDiario {
   updated_at          DateTime   @updatedAt
   equipo              MantEquipo @relation(fields: [equipo_id], references: [id])
   operador            Profile    @relation("ParteDiarioOperador", fields: [operador_id], references: [id])
+  planes_mantencion   MantPlanMantencion[]
 
   @@index([equipo_id])
   @@index([operador_id])
@@ -605,6 +608,7 @@ model MantMantencion {
   updated_at                   DateTime   @updatedAt
   equipo                       MantEquipo @relation(fields: [equipo_id], references: [id])
   responsable                  Profile    @relation("MantencionResponsable", fields: [responsable_id], references: [id])
+  planes_origen                MantPlanMantencion[] @relation("PlanMantOrdenTrabajo")
 
   @@index([equipo_id])
   @@index([estado])
@@ -737,4 +741,33 @@ model MantCertificadoMantencion {
   @@index([equipo_id])
   @@index([fecha])
   @@map("mant_certificados_mantencion")
+}
+
+model MantPlanMantencion {
+  id                    String           @id @default(uuid())
+  correlativo           Int
+  anio                  Int              @default(0)
+  equipo_id             String
+  registro_id           String?
+  responsable_id        String
+  plan                  String
+  descripcion           String
+  fecha_planificada     DateTime?        @db.Date
+  horometro_referencia  Decimal?         @db.Decimal(10, 2)
+  observaciones         String?
+  estado                String           @default("Planificado")
+  orden_trabajo_id      String?
+  deleted_at            DateTime?
+  created_at            DateTime         @default(now())
+  updated_at            DateTime         @updatedAt
+  equipo                MantEquipo       @relation(fields: [equipo_id], references: [id])
+  registro              MantParteDiario? @relation(fields: [registro_id], references: [id])
+  responsable           Profile          @relation("PlanMantResponsable", fields: [responsable_id], references: [id])
+  orden_trabajo         MantMantencion?  @relation("PlanMantOrdenTrabajo", fields: [orden_trabajo_id], references: [id])
+
+  @@unique([correlativo, anio])
+  @@index([equipo_id])
+  @@index([estado])
+  @@index([deleted_at, created_at])
+  @@map("mant_planes_mantencion")
 }

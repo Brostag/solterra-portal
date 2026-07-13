@@ -8,7 +8,9 @@ import { redirect } from "next/navigation";
 import { MANT_MANTENCIONES_TAG } from "@/lib/terreno/queries";
 import type { UserSession } from "@/types";
 
-const TIPOS = ["Preventiva", "Correctiva", "Emergencia"];
+// "Según Fabricante" proviene de generar una OT desde un Plan A. Debe estar en
+// la whitelist para que editar esa OT no rebote con "Tipo inválido".
+const TIPOS = ["Según Fabricante", "Preventiva", "Correctiva", "Emergencia"];
 const ESTADOS = ["Programada", "En Proceso", "Completada"];
 
 type ActionResult = { error: string };

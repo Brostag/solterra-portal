@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Settings } from "lucide-react";
-import { getMantencionDetalle } from "@/lib/terreno/queries";
+import { getMantencionDetalle, getPlanOrigenDeOT } from "@/lib/terreno/queries";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
 import EliminarMantencionButton from "@/components/mantencion/EliminarMantencionButton";
@@ -50,11 +50,18 @@ type Props = { params: Promise<{ id: string }> };
 
 export default async function MantencionDetallePage({ params }: Props) {
   const { id } = await params;
-  const [m, session] = await Promise.all([
+  const [m, session, planOrigen] = await Promise.all([
     getMantencionDetalle(id),
     getPortalSessionFast(),
+    getPlanOrigenDeOT(id),
   ]);
   if (!m) notFound();
+
+  const PLAN_LABEL: Record<string, string> = {
+    A: "A — Según fabricante",
+    B: "B — Preventivo",
+    C: "C — Correctivo",
+  };
 
   const puedeGestionar =
     !!session &&
@@ -132,6 +139,18 @@ export default async function MantencionDetallePage({ params }: Props) {
           )}
         </div>
       </header>
+
+      {planOrigen && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          Generada desde el{" "}
+          <Link
+            href={`/mantencion/planes/${planOrigen.id}`}
+            className="font-semibold underline hover:text-blue-900"
+          >
+            Plan N°{planOrigen.correlativo} ({PLAN_LABEL[planOrigen.plan] ?? planOrigen.plan})
+          </Link>
+        </div>
+      )}
 
       {/* Datos */}
       <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">

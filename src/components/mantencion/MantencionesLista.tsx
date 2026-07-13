@@ -22,6 +22,7 @@ function estadoBadge(estado: string): string {
 function tipoBadge(tipo: string): string {
   if (tipo === "Correctiva" || tipo === "Emergencia")
     return "bg-red-50 text-[#c6352e] ring-1 ring-red-600/20";
+  // "Según Fabricante" (generado desde un Plan A) y "Preventiva" → azul.
   return "bg-blue-50 text-blue-700 ring-1 ring-blue-600/20";
 }
 

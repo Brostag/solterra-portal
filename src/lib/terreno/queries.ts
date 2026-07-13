@@ -1124,6 +1124,207 @@ export async function nextCorrelativoCertMant(anio: number): Promise<number> {
   return (max._max.correlativo ?? 0) + 1;
 }
 
+// ── Planes de Mantención (paso 2 del flujo: registro → plan → OT) ──
+// El plan planifica un trabajo (A según fabricante, B preventivo, C correctivo)
+// a partir de un registro de entrada opcional. Al generar la OT se copia a una
+// MantMantencion (Taller) y el plan queda "Con OT".
+
+export const MANT_PLANES_TAG = "mant-planes";
+
+export type PlanMantLista = {
+  id: string;
+  correlativo: number;
+  anio: number;
+  plan: string; // "A" | "B" | "C"
+  estado: string; // "Planificado" | "Con OT" | "Anulado"
+  fecha_planificada: string | null; // ISO date
+  equipo: string | null;
+  equipoCodigo: string | null;
+  responsable: string | null;
+  created_at: string; // ISO
+};
+
+export const getPlanes = unstable_cache(
+  async (): Promise<PlanMantLista[]> => {
+    const rows = await prisma.mantPlanMantencion.findMany({
+      where: { deleted_at: null },
+      orderBy: { created_at: "desc" },
+      take: MAX_LISTA_TERRENO,
+      select: {
+        id: true,
+        correlativo: true,
+        anio: true,
+        plan: true,
+        estado: true,
+        fecha_planificada: true,
+        created_at: true,
+        equipo: { select: { codigo: true, nombre: true } },
+        responsable: { select: { nombre: true } },
+      },
+    });
+    return rows.map((p) => ({
+      id: p.id,
+      correlativo: p.correlativo,
+      anio: p.anio,
+      plan: p.plan,
+      estado: p.estado,
+      fecha_planificada: p.fecha_planificada
+        ? p.fecha_planificada.toISOString()
+        : null,
+      equipo: p.equipo?.nombre ?? null,
+      equipoCodigo: p.equipo?.codigo ?? null,
+      responsable: p.responsable?.nombre ?? null,
+      created_at: p.created_at.toISOString(),
+    }));
+  },
+  ["mant-planes"],
+  { revalidate: 60, tags: [MANT_PLANES_TAG] },
+);
+
+export type PlanMantDetalle = {
+  id: string;
+  correlativo: number;
+  anio: number;
+  equipo_id: string;
+  registro_id: string | null;
+  responsable_id: string;
+  equipo: string | null;
+  equipoCodigo: string | null;
+  responsable: string | null;
+  plan: string; // "A" | "B" | "C"
+  descripcion: string;
+  fecha_planificada: string | null; // ISO date
+  horometro_referencia: number | null;
+  observaciones: string | null;
+  estado: string;
+  orden_trabajo_id: string | null;
+  registroFecha: string | null; // ISO date del parte origen, si hay
+  created_at: string; // ISO
+};
+
+export async function getPlanDetalle(id: string): Promise<PlanMantDetalle | null> {
+  const p = await prisma.mantPlanMantencion.findFirst({
+    where: { id, deleted_at: null },
+    select: {
+      id: true,
+      correlativo: true,
+      anio: true,
+      equipo_id: true,
+      registro_id: true,
+      responsable_id: true,
+      plan: true,
+      descripcion: true,
+      fecha_planificada: true,
+      horometro_referencia: true,
+      observaciones: true,
+      estado: true,
+      orden_trabajo_id: true,
+      created_at: true,
+      equipo: { select: { codigo: true, nombre: true } },
+      responsable: { select: { nombre: true } },
+      registro: { select: { fecha: true } },
+    },
+  });
+  if (!p) return null;
+  return {
+    id: p.id,
+    correlativo: p.correlativo,
+    anio: p.anio,
+    equipo_id: p.equipo_id,
+    registro_id: p.registro_id,
+    responsable_id: p.responsable_id,
+    equipo: p.equipo?.nombre ?? null,
+    equipoCodigo: p.equipo?.codigo ?? null,
+    responsable: p.responsable?.nombre ?? null,
+    plan: p.plan,
+    descripcion: p.descripcion,
+    fecha_planificada: p.fecha_planificada
+      ? p.fecha_planificada.toISOString()
+      : null,
+    horometro_referencia:
+      p.horometro_referencia != null ? Number(p.horometro_referencia) : null,
+    observaciones: p.observaciones,
+    estado: p.estado,
+    orden_trabajo_id: p.orden_trabajo_id,
+    registroFecha: p.registro?.fecha ? p.registro.fecha.toISOString() : null,
+    created_at: p.created_at.toISOString(),
+  };
+}
+
+// Lookup inverso: ¿desde qué plan se generó esta orden de trabajo (OT)?
+// Se usa en el detalle del Taller para enlazar de vuelta al plan de origen.
+export type PlanOrigenResumen = {
+  id: string;
+  correlativo: number;
+  plan: string; // "A" | "B" | "C"
+};
+
+export async function getPlanOrigenDeOT(
+  ordenTrabajoId: string,
+): Promise<PlanOrigenResumen | null> {
+  const p = await prisma.mantPlanMantencion.findFirst({
+    where: { orden_trabajo_id: ordenTrabajoId, deleted_at: null },
+    select: { id: true, correlativo: true, plan: true },
+  });
+  if (!p) return null;
+  return { id: p.id, correlativo: p.correlativo, plan: p.plan };
+}
+
+// Siguiente correlativo del año. La unicidad real la garantiza el índice único
+// (correlativo, anio); la action reintenta si hay carrera (ver createPlan).
+export async function nextCorrelativoPlanMant(anio: number): Promise<number> {
+  const max = await prisma.mantPlanMantencion.aggregate({
+    _max: { correlativo: true },
+    where: { anio },
+  });
+  return (max._max.correlativo ?? 0) + 1;
+}
+
+// Selector de registros de entrada recientes (paso 1) para prellenar el plan.
+// Al elegir uno, el form copia equipo + horómetro + observaciones desde la BD.
+export type RegistroRecienteOption = {
+  id: string;
+  fecha: string; // ISO date
+  equipo_id: string;
+  equipo: string | null; // "CODIGO · nombre"
+  horometro: number | null;
+  odometro: number | null;
+  observaciones: string | null;
+};
+
+export const getRegistrosRecientesOptions = unstable_cache(
+  async (): Promise<RegistroRecienteOption[]> => {
+    const rows = await prisma.mantParteDiario.findMany({
+      where: { deleted_at: null },
+      orderBy: [{ fecha: "desc" }, { created_at: "desc" }],
+      take: 50,
+      select: {
+        id: true,
+        fecha: true,
+        equipo_id: true,
+        horometro: true,
+        odometro: true,
+        observaciones: true,
+        equipo: { select: { codigo: true, nombre: true } },
+      },
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      fecha: r.fecha.toISOString(),
+      equipo_id: r.equipo_id,
+      equipo: r.equipo ? `${r.equipo.codigo} · ${r.equipo.nombre}` : null,
+      horometro: r.horometro != null ? Number(r.horometro) : null,
+      odometro: r.odometro != null ? Number(r.odometro) : null,
+      observaciones: r.observaciones,
+    }));
+  },
+  ["mant-registros-recientes"],
+  // MANT_PARTES_TAG: los registros se crean en Operación (partes-diarios) y esas
+  // actions invalidan ese tag — sin él, un registro recién creado tardaría hasta
+  // 60s en aparecer en el selector del plan (justo el flujo paso 1 → paso 2).
+  { revalidate: 60, tags: [MANT_PLANES_TAG, MANT_PARTES_TAG] },
+);
+
 // ── Dashboard del módulo Mantención ────────────────────────
 
 export type MantDashboardMantencion = {
