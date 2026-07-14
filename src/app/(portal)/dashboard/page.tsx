@@ -6,6 +6,7 @@ import { formatCurrency } from "@/lib/currency";
 import { formatContractDisplayNumber } from "@/lib/contracts";
 import Link from "next/link";
 import KpiCard from "@/components/portal/KpiCard";
+import { AppTourAutoStart } from "@/components/portal/AppTour";
 import {
   FileText,
   Building2,
@@ -226,7 +227,7 @@ export default async function DashboardPage() {
       </header>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div data-tour="kpis" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {CARDS.map((c) => {
           const d = cardData[c.key];
           return (
@@ -253,7 +254,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Acciones rápidas */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
+      <div data-tour="acciones" className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
         <p className="text-[11px] font-semibold tracking-widest uppercase text-gray-400 mb-3">
           Acciones rápidas
         </p>
@@ -284,7 +285,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Últimos contratos + Últimas OC */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div data-tour="listas" className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Últimos contratos marco */}
         <section className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-gray-100">
@@ -425,6 +426,9 @@ export default async function DashboardPage() {
           </>
         )}
       </section>
+
+      {/* Tour guiado (isla cliente, render null). Auto-inicio solo en 1ª visita de escritorio. */}
+      <AppTourAutoStart module="COMERCIAL" />
     </div>
   );
 }

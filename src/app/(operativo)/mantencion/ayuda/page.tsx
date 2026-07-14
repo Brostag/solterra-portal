@@ -14,6 +14,7 @@ import {
   ArrowRight,
   ChevronLeft,
 } from "lucide-react";
+import { TourButton } from "@/components/portal/AppTour";
 
 // Guía de uso estática del Módulo de Mantención. Sin queries de datos: solo
 // contenido verificado contra las pantallas reales del módulo.
@@ -177,6 +178,9 @@ export default async function AyudaMantencionPage() {
           ¿Primera vez? Sigue este orden. El ciclo va de la flota al plan, del
           plan a la orden de trabajo y de ahí al certificado y los vencimientos.
         </p>
+        <div className="mt-4">
+          <TourButton module="MANTENCION" />
+        </div>
       </header>
 
       {/* Pasos numerados */}

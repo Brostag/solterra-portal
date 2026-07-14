@@ -17,6 +17,7 @@ import {
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
 import KpiCard from "@/components/portal/KpiCard";
+import { AppTourAutoStart } from "@/components/portal/AppTour";
 
 function fechaCorta(iso: string): string {
   return new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "short" });
@@ -107,7 +108,7 @@ export default async function OperacionDashboard() {
       </header>
 
       {/* KPIs */}
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <section data-tour="kpis" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {kpis.map(({ label, value, icon, href }) => (
           <KpiCard
             key={label}
@@ -121,7 +122,7 @@ export default async function OperacionDashboard() {
       </section>
 
       {/* Acciones rápidas */}
-      <section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+      <section data-tour="acciones" className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
         <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-gray-400">
           Acciones rápidas
         </p>
@@ -159,7 +160,7 @@ export default async function OperacionDashboard() {
       </section>
 
       {/* Actividad reciente */}
-      <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+      <section data-tour="listas" className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="border-b border-gray-100 px-5 py-3">
           <h2 className="text-sm font-semibold text-[#253158]">Actividad reciente</h2>
         </div>
@@ -197,6 +198,9 @@ export default async function OperacionDashboard() {
           </div>
         )}
       </section>
+
+      {/* Tour guiado (isla cliente, render null). Auto-inicio solo en 1ª visita de escritorio. */}
+      <AppTourAutoStart module="OPERACION" />
     </div>
   );
 }

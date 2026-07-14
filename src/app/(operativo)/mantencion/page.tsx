@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { getMantencionDashboard } from "@/lib/terreno/queries";
 import KpiCard from "@/components/portal/KpiCard";
+import { AppTourAutoStart } from "@/components/portal/AppTour";
 
 const CARDS = [
   {
@@ -131,7 +132,7 @@ export default async function MantencionHub() {
       </header>
 
       {/* KPIs */}
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <section data-tour="kpis" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {kpis.map(({ label, value, icon, href }) => (
           <KpiCard
             key={label}
@@ -145,7 +146,7 @@ export default async function MantencionHub() {
       </section>
 
       {/* Accesos a los submódulos */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div data-tour="submodulos" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {CARDS.map(({ href, title, desc, icon: Icon }) => (
           <Link
             key={href}
@@ -263,6 +264,9 @@ export default async function MantencionHub() {
           )}
         </section>
       </div>
+
+      {/* Tour guiado (isla cliente, render null). Auto-inicio solo en 1ª visita de escritorio. */}
+      <AppTourAutoStart module="MANTENCION" />
     </div>
   );
 }

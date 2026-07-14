@@ -10,6 +10,7 @@ import {
   ArrowRight,
   ChevronLeft,
 } from "lucide-react";
+import { TourButton } from "@/components/portal/AppTour";
 
 // Guía de uso estática del Módulo de Operación. Sin queries de datos: solo
 // contenido verificado contra las pantallas reales del módulo.
@@ -120,6 +121,9 @@ export default async function AyudaOperacionPage() {
           terreno: registrar el uso, inspeccionar y dejar todo listo para que
           Mantención planifique.
         </p>
+        <div className="mt-4">
+          <TourButton module="OPERACION" />
+        </div>
       </header>
 
       {/* Pasos numerados */}

@@ -3,9 +3,10 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { X, BookOpen, Lightbulb, ArrowRight } from "lucide-react";
+import { X, BookOpen, Lightbulb, ArrowRight, Sparkles } from "lucide-react";
 import { getHelpEntry } from "@/lib/help-content";
 import { moduleForPath } from "@/lib/modules";
+import { startTour } from "@/components/portal/AppTour";
 
 // Ruta de la guía de uso completa según el módulo de la pantalla actual.
 const GUIA_HREF: Record<ReturnType<typeof moduleForPath>, string> = {
@@ -22,6 +23,17 @@ interface HelpPanelProps {
 
 export default function HelpPanel({ open, onClose, pathname }: HelpPanelProps) {
   const entry = getHelpEntry(pathname);
+  const currentModule = moduleForPath(pathname);
+
+  // Cierra el panel y luego lanza el tour: el spotlight necesita ver el DOM
+  // de la pantalla, que este panel cubre con su overlay.
+  const handleStartTour = () => {
+    onClose();
+    // Esperar a que el panel se desmonte antes de iniciar el spotlight.
+    setTimeout(() => {
+      void startTour(currentModule);
+    }, 260);
+  };
 
   // Cerrar con Escape
   useEffect(() => {
@@ -160,10 +172,21 @@ export default function HelpPanel({ open, onClose, pathname }: HelpPanelProps) {
           </div>
         )}
 
-        {/* Footer fijo: enlace a la guía completa del módulo actual */}
-        <div className="flex-shrink-0 border-t border-gray-100 px-5 py-3.5">
+        {/* Footer fijo: iniciar tour + enlace a la guía completa del módulo actual */}
+        <div className="flex-shrink-0 border-t border-gray-100 px-5 py-3.5 space-y-2.5">
+          <button
+            type="button"
+            onClick={handleStartTour}
+            className="flex w-full items-center justify-between gap-2 rounded-lg bg-[#253158] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1e305e]"
+          >
+            <span className="inline-flex items-center gap-2">
+              <Sparkles className="h-4 w-4 flex-shrink-0" />
+              Iniciar tour guiado
+            </span>
+            <ArrowRight className="h-4 w-4 flex-shrink-0" />
+          </button>
           <Link
-            href={GUIA_HREF[moduleForPath(pathname)]}
+            href={GUIA_HREF[currentModule]}
             onClick={onClose}
             className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-[#253158] transition-colors hover:border-[#253158] hover:bg-[#253158]/5"
           >

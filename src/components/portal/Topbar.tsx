@@ -110,6 +110,7 @@ export default function Topbar({ nombre, email, rol, onOpenMenu }: TopbarProps) 
         </button>
         <button
           type="button"
+          data-tour="help-button"
           className="hidden sm:flex h-9 w-9 items-center justify-center rounded-md text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           aria-label="Ayuda"
           onClick={() => setHelpOpen(true)}

@@ -25,7 +25,12 @@ import Image from "next/image";
 import type { Rol, Area } from "@/types";
 import { allowedModules, moduleForPath, type Module } from "@/lib/modules";
 
-type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
+type NavItem = {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  dataTour?: string;
+};
 
 const comercialItems: NavItem[] = [
   { href: "/dashboard",      label: "Dashboard",         icon: LayoutDashboard },
@@ -48,7 +53,7 @@ const mantencionItems: NavItem[] = [
   { href: "/mantencion",              label: "Inicio",       icon: LayoutDashboard },
   { href: "/mantencion/equipos",      label: "Equipos",      icon: Package },
   { href: "/mantencion/taller",       label: "Taller",       icon: Settings },
-  { href: "/mantencion/planes",       label: "Planes",       icon: ClipboardCheck },
+  { href: "/mantencion/planes",       label: "Planes",       icon: ClipboardCheck, dataTour: "planes" },
   { href: "/mantencion/checklist-mantencion", label: "Check List", icon: ClipboardList },
   { href: "/mantencion/certificado-mantencion", label: "Certificado", icon: FileText },
   { href: "/mantencion/certificados", label: "Vencimientos", icon: ShieldCheck },
@@ -141,6 +146,7 @@ export default function Sidebar({ rol, area = null, mobileOpen = false, onClose 
         key={item.href}
         href={item.href}
         prefetch
+        data-tour={item.dataTour}
         onClick={() => setPendingHref(item.href)}
         onMouseEnter={() => router.prefetch(item.href)}
         onFocus={() => router.prefetch(item.href)}
@@ -223,6 +229,7 @@ export default function Sidebar({ rol, area = null, mobileOpen = false, onClose 
 
       {/* Navigation */}
       <nav
+        data-tour="sidebar-nav"
         className={cn(
           "flex-1 py-4 space-y-0.5 overflow-y-auto",
           // Mobile: always expanded padding

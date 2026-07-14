@@ -1,6 +1,7 @@
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import InstantLink from "@/components/portal/InstantLink";
+import { TourButton } from "@/components/portal/AppTour";
 import {
   Settings,
   Building2,
@@ -175,6 +176,9 @@ export default async function AyudaComercialPage() {
           apoya en la anterior, así que conviene recorrerlas de arriba hacia
           abajo la primera vez.
         </p>
+        <div className="mt-4">
+          <TourButton module="COMERCIAL" />
+        </div>
       </header>
 
       {/* Pasos numerados */}
