@@ -2,8 +2,17 @@
 
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, BookOpen, Lightbulb } from "lucide-react";
+import Link from "next/link";
+import { X, BookOpen, Lightbulb, ArrowRight } from "lucide-react";
 import { getHelpEntry } from "@/lib/help-content";
+import { moduleForPath } from "@/lib/modules";
+
+// Ruta de la guía de uso completa según el módulo de la pantalla actual.
+const GUIA_HREF: Record<ReturnType<typeof moduleForPath>, string> = {
+  COMERCIAL: "/ayuda",
+  MANTENCION: "/mantencion/ayuda",
+  OPERACION: "/operacion/ayuda",
+};
 
 interface HelpPanelProps {
   open: boolean;
@@ -150,6 +159,18 @@ export default function HelpPanel({ open, onClose, pathname }: HelpPanelProps) {
             </p>
           </div>
         )}
+
+        {/* Footer fijo: enlace a la guía completa del módulo actual */}
+        <div className="flex-shrink-0 border-t border-gray-100 px-5 py-3.5">
+          <Link
+            href={GUIA_HREF[moduleForPath(pathname)]}
+            onClick={onClose}
+            className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-[#253158] transition-colors hover:border-[#253158] hover:bg-[#253158]/5"
+          >
+            Ver guía de uso completa
+            <ArrowRight className="h-4 w-4 flex-shrink-0" />
+          </Link>
+        </div>
       </aside>
     </>,
     document.body

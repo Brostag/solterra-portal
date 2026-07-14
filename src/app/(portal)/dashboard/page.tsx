@@ -15,6 +15,7 @@ import {
   Calculator,
   Upload,
   Eye,
+  BookOpen,
 } from "lucide-react";
 
 export const DASHBOARD_STATS_TAG = "dashboard-stats";
@@ -215,6 +216,13 @@ export default async function DashboardPage() {
           {getGreeting()}, {session.nombre}
         </h1>
         <p className="mt-1 text-sm text-gray-400">{getFechaHoy()}</p>
+        <Link
+          href="/ayuda"
+          className="mt-1 inline-flex items-center gap-1.5 text-xs text-gray-400 transition-colors hover:text-[#253158]"
+        >
+          <BookOpen className="h-3.5 w-3.5" />
+          Guía de uso
+        </Link>
       </header>
 
       {/* KPIs */}

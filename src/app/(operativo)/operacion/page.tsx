@@ -7,6 +7,7 @@ import {
   ClipboardList,
   FolderOpen,
   ArrowRight,
+  BookOpen,
 } from "lucide-react";
 import {
   getOperacionDashboard,
@@ -96,6 +97,13 @@ export default async function OperacionDashboard() {
           Control diario de equipos y partes operacionales
         </h1>
         <p className="mt-1 text-sm capitalize text-gray-400">{hoy}</p>
+        <Link
+          href="/operacion/ayuda"
+          className="mt-1 inline-flex items-center gap-1.5 text-xs text-gray-400 transition-colors hover:text-[#253158]"
+        >
+          <BookOpen className="h-3.5 w-3.5" />
+          Guía de uso
+        </Link>
       </header>
 
       {/* KPIs */}

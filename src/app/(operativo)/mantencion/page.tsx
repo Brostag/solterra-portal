@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   Clock,
   ArrowRight,
+  BookOpen,
 } from "lucide-react";
 import { getMantencionDashboard } from "@/lib/terreno/queries";
 import KpiCard from "@/components/portal/KpiCard";
@@ -120,6 +121,13 @@ export default async function MantencionHub() {
           Planificación de trabajos, mantenciones y certificados
         </h1>
         <p className="mt-1 text-sm capitalize text-gray-400">{hoy}</p>
+        <Link
+          href="/mantencion/ayuda"
+          className="mt-1 inline-flex items-center gap-1.5 text-xs text-gray-400 transition-colors hover:text-[#253158]"
+        >
+          <BookOpen className="h-3.5 w-3.5" />
+          Guía de uso
+        </Link>
       </header>
 
       {/* KPIs */}
