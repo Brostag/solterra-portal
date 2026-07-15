@@ -17,7 +17,7 @@ import {
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
 import KpiCard from "@/components/portal/KpiCard";
-import { AppTourAutoStart } from "@/components/portal/AppTour";
+import { AppTourAutoStart, TourButton } from "@/components/portal/AppTour";
 
 function fechaCorta(iso: string): string {
   return new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "short" });
@@ -98,13 +98,19 @@ export default async function OperacionDashboard() {
           Control diario de equipos y partes operacionales
         </h1>
         <p className="mt-1 text-sm capitalize text-gray-400">{hoy}</p>
-        <Link
-          href="/operacion/ayuda"
-          className="mt-1 inline-flex items-center gap-1.5 text-xs text-gray-400 transition-colors hover:text-[#253158]"
-        >
-          <BookOpen className="h-3.5 w-3.5" />
-          Guía de uso
-        </Link>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <Link
+            href="/operacion/ayuda"
+            className="inline-flex items-center gap-1.5 text-xs text-gray-400 transition-colors hover:text-[#253158]"
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            Guía de uso
+          </Link>
+          <TourButton
+            module="OPERACION"
+            className="inline-flex items-center gap-1 text-xs text-gray-400 transition-colors hover:text-[#253158]"
+          />
+        </div>
       </header>
 
       {/* KPIs */}
@@ -199,7 +205,7 @@ export default async function OperacionDashboard() {
         )}
       </section>
 
-      {/* Tour guiado (isla cliente, render null). Auto-inicio solo en 1ª visita de escritorio. */}
+      {/* Tour guiado (isla cliente, render null). Auto-inicio en 1ª visita (móvil y escritorio). */}
       <AppTourAutoStart module="OPERACION" />
     </div>
   );

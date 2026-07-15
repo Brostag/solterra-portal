@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { getMantencionDashboard } from "@/lib/terreno/queries";
 import KpiCard from "@/components/portal/KpiCard";
-import { AppTourAutoStart } from "@/components/portal/AppTour";
+import { AppTourAutoStart, TourButton } from "@/components/portal/AppTour";
 
 const CARDS = [
   {
@@ -122,13 +122,19 @@ export default async function MantencionHub() {
           Planificación de trabajos, mantenciones y certificados
         </h1>
         <p className="mt-1 text-sm capitalize text-gray-400">{hoy}</p>
-        <Link
-          href="/mantencion/ayuda"
-          className="mt-1 inline-flex items-center gap-1.5 text-xs text-gray-400 transition-colors hover:text-[#253158]"
-        >
-          <BookOpen className="h-3.5 w-3.5" />
-          Guía de uso
-        </Link>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <Link
+            href="/mantencion/ayuda"
+            className="inline-flex items-center gap-1.5 text-xs text-gray-400 transition-colors hover:text-[#253158]"
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            Guía de uso
+          </Link>
+          <TourButton
+            module="MANTENCION"
+            className="inline-flex items-center gap-1 text-xs text-gray-400 transition-colors hover:text-[#253158]"
+          />
+        </div>
       </header>
 
       {/* KPIs */}
@@ -265,7 +271,7 @@ export default async function MantencionHub() {
         </section>
       </div>
 
-      {/* Tour guiado (isla cliente, render null). Auto-inicio solo en 1ª visita de escritorio. */}
+      {/* Tour guiado (isla cliente, render null). Auto-inicio en 1ª visita (móvil y escritorio). */}
       <AppTourAutoStart module="MANTENCION" />
     </div>
   );

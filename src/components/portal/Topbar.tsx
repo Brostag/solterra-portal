@@ -86,6 +86,7 @@ export default function Topbar({ nombre, email, rol, onOpenMenu }: TopbarProps) 
         <button
           type="button"
           onClick={onOpenMenu}
+          data-tour="menu-toggle"
           aria-label="Abrir menú de navegación"
           className="lg:hidden h-9 w-9 flex items-center justify-center rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200 transition-colors flex-shrink-0"
         >

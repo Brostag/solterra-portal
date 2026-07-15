@@ -87,3 +87,21 @@
 .driver-popover.solterra-tour .driver-popover-arrow {
   border-color: #ffffff;
 }
+
+/* Ajustes para pantallas muy angostas (móvil < 480 px).
+   Se reduce el ancho máximo para que el popover no toque los bordes y se
+   bajan levemente los tamaños de fuente para que el contenido quepa bien. */
+@media (max-width: 480px) {
+  .driver-popover.solterra-tour {
+    max-width: calc(100vw - 2rem);
+    padding: 1rem;
+  }
+
+  .driver-popover.solterra-tour .driver-popover-title {
+    font-size: 0.9375rem;
+  }
+
+  .driver-popover.solterra-tour .driver-popover-description {
+    font-size: 0.8125rem;
+  }
+}

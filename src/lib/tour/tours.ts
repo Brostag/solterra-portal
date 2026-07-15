@@ -6,9 +6,18 @@
 //
 // Cada `element` es un selector CSS que apunta a un ancla `data-tour="..."`
 // del DOM real. Los pasos SIN `element` se muestran como modal centrado
-// (bienvenida / cierre). En pantallas donde un ancla no exista (p. ej. el
-// sidebar oculto en móvil), el paso degrada a popover centrado; AppTour
-// filtra los pasos cuyo elemento no esté presente antes de armar el tour.
+// (bienvenida / cierre). AppTour.usableSteps() resuelve cada paso antes de
+// armar el tour:
+//   - element presente y en viewport → spotlight normal.
+//   - element ausente del viewport horizontal (sidebar móvil cerrado) +
+//     fallbackCentered: true → popover centrado sin spotlight.
+//   - element ausente del viewport horizontal sin fallback → paso descartado.
+//   - element bajo el fold → driver.js lo scrollea a la vista (no se filtra).
+//
+// Para el sidebar hay dos pasos gemelos: uno apunta a '[data-tour="sidebar-nav"]'
+// (el <nav> del sidebar, visible solo en desktop), el otro a
+// '[data-tour="menu-toggle"]' (el botón hamburguesa del Topbar, visible solo
+// en móvil). isElementUsable() descarta el que no aplique en cada pantalla.
 
 import type { Module } from "@/lib/modules";
 
@@ -21,6 +30,13 @@ export type TourStep = {
   description: string;
   side?: "top" | "right" | "bottom" | "left";
   align?: "start" | "center" | "end";
+  /**
+   * Si el ancla no está usable (p. ej. elemento de sidebar fuera del viewport
+   * horizontal en móvil), en vez de descartar el paso se muestra como modal
+   * centrado sin element. Útil para pasos de ítems del sidebar que solo son
+   * visibles en desktop.
+   */
+  fallbackCentered?: boolean;
 };
 
 const comercialSteps: TourStep[] = [
@@ -35,6 +51,18 @@ const comercialSteps: TourStep[] = [
     description:
       "Desde aquí llegas a Contratos, Empresas, Servicios, Documentos, Órdenes de Compra, Cotizador y Cotizaciones. Es tu punto de partida en todo el módulo.",
     side: "right",
+    align: "start",
+  },
+  // Paso gemelo para móvil: apunta al botón hamburguesa (lg:hidden en Topbar).
+  // En desktop el hamburguesa no está en pantalla → isElementUsable() lo filtra.
+  // En móvil el sidebar-nav está fuera del viewport horizontal → se filtra allá.
+  // Así nunca se muestran los dos al mismo tiempo.
+  {
+    element: '[data-tour="menu-toggle"]',
+    title: "Menú de navegación",
+    description:
+      "Toca este botón para abrir el menú. Desde ahí llegas a Contratos, Empresas, Servicios, Documentos, Órdenes de Compra, Cotizador y Cotizaciones.",
+    side: "bottom",
     align: "start",
   },
   {
@@ -90,6 +118,15 @@ const mantencionSteps: TourStep[] = [
     side: "right",
     align: "start",
   },
+  // Paso gemelo para móvil: apunta al botón hamburguesa (lg:hidden en Topbar).
+  {
+    element: '[data-tour="menu-toggle"]',
+    title: "Menú de navegación",
+    description:
+      "Toca este botón para abrir el menú. Desde ahí entras a Equipos, Taller, Planes, Check List, Certificado, Vencimientos y Reportes.",
+    side: "bottom",
+    align: "start",
+  },
   {
     element: '[data-tour="kpis"]',
     title: "Estado de la mantención",
@@ -107,12 +144,16 @@ const mantencionSteps: TourStep[] = [
     align: "center",
   },
   {
+    // «Planes» es un ítem del sidebar (/mantencion/planes). En desktop apunta
+    // al enlace en el sidebar abierto. En móvil el sidebar está cerrado fuera
+    // del viewport horizontal, así que fallbackCentered lo muestra centrado.
     element: '[data-tour="planes"]',
     title: "El flujo en 3 pasos",
     description:
-      "El ciclo es: 1) Registro de entrada en Operación, 2) crear el Plan (A según fabricante, B preventivo, C correctivo) aquí en «Planes», y 3) generar la Orden de Trabajo hacia el Taller.",
+      "El ciclo es: 1) Registro de entrada en Operación, 2) crear el Plan (A según fabricante, B preventivo, C correctivo) en «Planes» del menú, y 3) generar la Orden de Trabajo hacia el Taller.",
     side: "right",
     align: "center",
+    fallbackCentered: true,
   },
   {
     element: '[data-tour="help-button"]',
@@ -141,6 +182,15 @@ const operacionSteps: TourStep[] = [
     description:
       "Desde aquí llegas a Partes Diarios y Checklists. Los equipos se gestionan en Mantención; aquí solo los seleccionas.",
     side: "right",
+    align: "start",
+  },
+  // Paso gemelo para móvil: apunta al botón hamburguesa (lg:hidden en Topbar).
+  {
+    element: '[data-tour="menu-toggle"]',
+    title: "Menú de navegación",
+    description:
+      "Toca este botón para abrir el menú. Desde ahí llegas a Partes Diarios y Checklists.",
+    side: "bottom",
     align: "start",
   },
   {

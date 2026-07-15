@@ -6,7 +6,7 @@ import { formatCurrency } from "@/lib/currency";
 import { formatContractDisplayNumber } from "@/lib/contracts";
 import Link from "next/link";
 import KpiCard from "@/components/portal/KpiCard";
-import { AppTourAutoStart } from "@/components/portal/AppTour";
+import { AppTourAutoStart, TourButton } from "@/components/portal/AppTour";
 import {
   FileText,
   Building2,
@@ -217,13 +217,19 @@ export default async function DashboardPage() {
           {getGreeting()}, {session.nombre}
         </h1>
         <p className="mt-1 text-sm text-gray-400">{getFechaHoy()}</p>
-        <Link
-          href="/ayuda"
-          className="mt-1 inline-flex items-center gap-1.5 text-xs text-gray-400 transition-colors hover:text-[#253158]"
-        >
-          <BookOpen className="h-3.5 w-3.5" />
-          Guía de uso
-        </Link>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <Link
+            href="/ayuda"
+            className="inline-flex items-center gap-1.5 text-xs text-gray-400 transition-colors hover:text-[#253158]"
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            Guía de uso
+          </Link>
+          <TourButton
+            module="COMERCIAL"
+            className="inline-flex items-center gap-1 text-xs text-gray-400 transition-colors hover:text-[#253158]"
+          />
+        </div>
       </header>
 
       {/* KPIs */}
@@ -427,7 +433,7 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      {/* Tour guiado (isla cliente, render null). Auto-inicio solo en 1ª visita de escritorio. */}
+      {/* Tour guiado (isla cliente, render null). Auto-inicio en 1ª visita (móvil y escritorio). */}
       <AppTourAutoStart module="COMERCIAL" />
     </div>
   );

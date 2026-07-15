@@ -5,13 +5,19 @@ import { Sparkles } from "lucide-react";
 import type { Module } from "@/lib/modules";
 import { getTourSteps, tourSeenKey, type TourStep } from "@/lib/tour/tours";
 
-// Ancho mínimo para lanzar el tour automáticamente. Bajo esto (móvil) el
-// sidebar y varios anclas están ocultos, así que el auto-inicio no aplica.
-const DESKTOP_MIN_WIDTH = 768;
-
-/** ¿El ancla existe y está visible en el DOM actual? Un elemento presente pero
- *  oculto (display:none, sin layout, o fuera de pantalla por transform como el
- *  sidebar en móvil) no sirve como spotlight: mejor omitir ese paso. */
+/** ¿El ancla existe y está visible en el DOM actual?
+ *
+ *  Descarta un elemento si:
+ *  - No existe en el DOM.
+ *  - No tiene dimensiones (display:none, visibility:hidden, sin layout).
+ *  - Está fuera del viewport HORIZONTAL (rect.right <= 0 o rect.left >=
+ *    window.innerWidth). El caso más común es el sidebar en móvil: usa
+ *    "-translate-x-full" y getBoundingClientRect() devuelve right <= 0 aunque
+ *    width > 0. El portal no tiene scroll horizontal, por lo que un elemento
+ *    fuera de ese eje jamás es visible para el usuario.
+ *
+ *  NO filtra por posición vertical: elementos bajo el fold son legítimos
+ *  porque driver.js los scrollea automáticamente a la vista. */
 function isElementUsable(selector: string): boolean {
   if (typeof document === "undefined") return false;
   const el = document.querySelector(selector);
@@ -20,14 +26,32 @@ function isElementUsable(selector: string): boolean {
   if (rect.width === 0 && rect.height === 0) return false;
   const style = window.getComputedStyle(el);
   if (style.display === "none" || style.visibility === "hidden") return false;
+  // Descarta elementos fuera del viewport horizontal (p. ej. sidebar móvil cerrado).
+  if (rect.right <= 0 || rect.left >= window.innerWidth) return false;
   return true;
 }
 
-/** Deja solo los pasos utilizables: los de bienvenida/cierre (sin element) y
- *  los cuyo ancla exista y esté visible. Así el tour degrada limpio en móvil
- *  o cuando una pantalla no tiene todas las secciones. */
+/** Resuelve los pasos utilizables para el contexto de pantalla actual:
+ *
+ *  - Pasos sin `element` (bienvenida/cierre): se pasan tal cual (popover centrado).
+ *  - Pasos con `element` usable: se pasan tal cual.
+ *  - Pasos con `element` NO usable y `fallbackCentered: true`: se pasan SIN
+ *    `element` — driver.js los muestra como modal centrado. Útil para pasos que
+ *    apuntan a ítems del sidebar que en móvil están fuera de pantalla.
+ *  - Pasos con `element` NO usable sin fallback: se descartan.
+ *
+ *  Inmutable: nunca muta el array ni los objetos originales. */
 function usableSteps(steps: TourStep[]): TourStep[] {
-  return steps.filter((s) => !s.element || isElementUsable(s.element));
+  return steps.flatMap((s) => {
+    if (!s.element) return [s];
+    if (isElementUsable(s.element)) return [s];
+    if (s.fallbackCentered) {
+      // Copia inmutable del paso, sin `element`, `side`, `align` ni `fallbackCentered`
+      // (driver.js lo mostrará como modal centrado sin spotlight).
+      return [{ title: s.title, description: s.description }];
+    }
+    return [];
+  });
 }
 
 // Instancia activa a nivel de módulo: permite destruir un tour en curso si el
@@ -60,11 +84,21 @@ export async function startTour(module: Module): Promise<void> {
   // Un tour a la vez: cierra cualquier instancia previa antes de abrir otra.
   destroyActiveTour();
 
-  const [{ driver }] = await Promise.all([
-    import("driver.js"),
-    import("driver.js/dist/driver.css"),
-    import("./app-tour.css"),
-  ]);
+  let driverModule: typeof import("driver.js");
+  try {
+    const [mod] = await Promise.all([
+      import("driver.js"),
+      import("driver.js/dist/driver.css"),
+      import("./app-tour.css"),
+    ]);
+    driverModule = mod;
+  } catch (error) {
+    // Carga dinámica fallida (red caída, chunks viejos tras un deploy): el tour
+    // es una ayuda opcional — se aborta sin romper la página, dejando rastro.
+    console.error("No se pudo cargar driver.js para el tour", error);
+    return;
+  }
+  const { driver } = driverModule;
 
   const markSeen = () => {
     try {
@@ -110,18 +144,22 @@ interface TourModuleProps {
 }
 
 /**
- * Isla que inicia el tour automáticamente en la primera visita de escritorio.
+ * Isla que inicia el tour automáticamente en la primera visita (móvil y escritorio).
  * Render null. Se monta al final del JSX de los dashboards (server components).
+ *
+ * En móvil, los pasos que apuntan a anclas fuera del viewport horizontal (p. ej.
+ * el sidebar cerrado) se filtran o degradan a centrado automáticamente mediante
+ * isElementUsable() y el campo fallbackCentered de cada paso.
  */
 export function AppTourAutoStart({ module }: TourModuleProps) {
   const launched = useRef(false);
 
   useEffect(() => {
-    // Guard de doble ejecución (React StrictMode monta el efecto dos veces).
+    // Guard de doble arranque. Se marca DENTRO del rAF (no aquí): en dev,
+    // StrictMode ejecuta setup → cleanup → setup antes de que dispare el frame;
+    // si se marcara aquí, el cleanup cancelaría el rAF y el segundo setup haría
+    // early-return, dejando el auto-inicio muerto en desarrollo.
     if (launched.current) return;
-
-    if (typeof window === "undefined") return;
-    if (window.innerWidth < DESKTOP_MIN_WIDTH) return;
 
     let seen = false;
     try {
@@ -132,10 +170,9 @@ export function AppTourAutoStart({ module }: TourModuleProps) {
     }
     if (seen) return;
 
-    launched.current = true;
-
-    // Esperar un frame para que el DOM (KPIs, listas) esté montado y medible.
+    // Esperar un frame para que el DOM (KPIs, listas, sidebar) esté montado y medible.
     const raf = requestAnimationFrame(() => {
+      launched.current = true;
       void startTour(module);
     });
 
@@ -169,7 +206,7 @@ export function TourButton({ module, className }: TourButtonProps) {
         "inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-[#253158] transition-colors hover:border-[#253158] hover:bg-[#253158]/5"
       }
     >
-      <Sparkles className="h-4 w-4 flex-shrink-0" />
+      <Sparkles aria-hidden="true" className="h-4 w-4 flex-shrink-0" />
       Iniciar tour
     </button>
   );
