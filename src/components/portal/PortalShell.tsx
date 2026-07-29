@@ -12,10 +12,23 @@ interface PortalShellProps {
   email: string;
   rol: Rol;
   area?: Area | null;
+  /**
+   * Cuenta técnica de soporte. Se resuelve en el servidor (`esSoporte` en
+   * src/lib/soporte.ts lee SOPORTE_EMAILS, que no es NEXT_PUBLIC_) y baja como
+   * prop hasta el Sidebar, que es cliente y no puede calcularlo.
+   */
+  esSoporte?: boolean;
   children: React.ReactNode;
 }
 
-export default function PortalShell({ nombre, email, rol, area = null, children }: PortalShellProps) {
+export default function PortalShell({
+  nombre,
+  email,
+  rol,
+  area = null,
+  esSoporte = false,
+  children,
+}: PortalShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
 
@@ -55,7 +68,13 @@ export default function PortalShell({ nombre, email, rol, area = null, children 
         />
       )}
 
-      <Sidebar rol={rol} area={area} mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <Sidebar
+        rol={rol}
+        area={area}
+        esSoporte={esSoporte}
+        mobileOpen={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+      />
 
       <div className="flex flex-col flex-1 overflow-hidden">
         <Topbar

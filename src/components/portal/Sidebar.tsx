@@ -17,6 +17,7 @@ import {
   Calculator,
   ClipboardList,
   ClipboardCheck,
+  LifeBuoy,
   ChevronLeft,
   ChevronRight,
   X,
@@ -48,6 +49,11 @@ const adminItems: NavItem[] = [
   { href: "/usuarios",      label: "Usuarios",      icon: UserCog },
   { href: "/auditoria",     label: "Auditoría",     icon: ShieldCheck },
 ];
+
+// Bandeja de reportes de feedback. Solo la ve la cuenta técnica: el layout
+// resuelve `esSoporte` en el servidor (SOPORTE_EMAILS no es NEXT_PUBLIC_) y lo
+// baja como prop. El cliente nunca debe ver este item.
+const soporteItem: NavItem = { href: "/soporte", label: "Soporte", icon: LifeBuoy };
 
 const mantencionItems: NavItem[] = [
   { href: "/mantencion",              label: "Inicio",       icon: LayoutDashboard },
@@ -83,11 +89,19 @@ const STORAGE_KEY = "solterra_sidebar_collapsed";
 interface SidebarProps {
   rol: Rol;
   area?: Area | null;
+  /** Resuelto en el servidor (ver `esSoporte` en src/lib/soporte.ts). */
+  esSoporte?: boolean;
   mobileOpen?: boolean;
   onClose?: () => void;
 }
 
-export default function Sidebar({ rol, area = null, mobileOpen = false, onClose }: SidebarProps) {
+export default function Sidebar({
+  rol,
+  area = null,
+  esSoporte = false,
+  mobileOpen = false,
+  onClose,
+}: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
@@ -96,6 +110,7 @@ export default function Sidebar({ rol, area = null, mobileOpen = false, onClose 
   const currentModule = moduleForPath(pathname);
   const mainItems = itemsForModule(currentModule);
   const showAdmin = currentModule === "COMERCIAL" && rol === "ADMINISTRADOR";
+  const showSoporte = currentModule === "COMERCIAL" && esSoporte;
   const canSwitch = allowedModules(rol, area).length > 1;
 
   useEffect(() => {
@@ -111,8 +126,9 @@ export default function Sidebar({ rol, area = null, mobileOpen = false, onClose 
   useEffect(() => {
     itemsForModule(currentModule).forEach((item) => router.prefetch(item.href));
     if (showAdmin) adminItems.forEach((item) => router.prefetch(item.href));
+    if (showSoporte) router.prefetch(soporteItem.href);
     if (canSwitch) router.prefetch("/modulos");
-  }, [router, currentModule, showAdmin, canSwitch]);
+  }, [router, currentModule, showAdmin, showSoporte, canSwitch]);
 
   function toggle() {
     const next = !collapsed;
@@ -249,7 +265,7 @@ export default function Sidebar({ rol, area = null, mobileOpen = false, onClose 
 
         {mainItems.map(renderLink)}
 
-        {showAdmin && (
+        {(showAdmin || showSoporte) && (
           <>
             {/* Desktop collapsed: thin divider */}
             {collapsed && (
@@ -261,7 +277,8 @@ export default function Sidebar({ rol, area = null, mobileOpen = false, onClose 
                 Administración
               </p>
             </div>
-            {adminItems.map(renderLink)}
+            {showAdmin && adminItems.map(renderLink)}
+            {showSoporte && renderLink(soporteItem)}
           </>
         )}
 

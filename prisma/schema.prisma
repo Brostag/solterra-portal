@@ -104,8 +104,57 @@ model Profile {
   mant_certs_mant_gerente   MantCertificadoMantencion[] @relation("CertMantGerente")
   mant_certs_mant_anulado   MantCertificadoMantencion[] @relation("CertMantAnuladoPor")
   mant_planes_responsable   MantPlanMantencion[]        @relation("PlanMantResponsable")
+  feedback_reportes         FeedbackReport[]            @relation("FeedbackAutor")
+  feedback_resueltos        FeedbackReport[]            @relation("FeedbackResueltoPor")
 
   @@map("profiles")
+}
+
+// ============================================================
+// FEEDBACK IN-APP — canal de reporte del cliente hacia soporte.
+// No pertenece a ningún módulo de negocio: es transversal a los tres.
+// ============================================================
+
+model FeedbackReport {
+  id              String            @id @default(uuid())
+  correlativo     Int
+  anio            Int
+  autor_id        String
+  tipo            String            @default("Problema")
+  mensaje         String
+  ruta            String?
+  modulo          String?
+  user_agent      String?
+  viewport        String?
+  estado          String            @default("Nuevo")
+  nota_interna    String?
+  resuelto_at     DateTime?
+  resuelto_por_id String?
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+  autor           Profile           @relation("FeedbackAutor", fields: [autor_id], references: [id])
+  resuelto_por    Profile?          @relation("FeedbackResueltoPor", fields: [resuelto_por_id], references: [id])
+  adjuntos        FeedbackAdjunto[]
+
+  @@unique([correlativo, anio])
+  @@index([estado])
+  @@index([autor_id])
+  @@index([created_at])
+  @@map("feedback_reports")
+}
+
+model FeedbackAdjunto {
+  id           String         @id @default(uuid())
+  reporte_id   String
+  storage_path String
+  mime         String
+  tamano       Int
+  es_captura   Boolean        @default(false)
+  created_at   DateTime       @default(now())
+  reporte      FeedbackReport @relation(fields: [reporte_id], references: [id], onDelete: Cascade)
+
+  @@index([reporte_id])
+  @@map("feedback_adjuntos")
 }
 
 model Client {

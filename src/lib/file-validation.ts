@@ -46,7 +46,13 @@ const VERIFIERS: Record<string, (buffer: Buffer) => boolean> = {
  * MIME sin verificador conocido → false (rechazo por defecto).
  */
 export function fileContentMatchesMime(declaredMime: string, buffer: Buffer): boolean {
+  // Object.hasOwn y no `VERIFIERS[mime]` a secas: un MIME declarado como
+  // "constructor" o "toString" resuelve a una propiedad heredada de
+  // Object.prototype, que es truthy y se ejecutaría como si fuera un
+  // verificador. `Object(buffer)` devuelve el propio buffer, o sea el rechazo
+  // por defecto se convertiría en aprobación para contenido arbitrario.
+  if (!Object.hasOwn(VERIFIERS, declaredMime)) return false;
   const verify = VERIFIERS[declaredMime];
-  if (!verify) return false;
-  return verify(buffer);
+  if (typeof verify !== "function") return false;
+  return verify(buffer) === true;
 }

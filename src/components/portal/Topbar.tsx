@@ -3,9 +3,10 @@
 import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Bell, ChevronDown, HelpCircle, LogOut, Menu } from "lucide-react";
+import { ChevronDown, HelpCircle, LogOut, Menu, MessageSquarePlus } from "lucide-react";
 import type { Rol } from "@/types";
 import HelpPanel from "@/components/portal/HelpPanel";
+import FeedbackPanel from "@/components/portal/FeedbackPanel";
 import ThemeToggle from "@/components/portal/ThemeToggle";
 
 const rolLabels: Record<Rol, string> = {
@@ -29,6 +30,7 @@ const pageTitles: Record<string, string> = {
   "/configuracion": "Configuración",
   "/usuarios": "Usuarios",
   "/auditoria": "Auditoría",
+  "/soporte": "Soporte",
 };
 
 function getPageTitle(pathname: string): string {
@@ -49,6 +51,7 @@ export default function Topbar({ nombre, email, rol, onOpenMenu }: TopbarProps) 
   const pathname = usePathname();
   const pageTitle = getPageTitle(pathname);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -101,13 +104,18 @@ export default function Topbar({ nombre, email, rol, onOpenMenu }: TopbarProps) 
       </div>
 
       <div className="flex items-center gap-1 flex-shrink-0">
+        {/* Feedback: visible también en móvil — los problemas se reportan desde terreno */}
         <button
           type="button"
-          className="relative h-9 w-9 flex items-center justify-center rounded-md text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          aria-label="Notificaciones"
+          data-tour="feedback-button"
+          data-feedback-ui="boton"
+          className="h-9 w-9 flex items-center justify-center rounded-md text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          aria-label="Enviar comentario"
+          aria-haspopup="dialog"
+          aria-expanded={feedbackOpen}
+          onClick={() => setFeedbackOpen(true)}
         >
-          {/* Dot de notificación removido: se reactiva cuando exista un sistema real de notificaciones */}
-          <Bell className="h-[18px] w-[18px]" />
+          <MessageSquarePlus className="h-[18px] w-[18px]" />
         </button>
         <button
           type="button"
@@ -167,6 +175,11 @@ export default function Topbar({ nombre, email, rol, onOpenMenu }: TopbarProps) 
       <HelpPanel
         open={helpOpen}
         onClose={() => setHelpOpen(false)}
+        pathname={pathname}
+      />
+      <FeedbackPanel
+        open={feedbackOpen}
+        onClose={() => setFeedbackOpen(false)}
         pathname={pathname}
       />
     </header>

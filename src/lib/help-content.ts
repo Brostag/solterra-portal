@@ -481,6 +481,7 @@ export const HELP_CONTENT: Record<string, HelpEntry> = {
     consejos: [
       "El botón de ayuda contextual (arriba a la derecha) explica la pantalla en la que estás.",
       "Empieza por Configuración y Empresas: el resto del flujo depende de esos datos.",
+      "El botón de comentario, al lado de la ayuda, envía un reporte al equipo técnico con captura de pantalla incluida.",
     ],
   },
 
@@ -497,6 +498,7 @@ export const HELP_CONTENT: Record<string, HelpEntry> = {
     consejos: [
       "Empieza por Equipos: sin la flota cargada no puedes planificar ni cotizar.",
       "El plan genera la orden de trabajo; la orden se ejecuta en el Taller.",
+      "El botón de comentario, al lado de la ayuda, envía un reporte al equipo técnico con captura de pantalla incluida.",
     ],
   },
 
@@ -513,6 +515,24 @@ export const HELP_CONTENT: Record<string, HelpEntry> = {
     consejos: [
       "Los equipos los gestiona Mantención; en Operación solo los seleccionas.",
       "Tus registros diarios son la base para planificar la mantención.",
+      "Si algo falla en terreno, usa el botón de comentario de la barra superior: puedes capturar la pantalla y marcarla.",
+    ],
+  },
+
+  "/soporte": {
+    titulo: "Comentarios recibidos",
+    descripcion: "Bandeja de los comentarios que envían los usuarios desde el portal.",
+    paraQueSirve:
+      "Reúne los problemas, sugerencias y consultas que los usuarios envían con el botón de comentario de la barra superior. Cada reporte llega con el mensaje, la pantalla desde donde se envió y las imágenes adjuntas.",
+    pasos: [
+      "Revisa la lista: los comentarios nuevos aparecen primero.",
+      "Abre un reporte para leer el mensaje completo y ver las imágenes adjuntas.",
+      "Deja una nota interna con el diagnóstico o la solución aplicada.",
+      "Cambia el estado a medida que avanzas hasta dejarlo resuelto.",
+    ],
+    consejos: [
+      "Las capturas pueden contener datos de clientes: se guardan en almacenamiento privado y solo se abren desde aquí.",
+      "La ruta y el tamaño de pantalla del reporte ayudan a reproducir el problema tal como lo vio el usuario.",
     ],
   },
 };

@@ -98,6 +98,14 @@ const comercialSteps: TourStep[] = [
     align: "end",
   },
   {
+    element: '[data-tour="feedback-button"]',
+    title: "Reportar un problema",
+    description:
+      "Si algo falla o quieres sugerir una mejora, usa este botón. Puedes capturar la pantalla, marcar dónde está el problema y el reporte llega al equipo técnico.",
+    side: "bottom",
+    align: "end",
+  },
+  {
     title: "Sigue el orden recomendado",
     description:
       "En Guía de uso está el paso a paso completo: primero Empresas, luego la Cotización y recién ahí el Contrato. Ábrela desde el enlace «Guía de uso» bajo el saludo.",
@@ -164,6 +172,14 @@ const mantencionSteps: TourStep[] = [
     align: "end",
   },
   {
+    element: '[data-tour="feedback-button"]',
+    title: "Reportar un problema",
+    description:
+      "Si algo falla o quieres sugerir una mejora, usa este botón. Puedes capturar la pantalla, marcar dónde está el problema y el reporte llega al equipo técnico.",
+    side: "bottom",
+    align: "end",
+  },
+  {
     title: "Revisa la guía completa",
     description:
       "En Guía de uso está el paso a paso completo del ciclo, de la flota al plan, del plan a la orden de trabajo y de ahí al certificado. Ábrela desde el enlace «Guía de uso» bajo el título.",
@@ -222,6 +238,14 @@ const operacionSteps: TourStep[] = [
     title: "Ayuda de cada pantalla",
     description:
       "Este botón abre la ayuda contextual de la pantalla en la que estés: para qué sirve, pasos básicos y consejos.",
+    side: "bottom",
+    align: "end",
+  },
+  {
+    element: '[data-tour="feedback-button"]',
+    title: "Reportar un problema",
+    description:
+      "Si algo falla en terreno o quieres sugerir una mejora, usa este botón. Puedes capturar la pantalla, marcar dónde está el problema y el reporte llega al equipo técnico.",
     side: "bottom",
     align: "end",
   },

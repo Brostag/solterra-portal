@@ -3,6 +3,7 @@ import { getPortalSessionFast } from "@/lib/auth/session";
 import PortalShell from "@/components/portal/PortalShell";
 import { ThemeProvider } from "@/components/portal/ThemeProvider";
 import { canAccessModule, landingFor } from "@/lib/modules";
+import { esSoporte } from "@/lib/soporte";
 
 // Aplica la clase `dark` antes de que React hidrate para evitar parpadeo
 // cuando el usuario tiene tema oscuro guardado en localStorage.
@@ -22,7 +23,15 @@ export default async function PortalLayout({
     <>
       <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       <ThemeProvider>
-        <PortalShell nombre={session.nombre} email={session.email} rol={session.rol} area={session.area}>
+        {/* esSoporte se resuelve acá: SOPORTE_EMAILS es server-only y el
+            Sidebar es cliente. Para el resto de las cuentas viaja como false. */}
+        <PortalShell
+          nombre={session.nombre}
+          email={session.email}
+          rol={session.rol}
+          area={session.area}
+          esSoporte={esSoporte(session)}
+        >
           {children}
         </PortalShell>
       </ThemeProvider>

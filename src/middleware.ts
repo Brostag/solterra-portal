@@ -19,6 +19,7 @@ const PORTAL_PATHS = [
   "/mantencion",
   "/operacion",
   "/modulos",
+  "/soporte",
 ];
 
 export async function middleware(request: NextRequest) {
@@ -82,6 +83,7 @@ export const config = {
     "/mantencion/:path*",
     "/operacion/:path*",
     "/modulos/:path*",
+    "/soporte/:path*",
   ],
 };
 
