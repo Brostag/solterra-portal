@@ -3,7 +3,11 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
-import { getEquiposOptions, getResponsables } from "@/lib/terreno/queries";
+import {
+  getEquiposOptions,
+  getResponsables,
+  getUltimosRegistrosPorEquipo,
+} from "@/lib/terreno/queries";
 import ParteForm from "@/components/operacion/ParteForm";
 
 export default async function NuevoPartePage() {
@@ -11,9 +15,13 @@ export default async function NuevoPartePage() {
   if (!session) redirect("/login");
   if (!canAccessModule(session, "OPERACION")) redirect("/operacion/partes-diarios");
 
-  const [equipos, operadores] = await Promise.all([
+  // El último registro de cada equipo viaja al formulario para prellenar
+  // horómetro, odómetro, área, centro de costo y tipo de mantención en cuanto
+  // se elige el equipo, sin otra ida y vuelta al servidor.
+  const [equipos, operadores, ultimosRegistros] = await Promise.all([
     getEquiposOptions(),
     getResponsables(),
+    getUltimosRegistrosPorEquipo(),
   ]);
 
   return (
@@ -34,7 +42,12 @@ export default async function NuevoPartePage() {
         </p>
       </header>
 
-      <ParteForm equipos={equipos} operadores={operadores} userId={session.id} />
+      <ParteForm
+        equipos={equipos}
+        operadores={operadores}
+        userId={session.id}
+        ultimosRegistros={ultimosRegistros}
+      />
     </div>
   );
 }

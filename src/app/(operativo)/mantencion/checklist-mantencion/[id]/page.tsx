@@ -12,6 +12,7 @@ import {
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
 import AnularConMotivoButton from "@/components/terreno/AnularConMotivoButton";
+import PasoSiguiente from "@/components/terreno/PasoSiguiente";
 import { anularChecklistMantencion } from "@/app/(operativo)/mantencion/checklist-mantencion/actions";
 
 function fechaUTC(iso: string): string {
@@ -73,11 +74,13 @@ export default async function ChecklistMantDetallePage({ params }: Props) {
   const data = (c.items as ChecklistMantData | null) ?? null;
   const correctivas = data?.seccion_c ?? [];
 
-  const puedeAnular =
+  const puedeGestionar =
     !!session &&
-    !c.anulado &&
     canAccessModule(session, "MANTENCION") &&
     (session.rol === "ADMINISTRADOR" || session.rol === "SUPERVISOR");
+  const puedeAnular = puedeGestionar && !c.anulado;
+  // Corregir la cabecera y continuar el ciclo requieren lo mismo que crear.
+  const puedeEditar = puedeGestionar && !c.anulado;
 
   const datos = [
     { label: "N° correlativo", value: `#${c.correlativo}` },
@@ -126,6 +129,14 @@ export default async function ChecklistMantDetallePage({ params }: Props) {
           >
             Descargar PDF
           </a>
+          {puedeEditar && (
+            <Link
+              href={`/mantencion/checklist-mantencion/${c.id}/editar`}
+              className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-[#253158] transition hover:bg-gray-50"
+            >
+              Editar datos
+            </Link>
+          )}
         </div>
       </header>
 
@@ -170,6 +181,15 @@ export default async function ChecklistMantDetallePage({ params }: Props) {
             {c.observaciones_generales}
           </p>
         </section>
+      )}
+
+      {puedeEditar && (
+        <PasoSiguiente
+          titulo="Continuar con la orden de trabajo"
+          descripcion="La orden se abre con el equipo, el tipo de mantención y los trabajos detectados en este check list."
+          href={`/mantencion/taller/nueva?desde=${c.id}`}
+          cta="Crear orden de trabajo"
+        />
       )}
 
       {puedeAnular && (

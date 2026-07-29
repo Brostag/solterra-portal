@@ -28,21 +28,60 @@ export type MantencionFormValues = {
   observaciones: string | null;
 };
 
+// Valores propuestos al crear una orden de trabajo desde un Check List.
+// Estructura compatible con PrefillOT de @/lib/terreno/cadena (se le pasa tal
+// cual). Es un prop SEPARADO de `mantencion` a propósito: `mantencion` marca el
+// modo edición y dispara updateMantencion; un prellenado sigue siendo una
+// creación.
+export type MantencionPrefill = {
+  equipo_id: string;
+  responsable_id: string | null;
+  /** Ya validado contra TIPOS por la capa de cadena. No se re-mapea acá. */
+  tipo: string;
+  /** Ya viene como "YYYY-MM-DDTHH:mm" local, no como ISO. */
+  fecha_inicio: string;
+  horometro_realizada: number | null;
+  proxima_mantencion_horometro: number | null;
+  descripcion: string;
+  trabajos_realizados: string | null;
+  repuestos_usados: string | null;
+  observaciones: string | null;
+  /** Id del Check List de origen. Se manda al servidor, que lo re-valida. */
+  origen_id: string;
+};
+
 const TIPOS = ["Según Fabricante", "Preventiva", "Correctiva", "Emergencia"];
 const ESTADOS = ["Programada", "En Proceso", "Completada"];
+
+// Un id propuesto puede apuntar a un equipo eliminado o a un responsable
+// inactivo, que no están en el selector. En ese caso se deja el campo vacío
+// para que el usuario elija, en vez de enviar un id que el servidor rechazaría.
+function opcionValida(
+  lista: ReadonlyArray<{ id: string }>,
+  id: string | null | undefined,
+): string {
+  return id && lista.some((o) => o.id === id) ? id : "";
+}
 
 export default function MantencionForm({
   equipos,
   responsables,
   mantencion,
+  prefill,
 }: {
   equipos: EquipoOption[];
   responsables: ResponsableOption[];
   mantencion?: MantencionFormValues;
+  prefill?: MantencionPrefill;
 }) {
+  // Solo `mantencion` define el modo edición: con `prefill` esto sigue en false
+  // y el submit va a createMantencion.
   const editar = Boolean(mantencion);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  // Al editar mandan los valores guardados; el prellenado solo aplica al crear.
+  const propuesto = mantencion ? undefined : prefill;
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -67,6 +106,12 @@ export default function MantencionForm({
         </div>
       )}
 
+      {/* Traza del Check List de origen. Campo oculto: no cambia la pantalla y
+          el servidor vuelve a leer el documento antes de guardar el vínculo. */}
+      {propuesto?.origen_id && (
+        <input type="hidden" name="checklist_id" value={propuesto.origen_id} />
+      )}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="block">
           <span className={labelCls}>
@@ -75,7 +120,9 @@ export default function MantencionForm({
           <select
             name="equipo_id"
             required
-            defaultValue={mantencion?.equipo_id ?? ""}
+            defaultValue={
+              mantencion?.equipo_id ?? opcionValida(equipos, propuesto?.equipo_id)
+            }
             className={inputCls}
           >
             <option value="" disabled>
@@ -96,7 +143,10 @@ export default function MantencionForm({
           <select
             name="responsable_id"
             required
-            defaultValue={mantencion?.responsable_id ?? ""}
+            defaultValue={
+              mantencion?.responsable_id ??
+              opcionValida(responsables, propuesto?.responsable_id)
+            }
             className={inputCls}
           >
             <option value="" disabled>
@@ -116,7 +166,7 @@ export default function MantencionForm({
           </span>
           <select
             name="tipo"
-            defaultValue={mantencion?.tipo ?? "Preventiva"}
+            defaultValue={mantencion?.tipo ?? propuesto?.tipo ?? "Preventiva"}
             className={inputCls}
           >
             {TIPOS.map((t) => (
@@ -150,7 +200,12 @@ export default function MantencionForm({
             name="fecha_inicio"
             type="datetime-local"
             required
-            defaultValue={toLocalDateTimeInput(mantencion?.fecha_inicio)}
+            defaultValue={
+              // El prellenado ya viene en formato de input local: pasarlo por
+              // toLocalDateTimeInput lo correría de zona horaria.
+              toLocalDateTimeInput(mantencion?.fecha_inicio) ??
+              propuesto?.fecha_inicio
+            }
             className={inputCls}
           />
         </label>
@@ -173,7 +228,11 @@ export default function MantencionForm({
             min="0"
             step="any"
             placeholder="0"
-            defaultValue={mantencion?.horometro_realizada ?? undefined}
+            defaultValue={
+              mantencion?.horometro_realizada ??
+              propuesto?.horometro_realizada ??
+              undefined
+            }
             className={inputCls}
           />
         </label>
@@ -198,7 +257,11 @@ export default function MantencionForm({
             type="number"
             min="0"
             step="any"
-            defaultValue={mantencion?.proxima_mantencion_horometro ?? undefined}
+            defaultValue={
+              mantencion?.proxima_mantencion_horometro ??
+              propuesto?.proxima_mantencion_horometro ??
+              undefined
+            }
             className={inputCls}
           />
         </label>
@@ -221,7 +284,7 @@ export default function MantencionForm({
             name="descripcion"
             required
             rows={3}
-            defaultValue={mantencion?.descripcion}
+            defaultValue={mantencion?.descripcion ?? propuesto?.descripcion}
             className={inputCls}
           />
         </label>
@@ -231,7 +294,11 @@ export default function MantencionForm({
           <textarea
             name="trabajos_realizados"
             rows={3}
-            defaultValue={mantencion?.trabajos_realizados ?? undefined}
+            defaultValue={
+              mantencion?.trabajos_realizados ??
+              propuesto?.trabajos_realizados ??
+              undefined
+            }
             className={inputCls}
           />
         </label>
@@ -241,7 +308,11 @@ export default function MantencionForm({
           <textarea
             name="repuestos_usados"
             rows={2}
-            defaultValue={mantencion?.repuestos_usados ?? undefined}
+            defaultValue={
+              mantencion?.repuestos_usados ??
+              propuesto?.repuestos_usados ??
+              undefined
+            }
             className={inputCls}
           />
         </label>
@@ -251,7 +322,9 @@ export default function MantencionForm({
           <textarea
             name="observaciones"
             rows={2}
-            defaultValue={mantencion?.observaciones ?? undefined}
+            defaultValue={
+              mantencion?.observaciones ?? propuesto?.observaciones ?? undefined
+            }
             className={inputCls}
           />
         </label>

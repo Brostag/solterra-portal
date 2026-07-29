@@ -9,12 +9,39 @@ import {
 import type { EquipoOption, ResponsableOption } from "@/lib/terreno/queries";
 import { inputCls, labelCls } from "@/lib/terreno/form-styles";
 
+// Valores propuestos al emitir un certificado desde una orden de trabajo.
+// Estructura compatible con PrefillCertificado de @/lib/terreno/cadena (se le
+// pasa tal cual). Gerente y ciudad no tienen origen: conservan su default.
+export type CertMantPrefill = {
+  equipo_id: string;
+  responsable_id: string | null;
+  /** "YYYY-MM-DD" listo para <input type="date">. */
+  fecha: string;
+  horometro: number | null;
+  odometro: number | null;
+  proxima_mantencion: number | null;
+  /** Id de la orden de trabajo de origen. Se manda y el servidor lo re-valida. */
+  origen_id: string;
+};
+
+// Un id propuesto puede apuntar a un equipo eliminado o a un responsable
+// inactivo, que no están en el selector. En ese caso se deja el campo vacío
+// para que el usuario elija, en vez de enviar un id que el servidor rechazaría.
+function opcionValida(
+  lista: ReadonlyArray<{ id: string }>,
+  id: string | null | undefined,
+): string {
+  return id && lista.some((o) => o.id === id) ? id : "";
+}
+
 export default function CertMantForm({
   equipos,
   responsables,
+  prefill,
 }: {
   equipos: EquipoOption[];
   responsables: ResponsableOption[];
+  prefill?: CertMantPrefill;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -33,6 +60,9 @@ export default function CertMantForm({
       horometro: g("horometro"),
       odometro: g("odometro"),
       proxima_mantencion: g("proxima_mantencion"),
+      // Traza de la orden de trabajo de origen. Viaja solo el id; el servidor
+      // vuelve a leer la orden antes de guardar el vínculo.
+      mantencion_id: prefill?.origen_id ?? null,
     };
     startTransition(async () => {
       const res = await createCertificadoMantencion(input);
@@ -54,7 +84,12 @@ export default function CertMantForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="block sm:col-span-2">
           <span className={labelCls}>Equipo <span className="text-[#c6352e]">*</span></span>
-          <select name="equipo_id" required defaultValue="" className={inputCls}>
+          <select
+            name="equipo_id"
+            required
+            defaultValue={opcionValida(equipos, prefill?.equipo_id)}
+            className={inputCls}
+          >
             <option value="" disabled>Seleccionar…</option>
             {equipos.map((e) => (
               <option key={e.id} value={e.id}>{e.codigo} · {e.nombre}</option>
@@ -63,7 +98,12 @@ export default function CertMantForm({
         </label>
         <label className="block">
           <span className={labelCls}>Encargado de Mantención <span className="text-[#c6352e]">*</span></span>
-          <select name="responsable_id" required defaultValue="" className={inputCls}>
+          <select
+            name="responsable_id"
+            required
+            defaultValue={opcionValida(responsables, prefill?.responsable_id)}
+            className={inputCls}
+          >
             <option value="" disabled>Seleccionar…</option>
             {responsables.map((r) => (
               <option key={r.id} value={r.id}>{r.nombre}</option>
@@ -81,7 +121,7 @@ export default function CertMantForm({
         </label>
         <label className="block">
           <span className={labelCls}>Fecha <span className="text-[#c6352e]">*</span></span>
-          <input name="fecha" type="date" required defaultValue={new Date().toISOString().slice(0, 10)} className={inputCls} />
+          <input name="fecha" type="date" required defaultValue={prefill?.fecha ?? new Date().toISOString().slice(0, 10)} className={inputCls} />
         </label>
         <label className="block">
           <span className={labelCls}>Ciudad</span>
@@ -89,15 +129,15 @@ export default function CertMantForm({
         </label>
         <label className="block">
           <span className={labelCls}>Horómetro</span>
-          <input name="horometro" type="number" min="0" step="any" className={inputCls} />
+          <input name="horometro" type="number" min="0" step="any" defaultValue={prefill?.horometro ?? undefined} className={inputCls} />
         </label>
         <label className="block">
           <span className={labelCls}>Odómetro</span>
-          <input name="odometro" type="number" min="0" step="any" className={inputCls} />
+          <input name="odometro" type="number" min="0" step="any" defaultValue={prefill?.odometro ?? undefined} className={inputCls} />
         </label>
         <label className="block">
           <span className={labelCls}>Próxima mantención</span>
-          <input name="proxima_mantencion" type="number" min="0" step="any" className={inputCls} />
+          <input name="proxima_mantencion" type="number" min="0" step="any" defaultValue={prefill?.proxima_mantencion ?? undefined} className={inputCls} />
         </label>
       </div>
 

@@ -5,7 +5,10 @@ import { getSession } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
 import { revalidateTag, revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { MANT_MANTENCIONES_TAG } from "@/lib/terreno/queries";
+import {
+  MANT_CHECKLIST_MANT_TAG,
+  MANT_MANTENCIONES_TAG,
+} from "@/lib/terreno/queries";
 import type { UserSession } from "@/types";
 
 // "Según Fabricante" proviene de generar una OT desde un Plan A. Debe estar en
@@ -152,10 +155,31 @@ export async function createMantencion(
   const parsed = parseMantencionData(formData);
   if ("error" in parsed) return parsed;
 
+  // Traza del Check List de origen: por el formulario viaja solo el id y acá se
+  // vuelve a leer. El vínculo se guarda únicamente si el check list existe, no
+  // está anulado (mismo criterio que prefillOTDesdeChecklist) y es del MISMO
+  // equipo que la orden: si el usuario cambió el equipo en el formulario, ese
+  // check list dejó de ser su origen. Si algo no calza, la OT se crea sin
+  // vínculo — la trazabilidad nunca bloquea el guardado. Solo aplica al crear:
+  // editar una OT no puede reasignar de qué documento nació.
+  const checklistIdRaw = str(formData.get("checklist_id"));
+  let checklist_id: string | null = null;
+  if (checklistIdRaw) {
+    const origen = await prisma.mantChecklistMantencion.findFirst({
+      where: {
+        id: checklistIdRaw,
+        anulado_at: null,
+        equipo_id: parsed.data.equipo_id,
+      },
+      select: { id: true },
+    });
+    checklist_id = origen?.id ?? null;
+  }
+
   let nueva: { id: string };
   try {
     nueva = await prisma.mantMantencion.create({
-      data: parsed.data,
+      data: { ...parsed.data, checklist_id },
       select: { id: true },
     });
   } catch (e: unknown) {
@@ -167,6 +191,9 @@ export async function createMantencion(
   }
 
   revalidateTag(MANT_MANTENCIONES_TAG);
+  // Los dos lados de la relación: si quedó vinculada, el check list de origen
+  // pasó a tener una orden de trabajo colgando.
+  if (checklist_id) revalidateTag(MANT_CHECKLIST_MANT_TAG);
   revalidatePath("/mantencion/taller");
 
   redirect(`/mantencion/taller/${nueva.id}`);

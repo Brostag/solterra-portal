@@ -346,11 +346,14 @@ export const HELP_CONTENT: Record<string, HelpEntry> = {
       "Selecciona el equipo, el tipo de mantención y el encargado.",
       "Marca cada ítem como SÍ, NO o N/A según la pauta.",
       "Guarda: el check list queda con estado Vigente y su número correlativo.",
+      "Desde el detalle, «Crear orden de trabajo» continúa el ciclo en el taller.",
     ],
     consejos: [
       "Este check list de taller (83 ítems) es distinto del checklist diario de Operación.",
-      "Un check list se puede anular, pero no editar una vez guardado.",
-      "Crear check list requiere rol Administrador o Supervisor.",
+      "Si lo abres desde un registro de ingreso/salida, el equipo, la fecha, el horómetro y las fallas detectadas llegan propuestos. Revisa cada dato: todos se pueden corregir antes de guardar.",
+      "«Editar datos» corrige la cabecera de un check list guardado: equipo, encargado, fecha, tipo de mantención, horómetro, kilometraje, próxima mantención y observaciones. Los 83 ítems marcados y las correctivas no se modifican, y el número del documento no cambia.",
+      "Si el check list ya no sirve, anúlalo. Un check list anulado no se puede editar y su número no se reutiliza.",
+      "Crear, corregir y anular check list requiere rol Administrador o Supervisor.",
     ],
   },
 

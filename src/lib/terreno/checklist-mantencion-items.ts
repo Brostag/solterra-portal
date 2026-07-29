@@ -113,3 +113,51 @@ export type ChecklistMantData = {
 };
 
 export const TIPO_MANTENCION_OPCIONES = ["A", "B", "C", "A-B", "A-B-C", "Correctiva"];
+
+export const VALORES_ITEM: ValorItem[] = ["SI", "NO", "NA"];
+
+// ─── Semántica de los valores (para derivar texto hacia otros documentos) ───
+// SI = realizado / conforme · NO = no realizado / no conforme · NA = no aplica.
+//
+// La Sección A (1.01–1.33) es 100% acciones ejecutables: un NO ahí significa
+// "no se hizo", no un hallazgo. La Sección B es mixta: la mayoría son acciones,
+// pero el bloque final de seguridad contiene juicios de estado, donde SI =
+// conforme y NO = hallazgo que hay que levantar.
+export const ITEMS_CONFORMIDAD: ReadonlySet<string> = new Set([
+  // Estado explícito en el label: no describen una acción ejecutable.
+  "2.35", // "Carga y vencimiento extintor"
+  "2.36", // "Set de emergencia"
+  "2.37", // "Buen estado de parabrisa, vidrios laterales y luneta"
+  "2.43", // "Buen estado parachoques delantero y trasero"
+  "2.44", // "Cuñas de acuerdo al equipo"
+  "2.50", // "Documentos/fechas al día"
+  // Elementos de seguridad que el taller certifica como conformes.
+  "2.39", // "Revisión lámina antiexplosivas"
+  "2.40", // "Revisión focos delanteros, laterales y traseros"
+  "2.41", // "Revisión retrovisores y laterales"
+  "2.46", // "Revisión escaleras y plataforma 3 punto de apoyo"
+  // Por confirmar con el cliente: 2.45 "Revisión corta corriente y anclaje" y
+  // 2.47 "Revisión tubo escape" tienen la misma forma que los cuatro anteriores
+  // y hoy se tratan como acción. Si el cliente los declara juicios de estado,
+  // basta agregar sus códigos acá.
+]);
+
+export function esItemDeConformidad(codigo: string): boolean {
+  return ITEMS_CONFORMIDAD.has(codigo);
+}
+
+// Ítems que consumen repuesto o insumo. Se deriva del label para que agregar un
+// ítem al catálogo no obligue a mantener una segunda lista a mano.
+// "2.17 Inspección rotación/sustitución neumáticos" queda fuera a propósito: es
+// una inspección que puede o no terminar en sustitución.
+const RE_SUSTITUCION = /^(sustituci[oó]n|cambio)\b/;
+
+export const ITEMS_SUSTITUCION: ReadonlySet<string> = new Set(
+  TODOS_ITEMS.filter((i) =>
+    RE_SUSTITUCION.test(i.label.trim().toLowerCase()),
+  ).map((i) => i.codigo),
+);
+
+export function esItemDeSustitucion(codigo: string): boolean {
+  return ITEMS_SUSTITUCION.has(codigo);
+}

@@ -774,6 +774,118 @@ export async function getParteDetalle(id: string): Promise<ParteDetalle | null> 
   };
 }
 
+// ── Último registro de entrada por equipo (prellenado del ciclo) ───────────
+// El horómetro/odómetro de la ficha del equipo (MantEquipo.horometro_actual)
+// solo se escribe al editar el equipo a mano, así que NO es fuente confiable
+// para prellenar. La fuente correcta es el último registro de ingreso/salida
+// del equipo, y por eso se devuelve también su fecha: quien llena el
+// formulario tiene que saber de cuándo viene el dato copiado.
+//
+// Lista blanca explícita: el registro vive en Operación y el prellenado se
+// consume desde Mantención, así que se exponen solo los campos operativos.
+// rut_responsable y rut_receptor quedan EXCLUIDOS a propósito.
+
+export type UltimoRegistroEquipo = {
+  id: string;
+  fecha: string; // ISO date (@db.Date → medianoche UTC)
+  fecha_salida: string | null; // ISO date (@db.Date)
+  horometro: number | null;
+  odometro: number | null;
+  area_uso: string | null;
+  centro_costo: string | null;
+  tipo_mantencion: string | null;
+  operador_id: string;
+};
+
+// Fila cruda de mant_partes_diarios acotada a la lista blanca. Los Decimal de
+// Prisma entran como unknown y se convierten a number en el mapeo.
+type UltimoRegistroRow = {
+  id: string;
+  fecha: Date;
+  fecha_salida: Date | null;
+  horometro: unknown;
+  odometro: unknown;
+  area_uso: string | null;
+  centro_costo: string | null;
+  tipo_mantencion: string | null;
+  operador_id: string;
+};
+
+function mapUltimoRegistro(r: UltimoRegistroRow): UltimoRegistroEquipo {
+  const num = (v: unknown) => (v != null ? Number(v as number) : null);
+  return {
+    id: r.id,
+    fecha: r.fecha.toISOString(),
+    fecha_salida: r.fecha_salida ? r.fecha_salida.toISOString() : null,
+    horometro: num(r.horometro),
+    odometro: num(r.odometro),
+    area_uso: r.area_uso,
+    centro_costo: r.centro_costo,
+    tipo_mantencion: r.tipo_mantencion,
+    operador_id: r.operador_id,
+  };
+}
+
+// Último registro de CADA equipo, indexado por equipo_id. Lo consume el
+// formulario para prellenar al vuelo cuando cambia el select de equipo, sin
+// ida y vuelta al servidor.
+export type UltimosRegistrosPorEquipo = Record<string, UltimoRegistroEquipo>;
+
+export const getUltimosRegistrosPorEquipo = unstable_cache(
+  async (): Promise<UltimosRegistrosPorEquipo> => {
+    // 1) Fecha del último registro de cada equipo no borrado. Los registros
+    //    "Rechazado" quedan fuera: el supervisor desestimó esos datos y no
+    //    deben volver como propuesta de horómetro/odómetro. El filtro va en las
+    //    DOS consultas; si solo va acá, el paso 2 vuelve a traer la fila
+    //    rechazada cuando comparte fecha con otra.
+    const maximos = await prisma.mantParteDiario.groupBy({
+      by: ["equipo_id"],
+      where: {
+        deleted_at: null,
+        equipo: { deleted_at: null },
+        estado: { not: "Rechazado" },
+      },
+      _max: { fecha: true },
+    });
+    const pares = maximos
+      .filter((m) => m._max.fecha != null)
+      .map((m) => ({ equipo_id: m.equipo_id, fecha: m._max.fecha as Date }));
+    if (pares.length === 0) return {};
+
+    // 2) Las filas de esas fechas. El orden resuelve el empate cuando un
+    //    equipo tiene más de un registro el mismo día.
+    const rows = await prisma.mantParteDiario.findMany({
+      where: { deleted_at: null, estado: { not: "Rechazado" }, OR: pares },
+      orderBy: [{ fecha: "desc" }, { created_at: "desc" }],
+      select: {
+        id: true,
+        equipo_id: true,
+        fecha: true,
+        fecha_salida: true,
+        horometro: true,
+        odometro: true,
+        area_uso: true,
+        centro_costo: true,
+        tipo_mantencion: true,
+        operador_id: true,
+      },
+    });
+
+    // Decimal de Prisma -> number dentro del callback del cache (serializable).
+    const porEquipo: UltimosRegistrosPorEquipo = {};
+    for (const r of rows) {
+      if (porEquipo[r.equipo_id]) continue; // el primero ya es el más reciente
+      porEquipo[r.equipo_id] = mapUltimoRegistro(r);
+    }
+    return porEquipo;
+  },
+  ["mant-ultimos-registros-por-equipo"],
+  // La lectura cruza los dos módulos: los registros se crean en Operación
+  // (MANT_PARTES_TAG) y los equipos se administran en Mantención
+  // (MANT_EQUIPOS_TAG). Sin ambos tags el prellenado quedaría hasta 60 s atrás.
+  { revalidate: 60, tags: [MANT_PARTES_TAG, MANT_EQUIPOS_TAG] },
+);
+
 // ── Checklists pre-operacionales (Operación) ───────────────
 
 export const MANT_CHECKLISTS_TAG = "mant-checklists";
@@ -932,6 +1044,9 @@ export type ChecklistMantDetalle = {
   id: string;
   correlativo: number;
   equipo_id: string;
+  // responsable_id (además del nombre) para prellenar el documento siguiente
+  // del ciclo sin tener que adivinar el Profile por nombre.
+  responsable_id: string | null;
   equipo: string | null;
   equipoCodigo: string | null;
   responsable: string | null;
@@ -958,6 +1073,7 @@ export async function getChecklistMantencionDetalle(
       id: true,
       correlativo: true,
       equipo_id: true,
+      responsable_id: true,
       fecha: true,
       tipo_mantencion: true,
       empresa: true,
@@ -979,6 +1095,7 @@ export async function getChecklistMantencionDetalle(
     id: c.id,
     correlativo: c.correlativo,
     equipo_id: c.equipo_id,
+    responsable_id: c.responsable_id,
     equipo: c.equipo?.nombre ?? null,
     equipoCodigo: c.equipo?.codigo ?? null,
     responsable: c.responsable?.nombre ?? null,
@@ -1053,6 +1170,12 @@ export const getCertificadosMantencion = unstable_cache(
 export type CertMantDetalle = {
   id: string;
   correlativo: number;
+  // Los ids (además de los nombres) los necesita el prellenado del documento
+  // siguiente del ciclo: sin ellos habría que resolver equipo y Profile por
+  // nombre, que no es único.
+  equipo_id: string;
+  responsable_id: string | null;
+  gerente_id: string | null;
   equipo: string | null;
   equipoCodigo: string | null;
   responsable: string | null;
@@ -1078,6 +1201,9 @@ export async function getCertificadoMantencionDetalle(
     select: {
       id: true,
       correlativo: true,
+      equipo_id: true,
+      responsable_id: true,
+      gerente_id: true,
       fecha: true,
       ciudad: true,
       tipo_equipo_snapshot: true,
@@ -1098,6 +1224,9 @@ export async function getCertificadoMantencionDetalle(
   return {
     id: c.id,
     correlativo: c.correlativo,
+    equipo_id: c.equipo_id,
+    responsable_id: c.responsable_id,
+    gerente_id: c.gerente_id,
     equipo: c.equipo?.nombre ?? null,
     equipoCodigo: c.equipo?.codigo ?? null,
     responsable: c.responsable?.nombre ?? null,
@@ -1285,10 +1414,17 @@ export async function nextCorrelativoPlanMant(anio: number): Promise<number> {
 export type RegistroRecienteOption = {
   id: string;
   fecha: string; // ISO date
+  fecha_salida: string | null; // ISO date
   equipo_id: string;
   equipo: string | null; // "CODIGO · nombre"
+  operador_id: string;
   horometro: number | null;
   odometro: number | null;
+  area_uso: string | null;
+  centro_costo: string | null;
+  // Vocabulario del registro (Operación). NO se copia crudo al destino: cada
+  // formulario tiene su propia lista de tipos y debe mapear con whitelist.
+  tipo_mantencion: string | null;
   observaciones: string | null;
 };
 
@@ -1301,9 +1437,14 @@ export const getRegistrosRecientesOptions = unstable_cache(
       select: {
         id: true,
         fecha: true,
+        fecha_salida: true,
         equipo_id: true,
+        operador_id: true,
         horometro: true,
         odometro: true,
+        area_uso: true,
+        centro_costo: true,
+        tipo_mantencion: true,
         observaciones: true,
         equipo: { select: { codigo: true, nombre: true } },
       },
@@ -1311,10 +1452,15 @@ export const getRegistrosRecientesOptions = unstable_cache(
     return rows.map((r) => ({
       id: r.id,
       fecha: r.fecha.toISOString(),
+      fecha_salida: r.fecha_salida ? r.fecha_salida.toISOString() : null,
       equipo_id: r.equipo_id,
       equipo: r.equipo ? `${r.equipo.codigo} · ${r.equipo.nombre}` : null,
+      operador_id: r.operador_id,
       horometro: r.horometro != null ? Number(r.horometro) : null,
       odometro: r.odometro != null ? Number(r.odometro) : null,
+      area_uso: r.area_uso,
+      centro_costo: r.centro_costo,
+      tipo_mantencion: r.tipo_mantencion,
       observaciones: r.observaciones,
     }));
   },

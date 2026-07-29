@@ -578,6 +578,7 @@ model MantParteDiario {
   equipo              MantEquipo @relation(fields: [equipo_id], references: [id])
   operador            Profile    @relation("ParteDiarioOperador", fields: [operador_id], references: [id])
   planes_mantencion   MantPlanMantencion[]
+  checklists_mantencion MantChecklistMantencion[] @relation("ChecklistMantRegistro")
 
   @@index([equipo_id])
   @@index([operador_id])
@@ -603,16 +604,20 @@ model MantMantencion {
   proxima_mantencion_fecha     DateTime?  @db.Date
   estado                       String     @default("En Proceso")
   observaciones                String?
+  checklist_id                 String?
   deleted_at                   DateTime?
   created_at                   DateTime   @default(now())
   updated_at                   DateTime   @updatedAt
   equipo                       MantEquipo @relation(fields: [equipo_id], references: [id])
   responsable                  Profile    @relation("MantencionResponsable", fields: [responsable_id], references: [id])
   planes_origen                MantPlanMantencion[] @relation("PlanMantOrdenTrabajo")
+  checklist                    MantChecklistMantencion? @relation("OTDesdeChecklist", fields: [checklist_id], references: [id])
+  certificados_mantencion      MantCertificadoMantencion[] @relation("CertDesdeOT")
 
   @@index([equipo_id])
   @@index([estado])
   @@index([updated_at])
+  @@index([checklist_id])
   @@index([deleted_at, fecha_inicio])
   @@map("mant_mantenciones")
 }
@@ -684,6 +689,7 @@ model MantChecklistMantencion {
   correlativo             Int
   anio                    Int        @default(0)
   equipo_id               String
+  registro_id             String?
   responsable_id          String?
   fecha                   DateTime   @default(now()) @db.Date
   tipo_mantencion         String
@@ -701,11 +707,14 @@ model MantChecklistMantencion {
   created_at              DateTime   @default(now())
   updated_at              DateTime   @updatedAt
   equipo                  MantEquipo @relation(fields: [equipo_id], references: [id])
+  registro                MantParteDiario? @relation("ChecklistMantRegistro", fields: [registro_id], references: [id])
   responsable             Profile?   @relation("ChecklistMantResponsable", fields: [responsable_id], references: [id])
   anulado_por             Profile?   @relation("ChecklistMantAnuladoPor", fields: [anulado_por_id], references: [id])
+  ordenes_trabajo         MantMantencion[] @relation("OTDesdeChecklist")
 
   @@unique([correlativo, anio])
   @@index([equipo_id])
+  @@index([registro_id])
   @@index([fecha])
   @@map("mant_checklists_mantencion")
 }
@@ -715,6 +724,7 @@ model MantCertificadoMantencion {
   correlativo          Int
   anio                 Int        @default(0)
   equipo_id            String
+  mantencion_id        String?
   responsable_id       String?
   gerente_id           String?
   fecha                DateTime   @default(now()) @db.Date
@@ -733,12 +743,14 @@ model MantCertificadoMantencion {
   created_at           DateTime   @default(now())
   updated_at           DateTime   @updatedAt
   equipo               MantEquipo @relation(fields: [equipo_id], references: [id])
+  mantencion           MantMantencion? @relation("CertDesdeOT", fields: [mantencion_id], references: [id])
   responsable          Profile?   @relation("CertMantEncargado", fields: [responsable_id], references: [id])
   gerente              Profile?   @relation("CertMantGerente", fields: [gerente_id], references: [id])
   anulado_por          Profile?   @relation("CertMantAnuladoPor", fields: [anulado_por_id], references: [id])
 
   @@unique([correlativo, anio])
   @@index([equipo_id])
+  @@index([mantencion_id])
   @@index([fecha])
   @@map("mant_certificados_mantencion")
 }

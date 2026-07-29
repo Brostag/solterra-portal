@@ -9,8 +9,11 @@ import {
   Clock,
   ArrowRight,
   BookOpen,
+  FileText,
 } from "lucide-react";
 import { getMantencionDashboard } from "@/lib/terreno/queries";
+import { getPortalSessionFast } from "@/lib/auth/session";
+import { canAccessModule } from "@/lib/modules";
 import KpiCard from "@/components/portal/KpiCard";
 import { AppTourAutoStart, TourButton } from "@/components/portal/AppTour";
 
@@ -62,8 +65,25 @@ function fechaCortaUTC(iso: string): string {
   });
 }
 
+// El registro de ingreso/salida vive en Operación y es el paso previo del
+// ciclo de mantención. Se agrega como acceso adicional solo si la sesión tiene
+// ese módulo: sin permiso no se muestra, para no ofrecer un enlace que termine
+// en un redirect.
+const CARD_REGISTROS = {
+  href: "/operacion/partes-diarios",
+  title: "Ingreso / Salida de equipos",
+  desc: "Registros de entrada y salida de la flota",
+  icon: FileText,
+};
+
 export default async function MantencionHub() {
-  const d = await getMantencionDashboard();
+  const [d, session] = await Promise.all([
+    getMantencionDashboard(),
+    getPortalSessionFast(),
+  ]);
+
+  const veOperacion = !!session && canAccessModule(session, "OPERACION");
+  const cards = veOperacion ? [...CARDS, CARD_REGISTROS] : CARDS;
 
   const hoy = new Date().toLocaleDateString("es-CL", {
     weekday: "long",
@@ -153,7 +173,7 @@ export default async function MantencionHub() {
 
       {/* Accesos a los submódulos */}
       <div data-tour="submodulos" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {CARDS.map(({ href, title, desc, icon: Icon }) => (
+        {cards.map(({ href, title, desc, icon: Icon }) => (
           <Link
             key={href}
             href={href}

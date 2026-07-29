@@ -7,9 +7,16 @@ import { revalidateTag, revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   MANT_CERT_MANT_TAG,
+  MANT_MANTENCIONES_TAG,
   nextCorrelativoCertMant,
 } from "@/lib/terreno/queries";
 import type { UserSession } from "@/types";
+
+// El certificado acredita una mantención TERMINADA: una orden "Programada" o
+// "En Proceso" no puede ser su origen. Mismo criterio que
+// prefillCertificadoDesdeOT (src/lib/terreno/cadena.ts), donde la constante es
+// privada del módulo.
+const OT_COMPLETADA = "Completada";
 
 type ActionResult = { error: string };
 
@@ -22,6 +29,11 @@ export type CertMantInput = {
   horometro: string;
   odometro: string;
   proxima_mantencion: string;
+  /**
+   * Orden de trabajo de la que salió este certificado (?desde=<id>). Solo el
+   * id: el servidor vuelve a leer la orden antes de persistir el vínculo.
+   */
+  mantencion_id?: string | null;
 };
 
 function puedeGestionar(session: Pick<UserSession, "rol" | "area">): boolean {
@@ -69,6 +81,26 @@ export async function createCertificadoMantencion(
   });
   if (!equipo) return { error: "El equipo seleccionado no existe." };
 
+  // Traza del origen: el vínculo se guarda únicamente si la orden existe, no
+  // fue eliminada, está "Completada" y es del MISMO equipo que el certificado
+  // (si el usuario cambió el equipo en el formulario, esa orden dejó de ser su
+  // origen). Si algo no calza, el certificado se emite igual pero sin vínculo:
+  // la trazabilidad nunca bloquea el guardado.
+  const otId = input.mantencion_id?.trim() || null;
+  let mantencion_id: string | null = null;
+  if (otId) {
+    const origen = await prisma.mantMantencion.findFirst({
+      where: {
+        id: otId,
+        deleted_at: null,
+        estado: OT_COMPLETADA,
+        equipo_id: input.equipo_id,
+      },
+      select: { id: true },
+    });
+    mantencion_id = origen?.id ?? null;
+  }
+
   const anio = fecha.getUTCFullYear();
   let nuevo: { id: string } | null = null;
   // Reintenta si el correlativo fue tomado por una request concurrente
@@ -81,6 +113,7 @@ export async function createCertificadoMantencion(
           correlativo,
           anio,
           equipo_id: input.equipo_id,
+          mantencion_id,
           responsable_id: input.responsable_id,
           gerente_id: input.gerente_id || null,
           fecha,
@@ -107,6 +140,9 @@ export async function createCertificadoMantencion(
   }
 
   revalidateTag(MANT_CERT_MANT_TAG);
+  // Los dos lados de la relación: si quedó vinculado, la orden de trabajo de
+  // origen pasó a tener un certificado colgando.
+  if (mantencion_id) revalidateTag(MANT_MANTENCIONES_TAG);
   revalidatePath("/mantencion/certificado-mantencion");
 
   redirect(`/mantencion/certificado-mantencion/${nuevo.id}`);

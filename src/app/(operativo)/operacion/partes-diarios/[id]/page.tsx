@@ -5,6 +5,7 @@ import { getParteDetalle } from "@/lib/terreno/queries";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
 import RevisarParteButtons from "@/components/operacion/RevisarParteButtons";
+import PasoSiguiente from "@/components/terreno/PasoSiguiente";
 import { REGISTRO_COMPONENTES as COMPONENTES_DEF } from "@/lib/terreno/registro-componentes";
 
 function fechaUTC(iso: string): string {
@@ -50,6 +51,17 @@ export default async function ParteDetallePage({ params }: Props) {
     !!session &&
     p.estado === "Pendiente" &&
     canAccessModule(session, "OPERACION") &&
+    (session.rol === "ADMINISTRADOR" || session.rol === "SUPERVISOR");
+
+  // Paso siguiente del ciclo: el Check List se crea en Mantención, así que la
+  // banda solo aparece si la sesión puede crearlo ahí. Un registro Rechazado no
+  // sirve de origen (estados en partes-diarios/actions.ts: Pendiente, Aprobado,
+  // Rechazado): prefillChecklistDesdeRegistro devuelve null para ese estado, así
+  // que la banda abriría el check list en blanco.
+  const puedeCrearChecklist =
+    !!session &&
+    p.estado !== "Rechazado" &&
+    canAccessModule(session, "MANTENCION") &&
     (session.rol === "ADMINISTRADOR" || session.rol === "SUPERVISOR");
 
   const datos = [
@@ -187,6 +199,15 @@ export default async function ParteDetallePage({ params }: Props) {
           <p className="text-xs text-gray-500">Revisar registro pendiente:</p>
           <RevisarParteButtons id={p.id} />
         </div>
+      )}
+
+      {puedeCrearChecklist && (
+        <PasoSiguiente
+          titulo="Check List de Mantenimiento"
+          descripcion="Se copian el equipo, la fecha, el horómetro y los componentes con falla de este registro."
+          href={`/mantencion/checklist-mantencion/nuevo?desde=${p.id}`}
+          cta="Crear check list"
+        />
       )}
     </div>
   );

@@ -5,6 +5,7 @@ import { getMantencionDetalle, getPlanOrigenDeOT } from "@/lib/terreno/queries";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
 import EliminarMantencionButton from "@/components/mantencion/EliminarMantencionButton";
+import PasoSiguiente from "@/components/terreno/PasoSiguiente";
 
 function estadoBadge(estado: string): string {
   if (estado === "Completada") return "bg-green-50 text-green-700 ring-1 ring-green-600/20";
@@ -178,6 +179,20 @@ export default async function MantencionDetallePage({ params }: Props) {
             </div>
           ))}
         </section>
+      )}
+
+      {/* Cierre de la cadena: la orden de trabajo se acredita con el
+          certificado. Solo se ofrece a quien puede emitirlo y con la orden
+          Completada (estados en taller/actions.ts: Programada, En Proceso,
+          Completada): el certificado acredita que el equipo quedó operativo, y
+          prefillCertificadoDesdeOT solo prellena desde una OT Completada. */}
+      {puedeGestionar && m.estado === "Completada" && (
+        <PasoSiguiente
+          titulo="Certificado de mantención"
+          descripcion="Se proponen el equipo, el encargado, la fecha, el horómetro y la próxima mantención de esta orden."
+          href={`/mantencion/certificado-mantencion/nuevo?desde=${m.id}`}
+          cta="Emitir certificado"
+        />
       )}
 
       {puedeGestionar && (
