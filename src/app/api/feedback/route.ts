@@ -44,11 +44,19 @@ const MIME_PERMITIDOS = new Map<string, string>([
 ]);
 
 function esCodigo(e: unknown, code: string): boolean {
-  return !!e && typeof e === "object" && "code" in e && (e as { code?: string }).code === code;
+  return (
+    !!e &&
+    typeof e === "object" &&
+    "code" in e &&
+    (e as { code?: string }).code === code
+  );
 }
 
 /** Metadato de diagnóstico: se recorta en silencio, nunca invalida un reporte. */
-function recortar(valor: FormDataEntryValue | null, max: number): string | null {
+function recortar(
+  valor: FormDataEntryValue | null,
+  max: number,
+): string | null {
   if (typeof valor !== "string") return null;
   const limpio = valor.trim();
   return limpio ? limpio.slice(0, max) : null;
@@ -67,7 +75,10 @@ async function siguienteCorrelativo(anio: number): Promise<number> {
  * elimina el reporte (el borrado en cascada se lleva sus adjuntos). Cada paso va
  * aislado: si la limpieza falla, no debe tapar el error original.
  */
-async function revertirEnvio(paths: string[], reporteId: string): Promise<void> {
+async function revertirEnvio(
+  paths: string[],
+  reporteId: string,
+): Promise<void> {
   for (const path of paths) {
     try {
       await deleteFile(path);
@@ -89,7 +100,10 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session)
     return NextResponse.json(
-      { error: "Tu sesión expiró. Vuelve a iniciar sesión y envía el reporte otra vez." },
+      {
+        error:
+          "Tu sesión expiró. Vuelve a iniciar sesión y envía el reporte otra vez.",
+      },
       { status: 401 },
     );
 
@@ -106,7 +120,10 @@ export async function POST(req: NextRequest) {
   const largoDeclarado = Number(req.headers.get("content-length"));
   if (Number.isFinite(largoDeclarado) && largoDeclarado > MAX_BODY)
     return NextResponse.json(
-      { error: "El reporte pesa demasiado. Envía menos imágenes o más livianas." },
+      {
+        error:
+          "El reporte pesa demasiado. Envía menos imágenes o más livianas.",
+      },
       { status: 413 },
     );
 
@@ -152,14 +169,19 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
 
-  const tipo = ((formData.get("tipo") as string | null) ?? "").trim() || "Problema";
+  const tipo =
+    ((formData.get("tipo") as string | null) ?? "").trim() || "Problema";
   if (!TIPOS_VALIDOS.has(tipo))
-    return NextResponse.json({ error: "Tipo de reporte inválido." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Tipo de reporte inválido." },
+      { status: 400 },
+    );
 
   const ruta = recortar(formData.get("ruta"), MAX_RUTA);
   const modulo = recortar(formData.get("modulo"), MAX_MODULO);
   const viewport = recortar(formData.get("viewport"), MAX_VIEWPORT);
-  const user_agent = req.headers.get("user-agent")?.slice(0, MAX_USER_AGENT) ?? null;
+  const user_agent =
+    req.headers.get("user-agent")?.slice(0, MAX_USER_AGENT) ?? null;
 
   // El input vacío de un <input type="file"> llega como archivo de 0 bytes. La
   // lista cruda se conserva porque el cliente numera la captura sobre ELLA: el
@@ -196,7 +218,10 @@ export async function POST(req: NextRequest) {
   }
   if (pesoTotal > MAX_SIZE_TOTAL)
     return NextResponse.json(
-      { error: "Las imágenes suman más de 4 MB. Envía menos imágenes o más livianas." },
+      {
+        error:
+          "Las imágenes suman más de 4 MB. Envía menos imágenes o más livianas.",
+      },
       { status: 413 },
     );
 
@@ -206,13 +231,16 @@ export async function POST(req: NextRequest) {
   // entrada vacía, la marca no puede correrse al adjunto equivocado. Si lo
   // apuntado quedó fuera, no se marca ninguna captura — es una pista para la
   // bandeja, no un dato crítico.
-  const capturaIndexCrudo = ((formData.get("captura_index") as string | null) ?? "").trim();
+  const capturaIndexCrudo = (
+    (formData.get("captura_index") as string | null) ?? ""
+  ).trim();
   let capturaIndex = -1;
   if (capturaIndexCrudo) {
     const n = Number.parseInt(capturaIndexCrudo, 10);
     if (Number.isInteger(n) && n >= 0 && n < adjuntosCrudos.length) {
       const referido = adjuntosCrudos[n];
-      if (typeof referido !== "string") capturaIndex = archivos.indexOf(referido);
+      if (typeof referido !== "string")
+        capturaIndex = archivos.indexOf(referido);
     }
   }
 
@@ -246,7 +274,11 @@ export async function POST(req: NextRequest) {
   }
 
   const anio = new Date().getUTCFullYear();
-  let reporte: { id: string; correlativo: number } | null = null;
+  let reporte: {
+    id: string;
+    correlativo: number;
+    created_at: Date;
+  } | null = null;
   // Reintenta si el correlativo fue tomado por una request concurrente
   // (índice único (correlativo, anio) en DB → P2002). Mismo patrón que los
   // documentos de mantención.
@@ -265,7 +297,7 @@ export async function POST(req: NextRequest) {
           user_agent,
           viewport,
         },
-        select: { id: true, correlativo: true },
+        select: { id: true, correlativo: true, created_at: true },
       });
     } catch (e: unknown) {
       if (esCodigo(e, "P2002")) continue; // correlativo duplicado por carrera → reintentar
@@ -292,7 +324,12 @@ export async function POST(req: NextRequest) {
   // eso cualquier falla posterior borra lo ya subido y elimina el reporte
   // completo (revertirEnvio). Se prefiere no dejar rastro antes que dejar un
   // reporte en la bandeja con imágenes que no cargan.
-  const subidos: { path: string; mime: string; tamano: number; esCaptura: boolean }[] = [];
+  const subidos: {
+    path: string;
+    mime: string;
+    tamano: number;
+    esCaptura: boolean;
+  }[] = [];
   try {
     for (const preparado of preparados) {
       const path = `feedback/${creado.id}/${randomUUID()}.${preparado.ext}`;
@@ -322,7 +359,10 @@ export async function POST(req: NextRequest) {
       creado.id,
     );
     return NextResponse.json(
-      { error: "No se pudieron guardar las imágenes del reporte. Intenta nuevamente." },
+      {
+        error:
+          "No se pudieron guardar las imágenes del reporte. Intenta nuevamente.",
+      },
       { status: 500 },
     );
   }
@@ -342,6 +382,7 @@ export async function POST(req: NextRequest) {
       modulo,
       mensaje,
       totalAdjuntos: subidos.length,
+      creadoEn: creado.created_at,
     });
   } catch {
     // El aviso por correo es accesorio.

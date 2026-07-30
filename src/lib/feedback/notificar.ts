@@ -8,13 +8,19 @@
  *    extracto. Una captura de pantalla —o el propio texto— puede contener RUTs,
  *    montos y datos de clientes: eso vive en el portal y se ve solo dentro de la
  *    bandeja (las imágenes, por URL firmada). Aquí va únicamente el enlace.
- *  - Texto plano, sin HTML ni logos externos.
+ *  - Se envían las DOS versiones, HTML y texto plano. El texto plano no es
+ *    opcional: mejora la entregabilidad y es lo que leen los lectores de
+ *    pantalla y los clientes que bloquean HTML. Sin imágenes ni logos externos.
+ *
+ * Este archivo resuelve configuración, extracto, enlace y envío. La maqueta
+ * (asunto, HTML y texto) la arma `./correo-template`, que es una función pura.
  *
  * SERVER-ONLY: `RESEND_API_KEY`, `SOPORTE_EMAILS` y `SOPORTE_EMAIL_FROM` no
  * llevan prefijo NEXT_PUBLIC_ y nunca deben llegar al cliente.
  */
 
 import { Resend } from "resend";
+import { construirCorreoFeedback } from "./correo-template";
 
 export type DatosAvisoFeedback = {
   id: string;
@@ -27,7 +33,24 @@ export type DatosAvisoFeedback = {
   modulo: string | null;
   mensaje: string;
   totalAdjuntos: number;
+  creadoEn?: Date;
 };
+
+// El servidor corre en UTC. La casilla de soporte está en Chile, así que la fecha
+// del reporte se formatea en su zona: si no, un reporte de las 21:00 se lee como
+// del día siguiente. El cliente de correo muestra cuándo LLEGÓ el aviso, que no
+// es lo mismo que cuándo se creó el reporte si el envío se reintenta.
+function fechaChile(fecha: Date): string {
+  return new Intl.DateTimeFormat("es-CL", {
+    timeZone: "America/Santiago",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(fecha);
+}
 
 // El aviso sale a una casilla externa: del mensaje va solo lo justo para
 // priorizar. El texto completo se lee en la bandeja, dentro del portal.
@@ -45,11 +68,15 @@ function extracto(mensaje: string): string {
 function baseUrl(): string {
   const url =
     process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+    (process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000");
   return url.replace(/\/+$/, "");
 }
 
-export async function notificarReporteFeedback(datos: DatosAvisoFeedback): Promise<void> {
+export async function notificarReporteFeedback(
+  datos: DatosAvisoFeedback,
+): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   const remitente = process.env.SOPORTE_EMAIL_FROM?.trim();
   // Quién RECIBE el aviso es distinto de quién ACCEDE a la bandeja: el proveedor
@@ -89,23 +116,21 @@ export async function notificarReporteFeedback(datos: DatosAvisoFeedback): Promi
 
   const enlace = `${baseUrl()}/soporte/${datos.id}`;
 
-  const cuerpo = [
-    "Se recibió un nuevo reporte desde el portal Solterra.",
-    "",
-    `N° de reporte: ${datos.correlativo}/${datos.anio}`,
-    `Tipo: ${datos.tipo}`,
-    `Enviado por: ${datos.autorNombre} (${datos.autorEmail})`,
-    `Pantalla: ${datos.ruta ?? "no informada"}`,
-    `Módulo: ${datos.modulo ?? "no informado"}`,
-    `Imágenes adjuntas: ${datos.totalAdjuntos}`,
-    "",
-    "Mensaje (extracto):",
-    extracto(datos.mensaje),
-    "",
-    `Ver el reporte completo: ${enlace}`,
-    "",
-    "El mensaje completo y las imágenes no se envían por correo: quedan en el portal, en almacenamiento privado.",
-  ].join("\n");
+  // La plantilla recibe el extracto ya recortado: el mensaje completo no sale
+  // del portal. Solo presentación, sin acceso a entorno ni a la base.
+  const correo = construirCorreoFeedback({
+    correlativo: datos.correlativo,
+    anio: datos.anio,
+    tipo: datos.tipo,
+    autorNombre: datos.autorNombre,
+    autorEmail: datos.autorEmail,
+    ruta: datos.ruta,
+    modulo: datos.modulo,
+    totalAdjuntos: datos.totalAdjuntos,
+    mensaje: extracto(datos.mensaje),
+    enlace,
+    ...(datos.creadoEn ? { fechaLegible: fechaChile(datos.creadoEn) } : {}),
+  });
 
   try {
     const resend = new Resend(apiKey);
@@ -113,16 +138,21 @@ export async function notificarReporteFeedback(datos: DatosAvisoFeedback): Promi
       from: remitente,
       to: destinatarios,
       replyTo: datos.autorEmail,
-      subject: `Solterra · Reporte N°${datos.correlativo} — ${datos.tipo}`,
-      text: cuerpo,
+      subject: correo.asunto,
+      html: correo.html,
+      text: correo.texto,
     });
 
     if (error) {
       // Resend devuelve el error en la respuesta, no lo lanza.
-      console.warn(`[feedback] No se pudo enviar el aviso del reporte ${datos.id}: ${error.message}`);
+      console.warn(
+        `[feedback] No se pudo enviar el aviso del reporte ${datos.id}: ${error.message}`,
+      );
     }
   } catch {
     // Red caída, DNS, timeout: el aviso es accesorio, el reporte ya está guardado.
-    console.warn(`[feedback] Falló el envío del aviso del reporte ${datos.id}.`);
+    console.warn(
+      `[feedback] Falló el envío del aviso del reporte ${datos.id}.`,
+    );
   }
 }
