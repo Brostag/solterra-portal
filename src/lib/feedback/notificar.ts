@@ -29,9 +29,6 @@ export type DatosAvisoFeedback = {
   totalAdjuntos: number;
 };
 
-// Un solo aviso por proceso: esta función corre en cada reporte enviado.
-let avisoConfigEmitido = false;
-
 // El aviso sale a una casilla externa: del mensaje va solo lo justo para
 // priorizar. El texto completo se lee en la bandeja, dentro del portal.
 const MAX_MENSAJE_CORREO = 200;
@@ -71,12 +68,22 @@ export async function notificarReporteFeedback(datos: DatosAvisoFeedback): Promi
   if (!apiKey || !remitente || destinatarios.length === 0) {
     // La herramienta debe funcionar completa sin correo configurado: el reporte
     // igual quedó guardado y visible en la bandeja.
-    if (!avisoConfigEmitido) {
-      avisoConfigEmitido = true;
-      console.warn(
-        "[feedback] Aviso por correo desactivado: falta RESEND_API_KEY, SOPORTE_EMAIL_FROM o el destinatario (SOPORTE_NOTIFICAR_A / SOPORTE_EMAILS).",
-      );
-    }
+    //
+    // Se nombra la variable que falta y se registra en CADA intento, no una vez
+    // por proceso: esto es un error de configuración, no un evento por reporte.
+    // Silenciarlo deja al operador sabiendo que algo falta pero no qué, y en
+    // serverless el aviso "una sola vez" se pierde con la instancia que lo emitió.
+    const faltan = [
+      !apiKey && "RESEND_API_KEY",
+      !remitente && "SOPORTE_EMAIL_FROM",
+      destinatarios.length === 0 && "SOPORTE_NOTIFICAR_A (o SOPORTE_EMAILS)",
+    ].filter(Boolean);
+
+    console.warn(
+      `[feedback] Aviso por correo desactivado: falta ${faltan.join(", ")}. ` +
+        `El reporte ${datos.correlativo}/${datos.anio} quedó guardado en la bandeja. ` +
+        `Si acabas de cargar la variable, el despliegue en curso todavía no la ve: hay que volver a desplegar.`,
+    );
     return;
   }
 
