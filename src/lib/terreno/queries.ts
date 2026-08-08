@@ -573,6 +573,86 @@ export async function getMantencionDetalle(
   };
 }
 
+// Datos para el PDF de la Orden de Trabajo. Separada de getMantencionDetalle
+// (que ya consume la página de detalle) porque el PDF necesita además tipo,
+// marca y patente del equipo — dedicada en vez de ampliar la existente.
+export type MantencionParaPDF = {
+  id: string;
+  equipoCodigo: string | null;
+  equipoNombre: string | null;
+  tipoEquipo: string | null;
+  marca: string | null;
+  patente: string | null;
+  responsable: string | null;
+  tipo: string;
+  fecha_inicio: string; // ISO
+  fecha_fin: string | null; // ISO
+  horometro_realizada: number | null;
+  descripcion: string;
+  trabajos_realizados: string | null;
+  repuestos_usados: string | null;
+  costo: number | null;
+  proxima_mantencion_horometro: number | null;
+  proxima_mantencion_fecha: string | null; // ISO date
+  estado: string;
+  observaciones: string | null;
+};
+
+export async function getMantencionParaPDF(
+  id: string,
+): Promise<MantencionParaPDF | null> {
+  const m = await prisma.mantMantencion.findFirst({
+    where: { id, deleted_at: null },
+    select: {
+      id: true,
+      tipo: true,
+      fecha_inicio: true,
+      fecha_fin: true,
+      horometro_realizada: true,
+      descripcion: true,
+      trabajos_realizados: true,
+      repuestos_usados: true,
+      costo: true,
+      proxima_mantencion_horometro: true,
+      proxima_mantencion_fecha: true,
+      estado: true,
+      observaciones: true,
+      equipo: {
+        select: { codigo: true, nombre: true, tipo: true, marca: true, patente: true },
+      },
+      responsable: { select: { nombre: true } },
+    },
+  });
+  if (!m) return null;
+  return {
+    id: m.id,
+    equipoCodigo: m.equipo?.codigo ?? null,
+    equipoNombre: m.equipo?.nombre ?? null,
+    tipoEquipo: m.equipo?.tipo ?? null,
+    marca: m.equipo?.marca ?? null,
+    patente: m.equipo?.patente ?? null,
+    responsable: m.responsable?.nombre ?? null,
+    tipo: m.tipo,
+    fecha_inicio: m.fecha_inicio.toISOString(),
+    fecha_fin: m.fecha_fin ? m.fecha_fin.toISOString() : null,
+    horometro_realizada:
+      m.horometro_realizada != null ? Number(m.horometro_realizada) : null,
+    descripcion: m.descripcion,
+    trabajos_realizados: m.trabajos_realizados,
+    repuestos_usados: m.repuestos_usados,
+    costo: m.costo != null ? Number(m.costo) : null,
+    proxima_mantencion_horometro:
+      m.proxima_mantencion_horometro != null
+        ? Number(m.proxima_mantencion_horometro)
+        : null,
+    proxima_mantencion_fecha: m.proxima_mantencion_fecha
+      ? m.proxima_mantencion_fecha.toISOString()
+      : null,
+    estado: m.estado,
+    observaciones: m.observaciones,
+  };
+}
+
 // ── Certificados (vigencias y vencimientos) ────────────────
 
 export const MANT_CERTIFICADOS_TAG = "mant-certificados";
@@ -1188,6 +1268,10 @@ export type CertMantDetalle = {
   horometro_snapshot: number | null;
   odometro_snapshot: number | null;
   proxima_mantencion: number | null;
+  // Firma digital opcional (data URI); hoy no hay UI que la capture, casi
+  // siempre viene null y el PDF deja el recuadro vacío para firmar a mano.
+  firma_encargado_b64: string | null;
+  firma_gerente_b64: string | null;
   anulado: boolean;
   anulado_at: string | null;
   motivo_anulacion: string | null;
@@ -1212,6 +1296,8 @@ export async function getCertificadoMantencionDetalle(
       horometro_snapshot: true,
       odometro_snapshot: true,
       proxima_mantencion: true,
+      firma_encargado_b64: true,
+      firma_gerente_b64: true,
       anulado_at: true,
       motivo_anulacion: true,
       equipo: { select: { codigo: true, nombre: true } },
@@ -1239,6 +1325,8 @@ export async function getCertificadoMantencionDetalle(
     horometro_snapshot: num(c.horometro_snapshot),
     odometro_snapshot: num(c.odometro_snapshot),
     proxima_mantencion: num(c.proxima_mantencion),
+    firma_encargado_b64: c.firma_encargado_b64,
+    firma_gerente_b64: c.firma_gerente_b64,
     anulado: c.anulado_at != null,
     anulado_at: c.anulado_at ? c.anulado_at.toISOString() : null,
     motivo_anulacion: c.motivo_anulacion,

@@ -36,8 +36,8 @@ export async function GET(
     horometro: c.horometro_snapshot,
     odometro: c.odometro_snapshot,
     proximaMantencion: c.proxima_mantencion,
-    encargado: c.responsable,
-    gerente: c.gerente,
+    firmaEncargadoB64: c.firma_encargado_b64,
+    firmaGerenteB64: c.firma_gerente_b64,
   };
 
   let buffer: Buffer;

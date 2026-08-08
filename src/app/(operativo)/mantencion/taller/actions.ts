@@ -76,7 +76,9 @@ function parseMantencionData(
   const equipo_id = str(formData.get("equipo_id"));
   const responsable_id = str(formData.get("responsable_id"));
   const tipo = str(formData.get("tipo"));
-  const estado = str(formData.get("estado")) || "En Proceso";
+  // La OT se emite ya terminada: se documenta el trabajo hecho, no una tarea
+  // en curso. El estado sigue siendo editable si de verdad queda pendiente.
+  const estado = str(formData.get("estado")) || "Completada";
   const descripcion = str(formData.get("descripcion"));
   const fechaInicioRaw = str(formData.get("fecha_inicio"));
   const fechaFinRaw = str(formData.get("fecha_fin"));

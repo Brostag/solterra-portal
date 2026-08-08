@@ -1,30 +1,49 @@
 // @react-pdf/reconciler v0.23 no reconoce react.transitional.element
 // (JSX transform de React 18.3). Se usa React.createElement siempre. NO JSX.
 import React from "react";
-import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";
+import fs from "fs";
+import path from "path";
 import { registerFonts, PDF_COLORS } from "./pdf-base";
 
 registerFonts();
 
-const { BLUE, GRAY } = PDF_COLORS;
+const { GRAY, BORDER } = PDF_COLORS;
+
+// Logo local (public/), igual que las fuentes de registerFonts(): se lee una
+// sola vez por proceso desde el filesystem, sin dependencia de red externa.
+// OJO: @react-pdf v4 trata un `src` de tipo string como URL y lo pasa por
+// fetch — con una ruta de disco falla en silencio ("fetch failed" en el log) y
+// el logo simplemente no se dibuja. Hay que entregarle el Buffer explícito.
+const LOGO_SRC = {
+  data: fs.readFileSync(
+    path.join(process.cwd(), "public", "solterra-logo-color.png"),
+  ),
+  format: "png" as const,
+};
 
 const styles = StyleSheet.create({
-  page: { fontFamily: "Inter", fontSize: 10.5, color: "#1a1a1a", padding: 48, lineHeight: 1.5 },
-  topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 },
-  brand: { fontSize: 16, fontWeight: 700, color: BLUE },
-  brandSub: { fontSize: 8, color: GRAY, marginTop: 2 },
+  page: { fontFamily: "Inter", fontSize: 10.5, color: "#1a1a1a", padding: 40, lineHeight: 1.5 },
+  // Cabecera: número + ciudad arriba a la derecha, logo debajo a la izquierda.
+  header: { marginBottom: 16 },
+  docRow: { alignItems: "flex-end", marginBottom: 10 },
   docNum: { fontSize: 10, fontWeight: 700, color: "#1a1a1a", textAlign: "right" },
   docCity: { fontSize: 9, color: GRAY, textAlign: "right", marginTop: 2 },
-  title: { fontSize: 14, fontWeight: 700, textAlign: "center", textDecoration: "underline", marginVertical: 18, color: "#1a1a1a" },
-  para: { fontSize: 10, textAlign: "justify", marginBottom: 12 },
+  logo: { width: 130, height: 58, objectFit: "contain" },
+  title: { fontSize: 14, fontWeight: 700, textAlign: "center", textDecoration: "underline", marginVertical: 12, color: "#1a1a1a" },
+  para: { fontSize: 10, textAlign: "justify", marginBottom: 10 },
   bold: { fontWeight: 700 },
-  bullets: { marginVertical: 6, paddingLeft: 18 },
-  bullet: { fontSize: 10, marginBottom: 3 },
-  firmas: { flexDirection: "row", justifyContent: "center", gap: 48, marginTop: 64 },
-  firmaCol: { alignItems: "center", width: 200 },
-  firmaLine: { borderTop: "1px solid #1a1a1a", width: 180, marginBottom: 4 },
-  firmaName: { fontSize: 9, fontWeight: 700, color: "#1a1a1a", textAlign: "center" },
-  firmaRole: { fontSize: 8, color: GRAY, textAlign: "center" },
+  bullets: { marginVertical: 4, paddingLeft: 18 },
+  bullet: { fontSize: 10, marginBottom: 2 },
+  // Firmas: apiladas verticalmente y centradas, cada una con recuadro para
+  // firmar + línea gruesa + cargo/empresa (sin nombre de persona).
+  firmas: { alignItems: "center", marginTop: 24 },
+  firmaCol: { alignItems: "center", marginBottom: 16 },
+  firmaBox: { width: 180, height: 100, border: `1px solid ${BORDER}` },
+  firmaBoxImg: { width: "100%", height: "100%", objectFit: "contain" },
+  firmaLine: { borderTop: "2px solid #1a1a1a", width: 180 },
+  firmaCargo: { fontSize: 9, color: "#1a1a1a", textAlign: "center", marginTop: 4 },
+  firmaEmpresa: { fontSize: 9, color: "#1a1a1a", textAlign: "center" },
 });
 
 export type CertificadoPDFData = {
@@ -37,8 +56,9 @@ export type CertificadoPDFData = {
   horometro: number | null;
   odometro: number | null;
   proximaMantencion: number | null;
-  encargado: string | null;
-  gerente: string | null;
+  /** Data URI (image/png o image/jpeg) de la firma digital; null si aún no se firmó (recuadro vacío para firmar a mano). */
+  firmaEncargadoB64: string | null;
+  firmaGerenteB64: string | null;
 };
 
 const ce = React.createElement;
@@ -54,6 +74,23 @@ function fechaUTC(iso: string): string {
 
 function fmt(n: number | null): string {
   return n != null ? n.toLocaleString("es-CL") : "—";
+}
+
+// Bloque de firma reutilizable: recuadro para la firma (o la imagen si ya
+// está firmada digitalmente), línea gruesa y, debajo, cargo + empresa.
+function firmaBlock(cargo: string, firmaB64: string | null) {
+  return ce(
+    View,
+    { style: styles.firmaCol, wrap: false },
+    ce(
+      View,
+      { style: styles.firmaBox },
+      firmaB64 ? ce(Image, { style: styles.firmaBoxImg, src: firmaB64 }) : null,
+    ),
+    ce(View, { style: styles.firmaLine }),
+    ce(Text, { style: styles.firmaCargo }, cargo),
+    ce(Text, { style: styles.firmaEmpresa }, "SOLTERRA E.I.R.L"),
+  );
 }
 
 export function CertificadoMantencionDocument({ data }: { data: CertificadoPDFData }) {
@@ -74,19 +111,14 @@ export function CertificadoMantencionDocument({ data }: { data: CertificadoPDFDa
       { size: "A4", style: styles.page },
       ce(
         View,
-        { style: styles.topRow },
+        { style: styles.header },
         ce(
           View,
-          {},
-          ce(Text, { style: styles.brand }, "SOLTERRA E.I.R.L."),
-          ce(Text, { style: styles.brandSub }, "Movimiento de Tierra, Maquinarias y Equipos"),
-        ),
-        ce(
-          View,
-          {},
+          { style: styles.docRow },
           ce(Text, { style: styles.docNum }, `Certificado Nº ${data.correlativo}`),
           ce(Text, { style: styles.docCity }, `${data.ciudad}, ${fechaUTC(data.fecha)}`),
         ),
+        ce(Image, { style: styles.logo, src: LOGO_SRC }),
       ),
       ce(Text, { style: styles.title }, "CERTIFICADO MANTENCIÓN"),
       ce(
@@ -102,7 +134,7 @@ export function CertificadoMantencionDocument({ data }: { data: CertificadoPDFDa
           ce(
             Text,
             { key: i, style: styles.bullet },
-            "•  ",
+            "•  - ",
             ce(Text, { style: styles.bold }, b[0]),
             b[1],
           ),
@@ -121,20 +153,8 @@ export function CertificadoMantencionDocument({ data }: { data: CertificadoPDFDa
       ce(
         View,
         { style: styles.firmas },
-        ce(
-          View,
-          { style: styles.firmaCol },
-          ce(View, { style: styles.firmaLine }),
-          ce(Text, { style: styles.firmaName }, data.encargado ?? "Encargado Mantención"),
-          ce(Text, { style: styles.firmaRole }, "Encargado Mantención · SOLTERRA E.I.R.L"),
-        ),
-        ce(
-          View,
-          { style: styles.firmaCol },
-          ce(View, { style: styles.firmaLine }),
-          ce(Text, { style: styles.firmaName }, data.gerente ?? "Gerente de Operaciones"),
-          ce(Text, { style: styles.firmaRole }, "Gerente de Operaciones · SOLTERRA E.I.R.L"),
-        ),
+        firmaBlock("Encargado Mantención", data.firmaEncargadoB64),
+        firmaBlock("Gerente de Operaciones", data.firmaGerenteB64),
       ),
     ),
   );

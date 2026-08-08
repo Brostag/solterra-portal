@@ -130,10 +130,16 @@ export default async function MantencionDetallePage({ params }: Props) {
           >
             {m.estado}
           </span>
+          <a
+            href={`/api/mantencion/ot/${m.id}/pdf`}
+            className="rounded-lg bg-[#253158] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1b2540]"
+          >
+            Descargar PDF
+          </a>
           {puedeGestionar && (
             <Link
               href={`/mantencion/taller/${m.id}/editar`}
-              className="rounded-lg bg-[#253158] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1b2540]"
+              className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-[#253158] transition hover:bg-gray-50"
             >
               Editar
             </Link>
@@ -184,7 +190,10 @@ export default async function MantencionDetallePage({ params }: Props) {
       {/* Cierre de la cadena: la orden de trabajo se acredita con el
           certificado. Solo se ofrece a quien puede emitirlo y con la orden
           Completada (estados en taller/actions.ts: Programada, En Proceso,
-          Completada): el certificado acredita que el equipo quedó operativo, y
+          Completada). La OT se emite Completada por defecto (se documenta ya
+          terminada); queda en Programada solo si nace de un Plan, y el
+          estado se cambia a mano cuando el trabajo efectivamente queda
+          pendiente. El certificado acredita que el equipo quedó operativo, y
           prefillCertificadoDesdeOT solo prellena desde una OT Completada. */}
       {puedeGestionar && m.estado === "Completada" && (
         <PasoSiguiente

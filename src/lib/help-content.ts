@@ -322,11 +322,11 @@ export const HELP_CONTENT: Record<string, HelpEntry> = {
     titulo: "Taller / Mantenciones",
     descripcion: "Órdenes de trabajo en ejecución: según fabricante, preventivas, correctivas y de emergencia.",
     paraQueSirve:
-      "Es donde se ejecuta la mantención. La orden de trabajo llega desde un plan y avanza por sus estados hasta completarse.",
+      "Es donde se documenta la mantención. La orden de trabajo se emite ya terminada (Completada) o llega Programada desde un plan; el estado se cambia solo si el trabajo efectivamente queda pendiente.",
     pasos: [
       "Revisa la lista de mantenciones y filtra por estado si es necesario.",
-      "Abre una mantención para ver su detalle y el equipo asociado.",
-      "Avanza el estado a medida que trabajas: Programada → En Proceso → Completada.",
+      "Abre una mantención para ver su detalle, el equipo asociado y descargar su PDF.",
+      "Si el trabajo quedó pendiente, cambia el estado a Programada o En Proceso; si no, queda Completada.",
       "Registra el Check List de mantenimiento y emite el certificado cuando corresponda.",
     ],
     consejos: [

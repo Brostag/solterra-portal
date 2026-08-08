@@ -181,7 +181,7 @@ export default function MantencionForm({
           <span className={labelCls}>Estado</span>
           <select
             name="estado"
-            defaultValue={mantencion?.estado ?? "En Proceso"}
+            defaultValue={mantencion?.estado ?? "Completada"}
             className={inputCls}
           >
             {ESTADOS.map((s) => (

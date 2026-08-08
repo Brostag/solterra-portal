@@ -71,10 +71,10 @@ const PASOS: Paso[] = [
     icon: Settings,
     titulo: "Paso 3: Generar Orden de trabajo → Taller",
     descripcion:
-      "Desde el detalle del plan, presiona «Generar OT». La orden se copia al Taller y avanza por sus estados: Programada → En Proceso → Completada.",
+      "Desde el detalle del plan, presiona «Generar OT». La orden se copia al Taller en estado Programada; cambia a En Proceso o Completada según avance el trabajo.",
     tips: [
       "Al generar la OT, el plan pasa a estado «Con OT» y la mantención aparece en el Taller.",
-      "En el Taller también puedes crear una mantención directa con «Nueva mantención».",
+      "En el Taller también puedes crear una mantención directa con «Nueva mantención»: se emite ya Completada, y descarga su PDF desde el detalle.",
       "Gestionar el taller requiere rol Administrador o Supervisor.",
     ],
     href: "/mantencion/taller",
