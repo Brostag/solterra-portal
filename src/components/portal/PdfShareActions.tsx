@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { FileDown, MessageCircle, Mail, Loader2 } from "lucide-react";
+import { FileDown, MessageCircle, Mail, Printer, Loader2 } from "lucide-react";
+import { openPdfForPrint } from "@/lib/pdf-print";
 
 interface Props {
   /** URL GET del PDF (ej. /api/contratos/[id]/pdf). */
@@ -23,9 +24,23 @@ interface Props {
    * fetch(pdfUrl). El fetch del PDF SOLO ocurre al presionar un botón, nunca al montar.
    */
   getPdfBlob?: () => Promise<Blob>;
+  /**
+   * "botones" (default, comportamiento histórico) o "iconos": grupo segmentado
+   * compacto de solo-ícono, pensado para vivir en una fila de cabecera donde
+   * ya existe una acción primaria (ej. "Editar") y estas acciones de
+   * documento deben quedar en un segundo plano visual, sin competir por
+   * atención ni introducir colores fuera de la paleta del proyecto.
+   */
+  variant?: "botones" | "iconos";
+  /**
+   * Solo aplica con variant="iconos": agrega "Imprimir" como primer ícono
+   * del grupo, para poder reemplazar el PrintPdfButton suelto que antes vivía
+   * al lado de este componente.
+   */
+  incluirImprimir?: boolean;
 }
 
-type Accion = "download" | "whatsapp" | "email";
+type Accion = "download" | "whatsapp" | "email" | "print";
 
 // Limitación real del navegador: wa.me y mailto NO pueden adjuntar un archivo
 // automáticamente. La Web Share API (sobre todo en móvil) sí permite compartir
@@ -42,6 +57,8 @@ export default function PdfShareActions({
   compact,
   hideHint,
   getPdfBlob,
+  variant = "botones",
+  incluirImprimir,
 }: Props) {
   const [busy, setBusy] = useState<Accion | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -71,6 +88,24 @@ export default function PdfShareActions({
       typeof nav.canShare === "function" &&
       nav.canShare({ files: [file] })
     );
+  }
+
+  async function handlePrint() {
+    setAviso(null);
+    setBusy("print");
+    // openPdfForPrint abre la pestaña ANTES del fetch (gesto del usuario), y
+    // resuelve por su cuenta el problema de que el endpoint responde con
+    // Content-Disposition: attachment. No usamos getPdfBlob acá porque hoy
+    // esta variante solo se usa con endpoints GET simples.
+    const resultado = await openPdfForPrint(pdfUrl);
+    setBusy(null);
+    if (!resultado.ok) {
+      setAviso(
+        resultado.reason === "popup-blocked"
+          ? "El navegador bloqueó la ventana emergente. Permite las ventanas emergentes para este sitio e intenta de nuevo."
+          : "No se pudo abrir el PDF para imprimir. Intenta de nuevo.",
+      );
+    }
   }
 
   async function handleDownload() {
@@ -129,6 +164,64 @@ export default function PdfShareActions({
 
   const icon = (a: Accion, Fallback: typeof FileDown) =>
     busy === a ? <Loader2 className="h-4 w-4 animate-spin" /> : <Fallback className="h-4 w-4" />;
+
+  // Variante compacta para cabeceras: UN solo control segmentado (mismo
+  // lenguaje visual que la columna "Acciones" del listado de órdenes de
+  // trabajo) en vez de varios botones sueltos. Todo en azul de marca — nunca
+  // verde — porque acá estas acciones son secundarias frente a "Editar", que
+  // es la única acción primaria de la cabecera.
+  if (variant === "iconos") {
+    const botonIcono = "p-2 text-[#253158] transition hover:bg-gray-50 disabled:opacity-60";
+    return (
+      <div className="space-y-1">
+        <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white overflow-hidden divide-x divide-gray-200">
+          {incluirImprimir && (
+            <button
+              type="button"
+              onClick={handlePrint}
+              disabled={busy !== null}
+              title="Imprimir"
+              aria-label="Imprimir"
+              className={botonIcono}
+            >
+              {icon("print", Printer)}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleDownload}
+            disabled={busy !== null}
+            title="Descargar PDF"
+            aria-label="Descargar PDF"
+            className={botonIcono}
+          >
+            {icon("download", FileDown)}
+          </button>
+          <button
+            type="button"
+            onClick={handleWhatsApp}
+            disabled={busy !== null}
+            title="Enviar por WhatsApp"
+            aria-label="Enviar por WhatsApp"
+            className={botonIcono}
+          >
+            {icon("whatsapp", MessageCircle)}
+          </button>
+          <button
+            type="button"
+            onClick={handleEmail}
+            disabled={busy !== null}
+            title="Enviar por correo"
+            aria-label="Enviar por correo"
+            className={botonIcono}
+          >
+            {icon("email", Mail)}
+          </button>
+        </div>
+        {aviso && <p className="text-xs text-amber-600">{aviso}</p>}
+      </div>
+    );
+  }
 
   const wrap = compact
     ? "flex flex-wrap gap-2"

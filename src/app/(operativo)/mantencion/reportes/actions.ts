@@ -191,7 +191,10 @@ export async function generarReporte(
       orderBy: { fecha: "asc" },
       select: {
         fecha: true,
-        horometro_inicio: true,
+        // horometro (ingreso) y horometro_fin (salida) son las columnas que el
+        // flujo actual escribe. horometro_inicio quedó del modelo viejo de parte
+        // diario y nunca se llena: leerla dejaba la columna siempre vacía.
+        horometro: true,
         horometro_fin: true,
         combustible_litros: true,
         estado: true,
@@ -213,7 +216,7 @@ export async function generarReporte(
         fecha: fechaUTC(p.fecha),
         equipo: p.equipo ? `${p.equipo.codigo} · ${p.equipo.nombre}` : "—",
         operador: p.operador?.nombre ?? "—",
-        hrInicio: p.horometro_inicio != null ? Number(p.horometro_inicio) : null,
+        hrInicio: p.horometro != null ? Number(p.horometro) : null,
         hrFin: p.horometro_fin != null ? Number(p.horometro_fin) : null,
         combustible:
           p.combustible_litros != null ? Number(p.combustible_litros) : null,

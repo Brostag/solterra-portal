@@ -306,13 +306,13 @@ export const HELP_CONTENT: Record<string, HelpEntry> = {
       "Define qué se le hará a un equipo (Plan A según fabricante, B preventivo o C correctivo) y sus tareas. Desde el plan se genera la orden de trabajo hacia el Taller.",
     pasos: [
       "Haz clic en «Nuevo plan de mantención».",
-      "Elige el registro de entrada (paso 1) para prellenar equipo y horómetro, o planifica manual.",
+      "Elige la orden de trabajo (paso 1) para prellenar equipo y horómetro, o planifica manual.",
       "Selecciona el tipo de plan: A (fabricante), B (preventivo) o C (correctivo).",
       "Describe las tareas planificadas y guarda con «Crear plan».",
       "Desde el detalle del plan, presiona «Generar OT» para crear la orden de trabajo.",
     ],
     consejos: [
-      "Si partes desde un registro de entrada, se copian equipo, horómetro y observaciones. Todo queda editable.",
+      "Si partes desde una orden de trabajo, se copian equipo, horómetro y observaciones. Todo queda editable.",
       "Al generar la OT el plan pasa a estado «Con OT» y la mantención aparece en el Taller.",
       "Crear planes y generar OT requiere rol Administrador o Supervisor.",
     ],
@@ -415,36 +415,36 @@ export const HELP_CONTENT: Record<string, HelpEntry> = {
     titulo: "Módulo de Operación",
     descripcion: "Control diario de equipos y partes operacionales en terreno.",
     paraQueSirve:
-      "Es el día a día en terreno: el registro de entrada/salida del equipo y el checklist pre-operacional. Estos registros alimentan luego los planes de mantención.",
+      "Es el día a día en terreno: la orden de trabajo de ingreso y salida del equipo y el checklist pre-operacional. Estas órdenes alimentan luego los planes de mantención.",
     pasos: [
       "Revisa los indicadores de equipos y de actividad del día.",
-      "Registra el parte diario de entrada/salida del equipo.",
+      "Registra el ingreso y la salida del equipo.",
       "Completa el checklist pre-operacional antes de operar.",
-      "El supervisor revisa y aprueba los partes pendientes.",
+      "El supervisor revisa y aprueba las órdenes de trabajo pendientes.",
     ],
     consejos: [
       "Los equipos los gestiona el módulo de Mantención; aquí solo los seleccionas.",
       "Si es tu primera vez, abre la Guía de uso para seguir el orden correcto.",
-      "Los registros diarios son la base para planificar la mantención.",
+      "Las órdenes de trabajo son la base para planificar la mantención.",
     ],
   },
 
-  "/operacion/partes-diarios": {
-    titulo: "Partes Diarios",
-    descripcion: "Registro diario de entrada y salida de uso del equipo (paso 1).",
+  "/mantencion/ordenes-trabajo": {
+    titulo: "Órdenes de Trabajo",
+    descripcion: "Registro de ingreso y salida de taller (paso 1).",
     paraQueSirve:
-      "Documenta el uso del equipo en la jornada: horómetro, odómetro, combustible, componentes revisados al ingreso y a la salida, responsables y observaciones. Es el paso 1 del ciclo de mantención.",
+      "Documenta el ingreso y la salida del equipo del taller: horómetro, odómetro, combustible, componentes revisados al ingreso y a la salida, responsables y observaciones. Es el paso 1 del ciclo de mantención.",
     pasos: [
-      "Haz clic en «Nuevo parte» para registrar la entrada del equipo.",
+      "Haz clic en «Nueva orden de trabajo» para registrar la entrada del equipo.",
       "Completa equipo, responsable, horómetro/odómetro, área de uso y centro de costo.",
       "Marca el estado de los componentes y adjunta las fotos que correspondan.",
-      "Al cierre de jornada registra la salida y el receptor; el parte queda Pendiente de revisión.",
-      "El supervisor lo revisa y lo Aprueba o Rechaza.",
+      "Al cierre de jornada registra la salida y el receptor; la orden de trabajo queda Pendiente de revisión.",
+      "El supervisor la revisa y la Aprueba o Rechaza.",
     ],
     consejos: [
-      "Un parte Pendiente lo aprueba o rechaza un Administrador o Supervisor.",
-      "Descarga el PDF del registro desde el detalle del parte.",
-      "Este registro puede usarse después para prellenar un plan de mantención.",
+      "Una orden de trabajo Pendiente la aprueba o rechaza un Administrador o Supervisor.",
+      "Descarga el PDF desde el detalle de la orden de trabajo.",
+      "Esta orden de trabajo puede usarse después para prellenar un plan de mantención.",
     ],
   },
 
@@ -506,7 +506,7 @@ export const HELP_CONTENT: Record<string, HelpEntry> = {
     titulo: "Guía de uso · Módulo de Operación",
     descripcion: "El orden recomendado para el control diario de equipos en terreno.",
     paraQueSirve:
-      "Explica, paso a paso y en orden, cómo usar Operación: el registro de entrada/salida y el checklist diario, y cómo alimentan la mantención.",
+      "Explica, paso a paso y en orden, cómo usar Operación: la orden de trabajo de ingreso y salida y el checklist diario, y cómo alimentan la mantención.",
     pasos: [
       "Sigue las tarjetas numeradas en el orden en que aparecen.",
       "Cada paso tiene un botón «Ir a…» para abrir la pantalla correspondiente.",
@@ -514,7 +514,7 @@ export const HELP_CONTENT: Record<string, HelpEntry> = {
     ],
     consejos: [
       "Los equipos los gestiona Mantención; en Operación solo los seleccionas.",
-      "Tus registros diarios son la base para planificar la mantención.",
+      "Tus órdenes de trabajo son la base para planificar la mantención.",
       "Si algo falla en terreno, usa el botón de comentario de la barra superior: puedes capturar la pantalla y marcarla.",
     ],
   },

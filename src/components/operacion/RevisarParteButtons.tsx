@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import {
   aprobarParte,
   rechazarParte,
-} from "@/app/(operativo)/operacion/partes-diarios/actions";
+} from "@/app/(operativo)/mantencion/ordenes-trabajo/actions";
 
 export default function RevisarParteButtons({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null);

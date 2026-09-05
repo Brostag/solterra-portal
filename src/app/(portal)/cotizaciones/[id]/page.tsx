@@ -7,11 +7,10 @@ import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, FileDown } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { normalizarGastos } from "@/lib/cotizador";
 import PdfShareActions from "@/components/portal/PdfShareActions";
-import PrintPdfButton from "@/components/portal/PrintPdfButton";
 import QuotationStatusActions from "./QuotationStatusActions";
 
 type EstadoCotizacion = "BORRADOR" | "EMITIDA" | "ANULADA";
@@ -92,13 +91,17 @@ export default async function CotizacionDetallePage({ params }: Props) {
 
         <div className="flex flex-wrap items-center gap-2 pl-10 sm:pl-0">
           <QuotationStatusActions id={cotizacion.id} numero={cotizacion.numero} estado={cotizacion.estado as EstadoCotizacion} canManage={canManage} />
-          <a href={pdfUrl} download={pdfFileName}>
-            <Button size="sm" className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
-              <FileDown className="h-4 w-4" />
-              Descargar PDF
-            </Button>
-          </a>
-          <PrintPdfButton pdfUrl={pdfUrl} />
+          <PdfShareActions
+            pdfUrl={pdfUrl}
+            fileName={pdfFileName}
+            title={titulo}
+            whatsappMessage={waMensaje}
+            emailSubject={emailAsunto}
+            emailBody={emailCuerpo}
+            emailTo={emailDestino}
+            variant="iconos"
+            incluirImprimir
+          />
         </div>
       </div>
 
@@ -223,20 +226,6 @@ export default async function CotizacionDetallePage({ params }: Props) {
             );
           })}
         </div>
-      </div>
-
-      {/* Compartir */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h2 className="font-semibold text-[#253158] mb-3">Compartir cotización</h2>
-        <PdfShareActions
-          pdfUrl={pdfUrl}
-          fileName={pdfFileName}
-          title={titulo}
-          whatsappMessage={waMensaje}
-          emailSubject={emailAsunto}
-          emailBody={emailCuerpo}
-          emailTo={emailDestino}
-        />
       </div>
 
       <div className="flex justify-start">

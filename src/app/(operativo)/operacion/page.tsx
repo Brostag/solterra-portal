@@ -65,12 +65,10 @@ export default async function OperacionDashboard() {
         ? `/mantencion/equipos?estado=${encodeURIComponent("En Mantención")}`
         : undefined,
     },
-    {
-      label: "Partes diarios hoy",
-      value: d.kpis.partesHoy,
-      icon: FileText,
-      href: "/operacion/partes-diarios",
-    },
+    // Las órdenes de trabajo se mudaron al módulo de Mantención: su KPI, su
+    // acción rápida y su lista salieron de este panel. La query del dashboard
+    // sigue devolviendo `partesHoy` y `partesRecientes` porque otros consumos
+    // podrían necesitarlos; acá simplemente ya no se muestran.
     {
       label: "Checklists hoy",
       value: d.kpis.checklistsHoy,
@@ -80,12 +78,10 @@ export default async function OperacionDashboard() {
   ];
 
   const acciones = [
-    { href: "/operacion/partes-diarios/nuevo", label: "Nuevo parte diario", icon: FileText, primary: true },
-    { href: "/operacion/checklists/nuevo", label: "Nuevo checklist", icon: FolderOpen, primary: false },
+    { href: "/operacion/checklists/nuevo", label: "Nuevo checklist", icon: FolderOpen, primary: true },
   ];
 
-  const sinActividad =
-    d.partesRecientes.length === 0 && d.checklistsRecientes.length === 0;
+  const sinActividad = d.checklistsRecientes.length === 0;
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -176,19 +172,7 @@ export default async function OperacionDashboard() {
             texto="Aún no hay registros operacionales."
           />
         ) : (
-          <div className="grid gap-px bg-gray-100 sm:grid-cols-2">
-            <ActividadColumna
-              titulo="Últimos partes diarios"
-              icon={<FileText className="h-4 w-4" />}
-              vacio="Sin partes diarios aún."
-              items={d.partesRecientes.map((p: ParteResumen) => ({
-                id: p.id,
-                principal: p.equipo ?? "Equipo —",
-                secundario: p.operador ?? "",
-                fecha: p.fecha,
-                estado: p.estado,
-              }))}
-            />
+          <div className="grid gap-px bg-gray-100">
             <ActividadColumna
               titulo="Últimos checklists"
               icon={<ClipboardList className="h-4 w-4" />}

@@ -17,8 +17,8 @@ export default async function EditarPartePage({ params }: Props) {
 
   const session = await getPortalSessionFast();
   if (!session) redirect("/login");
-  if (!canAccessModule(session, "OPERACION")) {
-    redirect(`/operacion/partes-diarios/${id}`);
+  if (!canAccessModule(session, "MANTENCION")) {
+    redirect(`/mantencion/ordenes-trabajo/${id}`);
   }
 
   const [parte, equipos, operadores] = await Promise.all([
@@ -31,16 +31,13 @@ export default async function EditarPartePage({ params }: Props) {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <Link
-        href={`/operacion/partes-diarios/${id}`}
+        href={`/mantencion/ordenes-trabajo/${id}`}
         className="inline-flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-[#253158]"
       >
         <ChevronLeft className="h-4 w-4" /> Volver al detalle
       </Link>
       <header>
-        <p className="text-xs font-semibold uppercase tracking-widest text-[#c6352e]">
-          Operación · Partes Diarios
-        </p>
-        <h1 className="mt-1 text-2xl font-bold text-[#253158]">Editar parte diario</h1>
+        <h1 className="mt-1 text-2xl font-bold text-[#253158]">Editar orden de trabajo</h1>
         <p className="mt-0.5 text-sm text-gray-500">
           {parte.equipoCodigo ? `${parte.equipoCodigo} · ` : ""}
           {parte.equipo ?? "Equipo"}

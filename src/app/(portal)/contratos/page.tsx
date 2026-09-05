@@ -88,7 +88,7 @@ export default async function ContratosPage({ searchParams }: Props) {
       </div>
 
       {/* Filtros */}
-      <div className="flex flex-wrap gap-3 items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <form method="GET" className="relative w-full sm:w-auto">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input

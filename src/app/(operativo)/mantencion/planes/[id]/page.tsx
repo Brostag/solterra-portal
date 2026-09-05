@@ -59,9 +59,6 @@ export default async function PlanDetallePage({ params }: Props) {
     canAccessModule(session, "MANTENCION") &&
     (session.rol === "ADMINISTRADOR" || session.rol === "SUPERVISOR");
 
-  // El registro de entrada vive en Operación: sin ese módulo el enlace
-  // terminaría en un redirect. Se muestra el dato como texto plano.
-  const veOperacion = !!session && canAccessModule(session, "OPERACION");
   const registroSufijo = p.registroFecha ? ` (${fechaCortaUTC(p.registroFecha)})` : "";
 
   const datos = [
@@ -146,26 +143,21 @@ export default async function PlanDetallePage({ params }: Props) {
 
       {/* Enlaces al registro origen y a la orden de trabajo */}
       <section className="flex flex-wrap gap-3">
-        {p.registro_id &&
-          (veOperacion ? (
-            <Link
-              href={`/operacion/partes-diarios/${p.registro_id}`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-[#253158] transition hover:bg-gray-50"
-            >
-              Ver registro de entrada
-              {registroSufijo}
-            </Link>
-          ) : (
-            <p className="inline-flex items-center py-2 text-sm text-gray-500">
-              Registro de entrada{registroSufijo}
-            </p>
-          ))}
+        {p.registro_id && (
+          <Link
+            href={`/mantencion/ordenes-trabajo/${p.registro_id}`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-[#253158] transition hover:bg-gray-50"
+          >
+            Ver orden de trabajo
+            {registroSufijo}
+          </Link>
+        )}
         {p.estado === "Con OT" && p.orden_trabajo_id && (
           <Link
             href={`/mantencion/taller/${p.orden_trabajo_id}`}
             className="inline-flex items-center gap-1.5 rounded-lg bg-[#253158] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1b2540]"
           >
-            Ver orden de trabajo
+            Ver OT de taller
           </Link>
         )}
       </section>

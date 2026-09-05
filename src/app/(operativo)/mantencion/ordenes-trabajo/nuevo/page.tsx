@@ -13,7 +13,7 @@ import ParteForm from "@/components/operacion/ParteForm";
 export default async function NuevoPartePage() {
   const session = await getPortalSessionFast();
   if (!session) redirect("/login");
-  if (!canAccessModule(session, "OPERACION")) redirect("/operacion/partes-diarios");
+  if (!canAccessModule(session, "MANTENCION")) redirect("/mantencion/ordenes-trabajo");
 
   // El último registro de cada equipo viaja al formulario para prellenar
   // horómetro, odómetro, área, centro de costo y tipo de mantención en cuanto
@@ -27,18 +27,15 @@ export default async function NuevoPartePage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <Link
-        href="/operacion/partes-diarios"
+        href="/mantencion/ordenes-trabajo"
         className="inline-flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-[#253158]"
       >
-        <ChevronLeft className="h-4 w-4" /> Volver a partes diarios
+        <ChevronLeft className="h-4 w-4" /> Volver a órdenes de trabajo
       </Link>
       <header>
-        <p className="text-xs font-semibold uppercase tracking-widest text-[#c6352e]">
-          Operación · Partes Diarios
-        </p>
-        <h1 className="mt-1 text-2xl font-bold text-[#253158]">Nuevo parte diario</h1>
+        <h1 className="mt-1 text-2xl font-bold text-[#253158]">Orden de Trabajo</h1>
         <p className="mt-0.5 text-sm text-gray-500">
-          Registra el uso del equipo en la jornada.
+          Registro de ingreso y salida de taller
         </p>
       </header>
 
@@ -46,6 +43,7 @@ export default async function NuevoPartePage() {
         equipos={equipos}
         operadores={operadores}
         userId={session.id}
+        rol={session.rol}
         ultimosRegistros={ultimosRegistros}
       />
     </div>

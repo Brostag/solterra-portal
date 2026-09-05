@@ -29,26 +29,13 @@ const PASOS: Paso[] = [
     icon: Package,
     titulo: "Los equipos los gestiona Mantención",
     descripcion:
-      "En Operación no se crean ni editan equipos: eso vive en el módulo de Mantención. Aquí solo los seleccionas al registrar un parte diario o un checklist.",
+      "En Operación no se crean ni editan equipos: eso vive en el módulo de Mantención. Aquí solo los seleccionas al crear una orden de trabajo o un checklist.",
     tips: [
       "Si falta un equipo en la lista, pídelo al encargado de Mantención.",
       "Solo aparecen los equipos ya dados de alta en la flota.",
     ],
     href: "/operacion",
     hrefLabel: "Ir a Operación",
-  },
-  {
-    icon: FileText,
-    titulo: "Registro de entrada/salida (parte diario)",
-    descripcion:
-      "Documenta el uso del equipo en la jornada: horómetro, odómetro, combustible, área de uso, centro de costo y el estado de los componentes al ingreso y a la salida. Adjunta fotos y firmas cuando corresponda.",
-    tips: [
-      "Registra la entrada al inicio y la salida con el receptor al cierre de jornada.",
-      "El parte queda en estado Pendiente hasta que el supervisor lo revise.",
-      "Puedes descargar el PDF del registro desde su detalle.",
-    ],
-    href: "/operacion/partes-diarios",
-    hrefLabel: "Ir a Partes Diarios",
   },
   {
     icon: ClipboardList,
@@ -66,13 +53,13 @@ const PASOS: Paso[] = [
     icon: Wrench,
     titulo: "¿Qué pasa después?",
     descripcion:
-      "El supervisor revisa y aprueba (o rechaza) los partes pendientes. Estos registros diarios son la base con que Mantención planifica los trabajos: un plan puede partir directamente de un registro de entrada.",
+      "Un checklist No Apto es la señal de que el equipo necesita taller. El ingreso del equipo, su orden de trabajo y el plan de mantención se registran en el módulo de Mantención.",
     tips: [
-      "Aprobar o rechazar un parte lo hace un Administrador o Supervisor.",
-      "Un registro completo agiliza el plan de mantención: hereda equipo y horómetro.",
+      "Si el equipo queda No Apto, avísale a Mantención para que abra la orden de trabajo.",
+      "Los equipos también se gestionan en Mantención: acá solo se seleccionan.",
     ],
-    href: "/operacion/partes-diarios",
-    hrefLabel: "Ir a Partes Diarios",
+    href: "/mantencion",
+    hrefLabel: "Ir a Mantención",
   },
 ];
 
@@ -82,16 +69,16 @@ const FAQS: { q: string; a: string }[] = [
     a: "Los equipos se gestionan solo en el módulo de Mantención. En Operación se seleccionan de la flota ya cargada. Si falta uno, avísale a Mantención.",
   },
   {
-    q: "¿Qué significa que un parte quede «Pendiente»?",
-    a: "Recién creado, el parte diario queda Pendiente de revisión. Un Administrador o Supervisor lo Aprueba o Rechaza desde el detalle del parte.",
+    q: "¿Dónde quedaron las órdenes de trabajo?",
+    a: "Se trasladaron al módulo de Mantención, que es donde vive el taller. Ahí se registra el ingreso del equipo, su salida y el estado de los componentes.",
   },
   {
     q: "¿En qué se diferencia el checklist de Operación del de Mantención?",
     a: "El de Operación es la inspección diaria pre-operacional (OK/Falla, resultado Apto o No Apto). El de Mantención es la pauta de taller de 83 ítems (SÍ/NO/N/A). Son distintos.",
   },
   {
-    q: "¿Para qué sirven los registros que hago cada día?",
-    a: "Además de dejar respaldo del uso del equipo, alimentan la mantención: un plan puede partir de un registro de entrada y hereda automáticamente el equipo y el horómetro.",
+    q: "¿Para qué sirven las órdenes de trabajo que genero cada día?",
+    a: "Además de dejar respaldo del ingreso y la salida del equipo, alimentan la mantención: un plan puede partir de una orden de trabajo y hereda automáticamente el equipo y el horómetro.",
   },
 ];
 

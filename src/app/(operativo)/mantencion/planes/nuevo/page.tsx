@@ -37,7 +37,7 @@ export default async function NuevoPlanPage() {
         </p>
         <h1 className="mt-1 text-2xl font-bold text-[#253158]">Nuevo plan de mantención</h1>
         <p className="mt-0.5 text-sm text-gray-500">
-          Planifica el trabajo a partir de un registro de entrada o de forma manual.
+          Planifica el trabajo a partir de una orden de trabajo o de forma manual.
         </p>
       </header>
 

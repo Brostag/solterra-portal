@@ -5,6 +5,7 @@ import {
   type ChecklistItemKey,
 } from "@/lib/terreno/checklist-items";
 import type { ComponentesData } from "@/lib/terreno/registro-componentes";
+import { getSignedUrls } from "@/lib/supabase/storage";
 
 // Tag para invalidar el dashboard de Operación cuando existan acciones de
 // escritura (partes diarios / checklists / equipos). Por ahora solo lectura.
@@ -722,6 +723,9 @@ export type ParteLista = {
   horometro: number | null;
   combustible_fraccion: string | null;
   estado: string;
+  /** Null mientras el equipo siga en el taller. El listado lo usa para
+   *  distinguir "Registrar salida" de "Editar salida registrada". */
+  fecha_salida: string | null;
 };
 
 // Sin unstable_cache: lista "viva" con AutoRefresh (polling). El cache
@@ -734,6 +738,7 @@ export async function getPartes(): Promise<ParteLista[]> {
     select: {
       id: true,
       fecha: true,
+      fecha_salida: true,
       horometro: true,
       combustible_fraccion: true,
       estado: true,
@@ -750,6 +755,45 @@ export async function getPartes(): Promise<ParteLista[]> {
     horometro: p.horometro != null ? Number(p.horometro) : null,
     combustible_fraccion: p.combustible_fraccion,
     estado: p.estado,
+    fecha_salida: p.fecha_salida ? p.fecha_salida.toISOString() : null,
+  }));
+}
+
+// Equipos que siguen físicamente en el taller (sin fecha de salida). Alimenta
+// la pantalla "Registrar salida" del listado: el usuario elige ahí cuál orden
+// cierra, en vez de tener que recordar el id.
+export type EquipoEnTaller = {
+  parteId: string;
+  equipo: string | null;
+  equipoCodigo: string | null;
+  fechaIngreso: string; // ISO date
+  responsable: string | null;
+  horometro: number | null;
+};
+
+// Sin unstable_cache, mismo criterio que getPartes: la pantalla de selección
+// tiene que reflejar de inmediato una salida recién registrada (si no, el
+// equipo seguiría apareciendo como "en el taller" hasta que venza el TTL).
+export async function getEquiposEnTaller(): Promise<EquipoEnTaller[]> {
+  const rows = await prisma.mantParteDiario.findMany({
+    where: { deleted_at: null, fecha_salida: null },
+    orderBy: { fecha: "desc" },
+    take: MAX_LISTA_TERRENO,
+    select: {
+      id: true,
+      fecha: true,
+      horometro: true,
+      nombre_responsable: true,
+      equipo: { select: { codigo: true, nombre: true } },
+    },
+  });
+  return rows.map((p) => ({
+    parteId: p.id,
+    equipo: p.equipo?.nombre ?? null,
+    equipoCodigo: p.equipo?.codigo ?? null,
+    fechaIngreso: p.fecha.toISOString(),
+    responsable: p.nombre_responsable,
+    horometro: p.horometro != null ? Number(p.horometro) : null,
   }));
 }
 
@@ -785,6 +829,9 @@ export type ParteDetalle = {
   rut_receptor: string | null;
   fecha_salida: string | null; // ISO date
   componentes: ComponentesData | null;
+  fotos_tablero: string[];
+  fotos_entrada: string[];
+  fotos_salida: string[];
 };
 
 export async function getParteDetalle(id: string): Promise<ParteDetalle | null> {
@@ -816,6 +863,9 @@ export async function getParteDetalle(id: string): Promise<ParteDetalle | null> 
       rut_receptor: true,
       fecha_salida: true,
       componentes: true,
+      fotos_tablero: true,
+      fotos_entrada: true,
+      fotos_salida: true,
       equipo: { select: { codigo: true, nombre: true } },
       operador: { select: { nombre: true } },
     },
@@ -851,7 +901,27 @@ export async function getParteDetalle(id: string): Promise<ParteDetalle | null> 
     rut_receptor: p.rut_receptor,
     fecha_salida: p.fecha_salida ? p.fecha_salida.toISOString() : null,
     componentes: (p.componentes as ComponentesData | null) ?? null,
+    fotos_tablero: p.fotos_tablero,
+    fotos_entrada: p.fotos_entrada,
+    fotos_salida: p.fotos_salida,
   };
+}
+
+// Convierte rutas de Storage en URLs firmadas para mostrar las fotos del
+// registro. Deliberadamente SIN unstable_cache: las URLs firmadas expiran a
+// las 3600s y, si quedaran cacheadas, se servirían rotas hasta el próximo
+// revalidate. Si Storage falla, se loguea y se devuelve {} — una foto que no
+// carga no debe tumbar la página completa del registro.
+export async function getFotosFirmadas(
+  paths: string[],
+): Promise<Record<string, string>> {
+  if (paths.length === 0) return {};
+  try {
+    return await getSignedUrls(paths, 3600);
+  } catch (e) {
+    console.error("[queries] Error al firmar fotos del registro:", e);
+    return {};
+  }
 }
 
 // ── Último registro de entrada por equipo (prellenado del ciclo) ───────────

@@ -5,13 +5,12 @@ import { getPortalSessionFast } from "@/lib/auth/session";
 import { formatCurrency } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowLeft, FileDown, Pencil } from "lucide-react";
+import { ArrowLeft, Pencil } from "lucide-react";
 import type { EstadoOC, Moneda, Rol } from "@/types";
 import OCActions from "./OCActions";
 import NuevoOCForm from "../nueva/NuevoOCForm";
 import { changeOrderStatus, annulOrder } from "../actions";
 import DocumentsSection from "@/components/portal/DocumentsSection";
-import PrintPdfButton from "@/components/portal/PrintPdfButton";
 import PdfShareActions from "@/components/portal/PdfShareActions";
 
 const ESTADO_COLORS: Record<EstadoOC, string> = {
@@ -131,13 +130,17 @@ export default async function OCDetailPage({ params, searchParams }: Props) {
               </Button>
             </Link>
           )}
-          <a href={`/api/ordenes-compra/${id}/pdf`} download={`orden-compra-${oc.numero}.pdf`}>
-            <Button size="sm" className="bg-[#253158] hover:bg-[#1e305e] text-white gap-2">
-              <FileDown className="h-4 w-4" />
-              Descargar PDF
-            </Button>
-          </a>
-          <PrintPdfButton pdfUrl={`/api/ordenes-compra/${id}/pdf`} />
+          <PdfShareActions
+            pdfUrl={`/api/ordenes-compra/${id}/pdf`}
+            fileName={`orden-compra-${oc.numero}.pdf`}
+            title={`Orden de Compra ${oc.numero}`}
+            whatsappMessage={`Hola, te envío la Orden de Compra ${oc.numero} de Solterra SpA${oc.proveedor.nombre ? ` para ${oc.proveedor.nombre}` : ""}. El PDF se descargó en este dispositivo para adjuntarlo si WhatsApp no lo adjunta automáticamente.`}
+            emailSubject={`Orden de Compra ${oc.numero} — Solterra SpA`}
+            emailBody={`Estimados,\n\nAdjunto la Orden de Compra ${oc.numero}${oc.proveedor.nombre ? ` (${oc.proveedor.nombre})` : ""}. Si el archivo no se adjuntó automáticamente, fue descargado para adjuntarlo manualmente.\n\nSaludos,\nSolterra SpA`}
+            emailTo={oc.proveedor.email ?? undefined}
+            variant="iconos"
+            incluirImprimir
+          />
         </div>
       </div>
 
@@ -325,20 +328,6 @@ export default async function OCDetailPage({ params, searchParams }: Props) {
         sessionId={session.id}
         sessionRol={session.rol}
       />
-
-      {/* Compartir orden de compra */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h2 className="font-semibold text-[#253158] mb-3">Compartir orden de compra</h2>
-        <PdfShareActions
-          pdfUrl={`/api/ordenes-compra/${id}/pdf`}
-          fileName={`orden-compra-${oc.numero}.pdf`}
-          title={`Orden de Compra ${oc.numero}`}
-          whatsappMessage={`Hola, te envío la Orden de Compra ${oc.numero} de Solterra SpA${oc.proveedor.nombre ? ` para ${oc.proveedor.nombre}` : ""}. El PDF se descargó en este dispositivo para adjuntarlo si WhatsApp no lo adjunta automáticamente.`}
-          emailSubject={`Orden de Compra ${oc.numero} — Solterra SpA`}
-          emailBody={`Estimados,\n\nAdjunto la Orden de Compra ${oc.numero}${oc.proveedor.nombre ? ` (${oc.proveedor.nombre})` : ""}. Si el archivo no se adjuntó automáticamente, fue descargado para adjuntarlo manualmente.\n\nSaludos,\nSolterra SpA`}
-          emailTo={oc.proveedor.email ?? undefined}
-        />
-      </div>
 
       {/* Volver */}
       <div className="flex justify-start">

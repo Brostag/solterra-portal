@@ -72,7 +72,7 @@ export default async function ProductosPage({ searchParams }: Props) {
       </div>
 
       {/* Filtros */}
-      <div className="flex flex-wrap gap-3 items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <form method="GET" className="relative w-full sm:w-auto">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
@@ -84,7 +84,7 @@ export default async function ProductosPage({ searchParams }: Props) {
           {filtroActivo && <input type="hidden" name="filtro" value={filtroActivo} />}
         </form>
 
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap gap-1.5">
           {(["", "activos", "inactivos"] as const).map((f) => {
             const isActive = (f === "" && !filtroActivo) || filtroActivo === f;
             const label = f === "" ? "Todos" : f === "activos" ? "Activos" : "Inactivos";

@@ -13,7 +13,6 @@ import { formatCurrency } from "@/lib/currency";
 import { getSignedUrls } from "@/lib/supabase/storage";
 import FotosEquipoSection, { type EquipoConFotos } from "./FotosEquipoSection";
 import PdfShareActions from "@/components/portal/PdfShareActions";
-import PrintPdfButton from "@/components/portal/PrintPdfButton";
 import ContractStatusActions from "./ContractStatusActions";
 import { formatContractDisplayNumber } from "@/lib/contracts";
 
@@ -115,9 +114,9 @@ export default async function ContratoDetallePage({ params }: Props) {
           emailSubject={emailAsunto}
           emailBody={emailCuerpo}
           emailTo={emailDestino}
-          hideHint
+          variant="iconos"
+          incluirImprimir
         />
-        <PrintPdfButton pdfUrl={pdfUrl} size="default" className="min-h-[44px] w-full sm:w-auto" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

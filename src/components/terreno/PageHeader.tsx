@@ -9,11 +9,16 @@ export default function PageHeader({
   titulo,
   subtitulo,
   accion,
+  accionSecundaria,
 }: {
   icon: ReactNode;
   titulo: string;
   subtitulo?: string;
   accion?: { href: string; label: string };
+  /** Acción de menor jerarquía visual (ej. "Registrar salida"). Se pinta
+   *  ANTES de `accion` dentro del mismo contenedor. Opcional y aditiva: las
+   *  páginas que no la pasan quedan exactamente igual que hoy. */
+  accionSecundaria?: { href: string; label: string };
 }) {
   return (
     <header className="flex flex-wrap items-start justify-between gap-3">
@@ -26,13 +31,25 @@ export default function PageHeader({
           {subtitulo && <p className="mt-0.5 text-sm text-gray-500">{subtitulo}</p>}
         </div>
       </div>
-      {accion && (
-        <Link
-          href={accion.href}
-          className="rounded-lg bg-[#253158] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1b2540]"
-        >
-          {accion.label}
-        </Link>
+      {(accionSecundaria || accion) && (
+        <div className="flex flex-wrap items-center gap-3">
+          {accionSecundaria && (
+            <Link
+              href={accionSecundaria.href}
+              className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-[#253158] transition hover:bg-gray-50"
+            >
+              {accionSecundaria.label}
+            </Link>
+          )}
+          {accion && (
+            <Link
+              href={accion.href}
+              className="rounded-lg bg-[#253158] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1b2540]"
+            >
+              {accion.label}
+            </Link>
+          )}
+        </div>
       )}
     </header>
   );

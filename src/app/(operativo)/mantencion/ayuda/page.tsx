@@ -44,23 +44,23 @@ const PASOS: Paso[] = [
   },
   {
     icon: FileText,
-    titulo: "Paso 1: Registro de entrada/salida",
+    titulo: "Paso 1: Orden de Trabajo",
     descripcion:
-      "El registro del equipo (horómetro, componentes, responsables) se hace en Operación → Partes Diarios. Es la base para planificar la mantención.",
+      "La orden de trabajo del equipo (horómetro, componentes, responsables) se completa en Operación → Órdenes de Trabajo. Es la base para planificar la mantención.",
     tips: [
-      "El registro se crea y aprueba en el módulo de Operación.",
-      "Desde ese registro puedes prellenar el plan de mantención (paso siguiente).",
+      "La orden de trabajo se crea y aprueba en el módulo de Operación.",
+      "Desde esa orden de trabajo puedes prellenar el plan de mantención (paso siguiente).",
     ],
-    href: "/operacion/partes-diarios",
-    hrefLabel: "Ir a Partes Diarios",
+    href: "/mantencion/ordenes-trabajo",
+    hrefLabel: "Ir a Órdenes de Trabajo",
   },
   {
     icon: ClipboardList,
     titulo: "Paso 2: Planes de mantención",
     descripcion:
-      "Define qué se le hará al equipo. Elige el tipo de plan: A (Según fabricante), B (Preventivo) o C (Correctivo). Puede partir de un registro de entrada, del que hereda equipo y horómetro.",
+      "Define qué se le hará al equipo. Elige el tipo de plan: A (Según fabricante), B (Preventivo) o C (Correctivo). Puede partir de una orden de trabajo, de la que hereda equipo y horómetro.",
     tips: [
-      "Si eliges un registro de entrada, se copian equipo, horómetro y observaciones. Todo queda editable.",
+      "Si eliges una orden de trabajo, se copian equipo, horómetro y observaciones. Todo queda editable.",
       "Describe las tareas planificadas y guarda con «Crear plan».",
       "Crear planes requiere rol Administrador o Supervisor.",
     ],
@@ -69,7 +69,7 @@ const PASOS: Paso[] = [
   },
   {
     icon: Settings,
-    titulo: "Paso 3: Generar Orden de trabajo → Taller",
+    titulo: "Paso 3: Generar OT de taller → Taller",
     descripcion:
       "Desde el detalle del plan, presiona «Generar OT». La orden se copia al Taller en estado Programada; cambia a En Proceso o Completada según avance el trabajo.",
     tips: [

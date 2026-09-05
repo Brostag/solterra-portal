@@ -70,7 +70,7 @@ function fechaCortaUTC(iso: string): string {
 // ese módulo: sin permiso no se muestra, para no ofrecer un enlace que termine
 // en un redirect.
 const CARD_REGISTROS = {
-  href: "/operacion/partes-diarios",
+  href: "/mantencion/ordenes-trabajo",
   title: "Ingreso / Salida de equipos",
   desc: "Registros de entrada y salida de la flota",
   icon: FileText,

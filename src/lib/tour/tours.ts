@@ -190,13 +190,13 @@ const operacionSteps: TourStep[] = [
   {
     title: "Bienvenido al Módulo de Operación",
     description:
-      "Te mostramos lo esencial en un minuto: el control diario del equipo en terreno con partes diarios y checklists. Puedes salir cuando quieras con la X o la tecla Esc.",
+      "Te mostramos lo esencial en un minuto: el control diario del equipo en terreno con órdenes de trabajo y checklists. Puedes salir cuando quieras con la X o la tecla Esc.",
   },
   {
     element: '[data-tour="sidebar-nav"]',
     title: "Menú de navegación",
     description:
-      "Desde aquí llegas a Partes Diarios y Checklists. Los equipos se gestionan en Mantención; aquí solo los seleccionas.",
+      "Desde aquí llegas a Órdenes de Trabajo y a Checklists. Los equipos se gestionan en Mantención; aquí solo los seleccionas.",
     side: "right",
     align: "start",
   },
@@ -205,7 +205,7 @@ const operacionSteps: TourStep[] = [
     element: '[data-tour="menu-toggle"]',
     title: "Menú de navegación",
     description:
-      "Toca este botón para abrir el menú. Desde ahí llegas a Partes Diarios y Checklists.",
+      "Toca este botón para abrir el menú. Desde ahí llegas a Órdenes de Trabajo y a Checklists.",
     side: "bottom",
     align: "start",
   },
@@ -213,7 +213,7 @@ const operacionSteps: TourStep[] = [
     element: '[data-tour="kpis"]',
     title: "Tu día de un vistazo",
     description:
-      "Equipos totales y activos, equipos en mantención, y los partes diarios y checklists registrados hoy. Haz clic en una tarjeta para ir a esa lista.",
+      "Equipos totales y activos, equipos en mantención, y las órdenes de trabajo y checklists de hoy. Haz clic en una tarjeta para ir a esa lista.",
     side: "bottom",
     align: "center",
   },
@@ -221,7 +221,7 @@ const operacionSteps: TourStep[] = [
     element: '[data-tour="acciones"]',
     title: "Acciones rápidas",
     description:
-      "Los dos registros del día: «Nuevo parte diario» documenta el uso del equipo y «Nuevo checklist» deja la inspección pre-operacional.",
+      "Las dos acciones del día: «Nueva orden de trabajo» documenta el ingreso y la salida del equipo del taller y «Nuevo checklist» deja la inspección pre-operacional.",
     side: "bottom",
     align: "center",
   },
@@ -229,7 +229,7 @@ const operacionSteps: TourStep[] = [
     element: '[data-tour="listas"]',
     title: "Actividad reciente",
     description:
-      "Los últimos partes diarios y checklists del equipo, con su estado. Un parte queda Pendiente hasta que el supervisor lo revise.",
+      "Las últimas órdenes de trabajo y checklists del equipo, con su estado. Una orden de trabajo queda Pendiente hasta que el supervisor la revise.",
     side: "top",
     align: "center",
   },

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Printer, Loader2 } from "lucide-react";
+import { openPdfForPrint } from "@/lib/pdf-print";
 
 interface Props {
   pdfUrl: string;
@@ -15,11 +16,18 @@ interface Props {
 export default function PrintPdfButton({ pdfUrl, label = "Imprimir", size = "sm", className }: Props) {
   const [opening, setOpening] = useState(false);
 
-  function handleClick() {
+  async function handleClick() {
     if (opening) return;
     setOpening(true);
-    window.open(pdfUrl, "_blank");
-    setTimeout(() => setOpening(false), 3000);
+    const resultado = await openPdfForPrint(pdfUrl);
+    setOpening(false);
+    if (!resultado.ok) {
+      window.alert(
+        resultado.reason === "popup-blocked"
+          ? "El navegador bloqueó la ventana emergente. Permite las ventanas emergentes para este sitio e intenta de nuevo."
+          : "No se pudo abrir el PDF para imprimir. Intenta de nuevo.",
+      );
+    }
   }
 
   return (

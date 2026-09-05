@@ -3,7 +3,10 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { FileDown, Printer, Loader2, LogOut } from "lucide-react";
 import type { ParteLista } from "@/lib/terreno/queries";
+import { openPdfForPrint } from "@/lib/pdf-print";
+import EliminarParteButton from "./EliminarParteButton";
 
 const FILTROS = [
   { key: "todos", label: "Todos" },
@@ -31,10 +34,35 @@ function fmtNum(n: number | null): string {
   return n != null ? n.toLocaleString("es-CL") : "—";
 }
 
-export default function PartesLista({ partes }: { partes: ParteLista[] }) {
+export default function PartesLista({
+  partes,
+  puedeEliminar,
+}: {
+  partes: ParteLista[];
+  // Controla solo el ícono de eliminar: descargar/imprimir se muestran a
+  // cualquiera con acceso al listado. El permiso real se valida siempre en
+  // el servidor (deleteParte); esto solo evita mostrar un botón inútil.
+  puedeEliminar: boolean;
+}) {
   const router = useRouter();
   const [q, setQ] = useState("");
   const [filtro, setFiltro] = useState<string>("todos");
+  const [imprimiendoId, setImprimiendoId] = useState<string | null>(null);
+
+  async function handleImprimir(ev: React.MouseEvent, id: string) {
+    ev.stopPropagation();
+    if (imprimiendoId) return;
+    setImprimiendoId(id);
+    const resultado = await openPdfForPrint(pdfUrl(id));
+    setImprimiendoId(null);
+    if (!resultado.ok) {
+      window.alert(
+        resultado.reason === "popup-blocked"
+          ? "El navegador bloqueó la ventana emergente. Permite las ventanas emergentes para este sitio e intenta de nuevo."
+          : "No se pudo abrir el PDF para imprimir. Intenta de nuevo.",
+      );
+    }
+  }
 
   const filtrados = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -50,15 +78,17 @@ export default function PartesLista({ partes }: { partes: ParteLista[] }) {
   if (partes.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-gray-300 bg-white p-12 text-center">
-        <p className="font-semibold text-[#253158]">Aún no hay partes diarios registrados.</p>
+        <p className="font-semibold text-[#253158]">Aún no hay órdenes de trabajo registradas.</p>
         <p className="mt-1 text-sm text-gray-500">
-          Crea el primero con el botón “Nuevo parte”.
+          Crea la primera con el botón “Nueva orden de trabajo”.
         </p>
       </div>
     );
   }
 
-  const href = (id: string) => `/operacion/partes-diarios/${id}`;
+  const href = (id: string) => `/mantencion/ordenes-trabajo/${id}`;
+  const salidaHref = (id: string) => `/mantencion/ordenes-trabajo/${id}/salida`;
+  const pdfUrl = (id: string) => `/api/operacion/registro/${id}/pdf`;
 
   return (
     <div className="space-y-4">
@@ -92,7 +122,7 @@ export default function PartesLista({ partes }: { partes: ParteLista[] }) {
       {filtrados.length === 0 ? (
         <div className="rounded-xl border border-dashed border-gray-300 bg-white p-12 text-center">
           <p className="font-semibold text-[#253158]">
-            No encontramos partes con ese filtro.
+            No encontramos órdenes de trabajo con ese filtro.
           </p>
           <p className="mt-1 text-sm text-gray-500">Prueba con otro término o estado.</p>
         </div>
@@ -109,6 +139,7 @@ export default function PartesLista({ partes }: { partes: ParteLista[] }) {
                   <th className="px-4 py-3 font-semibold">Horómetro</th>
                   <th className="px-4 py-3 text-right font-semibold">Combustible</th>
                   <th className="px-4 py-3 font-semibold">Estado</th>
+                  <th className="px-4 py-3 text-right font-semibold">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -147,6 +178,58 @@ export default function PartesLista({ partes }: { partes: ParteLista[] }) {
                       >
                         {p.estado}
                       </span>
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        {/* Apagado cuando la salida ya está registrada: el
+                            enlace sigue sirviendo para corregirla, pero deja
+                            de competir visualmente con las órdenes que sí
+                            tienen el equipo todavía en el taller. */}
+                        <Link
+                          href={salidaHref(p.id)}
+                          onClick={(ev) => ev.stopPropagation()}
+                          title={
+                            p.fecha_salida
+                              ? "Editar salida registrada"
+                              : "Registrar salida del equipo"
+                          }
+                          aria-label={
+                            p.fecha_salida
+                              ? "Editar salida registrada"
+                              : "Registrar salida del equipo"
+                          }
+                          className={
+                            "rounded-lg p-1.5 transition hover:bg-gray-100 " +
+                            (p.fecha_salida ? "text-gray-400" : "text-[#253158]")
+                          }
+                        >
+                          <LogOut className="h-4 w-4" />
+                        </Link>
+                        <a
+                          href={pdfUrl(p.id)}
+                          onClick={(ev) => ev.stopPropagation()}
+                          title="Descargar PDF"
+                          aria-label="Descargar PDF"
+                          className="rounded-lg p-1.5 text-gray-500 transition hover:bg-gray-100 hover:text-[#253158]"
+                        >
+                          <FileDown className="h-4 w-4" />
+                        </a>
+                        <button
+                          type="button"
+                          onClick={(ev) => void handleImprimir(ev, p.id)}
+                          disabled={imprimiendoId === p.id}
+                          title="Imprimir"
+                          aria-label="Imprimir"
+                          className="rounded-lg p-1.5 text-gray-500 transition hover:bg-gray-100 hover:text-[#253158] disabled:opacity-50"
+                        >
+                          {imprimiendoId === p.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Printer className="h-4 w-4" />
+                          )}
+                        </button>
+                        {puedeEliminar && <EliminarParteButton id={p.id} />}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -188,7 +271,7 @@ export default function PartesLista({ partes }: { partes: ParteLista[] }) {
           </div>
 
           <p className="text-xs text-gray-400">
-            {filtrados.length} {filtrados.length === 1 ? "parte" : "partes"}
+            {filtrados.length} {filtrados.length === 1 ? "orden de trabajo" : "órdenes de trabajo"}
             {(q.trim() !== "" || filtro !== "todos") && ` de ${partes.length}`}
           </p>
         </>

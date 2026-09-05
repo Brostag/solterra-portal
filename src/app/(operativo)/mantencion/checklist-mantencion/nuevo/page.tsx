@@ -61,10 +61,6 @@ export default async function NuevoChecklistMantPage({ searchParams }: Props) {
   // rechazado). Sin aviso el usuario cree que el sistema falló al copiar.
   const origenNoDisponible = Boolean(idOrigen) && !prefill;
 
-  // El registro de origen vive en Operación: sin ese módulo el enlace terminaría
-  // en un redirect, así que el aviso queda como texto plano.
-  const veOperacion = canAccessModule(session, "OPERACION");
-
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <Link
@@ -87,7 +83,7 @@ export default async function NuevoChecklistMantPage({ searchParams }: Props) {
         <OrigenBanner
           titulo={`Datos tomados del registro del ${prefill.fecha_registro}`}
           detalle={detalleOrigen || undefined}
-          href={veOperacion ? prefill.origen_href : undefined}
+          href={prefill.origen_href}
         />
       )}
 

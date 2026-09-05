@@ -1203,7 +1203,7 @@ export default function CotizadorForm({
                 whatsappMessage={buildSummaryText()}
                 emailSubject={`Cotización Solterra ${new Date().toLocaleDateString("es-CL")}`}
                 emailBody={buildSummaryText()}
-                compact
+                variant="iconos"
               />
               <Button
                 type="button"

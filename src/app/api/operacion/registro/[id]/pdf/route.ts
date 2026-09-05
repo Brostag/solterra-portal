@@ -17,7 +17,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await getSession();
-  if (!session || !canAccessModule(session, "OPERACION")) {
+  if (!session || !canAccessModule(session, "MANTENCION")) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 

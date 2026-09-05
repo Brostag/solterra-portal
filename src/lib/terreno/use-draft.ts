@@ -55,6 +55,16 @@ export interface UseDraftResult {
   beginSubmit: () => void;
   /** El envío falló: el borrador se conserva y el autosave sigue activo. */
   submitFailed: () => void;
+  /**
+   * Llamar apenas el registro haya quedado creado en el servidor, ANTES de
+   * cualquier paso posterior que pueda demorar (p. ej. subir fotos). A
+   * diferencia de esperar al desmontaje del formulario para confirmar el
+   * éxito, esto borra el borrador en el instante exacto en que ya no hace
+   * falta: si el desmontaje se atrasa o nunca llega a ocurrir (la pestaña se
+   * cierra a la fuerza en el medio), el borrador no queda vivo ofreciendo
+   * recrear un registro que ya existe.
+   */
+  submitSucceeded: () => void;
   /** Conectar a <form onChange> para capturar campos no controlados. */
   notifyChange: () => void;
 }
@@ -214,6 +224,18 @@ export function useDraft<TSnapshot>({
     timerRef.current = setTimeout(saveNow, debounceMs);
   }, [saveNow, debounceMs]);
 
+  const submitSucceeded = useCallback(() => {
+    clearedRef.current = true;
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    void deleteDraft(id).catch(() => {
+      // Best-effort: si falla el borrado, el borrador queda pero clearedRef
+      // ya impide que se vuelva a escribir.
+    });
+  }, [id]);
+
   return {
     hasDraft: pending !== null,
     draftSavedAt: pending?.updatedAt ?? null,
@@ -221,6 +243,7 @@ export function useDraft<TSnapshot>({
     discardDraft,
     beginSubmit,
     submitFailed,
+    submitSucceeded,
     notifyChange,
   };
 }

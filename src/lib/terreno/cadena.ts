@@ -80,7 +80,7 @@ function hoyInput(): string {
 
 // Estados del documento de ORIGEN que hacen que no se proponga nada. Los strings
 // son los mismos que validan las acciones de cada módulo
-// (operacion/partes-diarios/actions.ts y mantencion/taller/actions.ts): si allá
+// (mantencion/ordenes-trabajo/actions.ts y mantencion/taller/actions.ts): si allá
 // cambian, cambian acá.
 const REGISTRO_RECHAZADO = "Rechazado";
 const OT_COMPLETADA = "Completada";
@@ -264,7 +264,7 @@ export async function prefillChecklistDesdeRegistro(
     observaciones_generales: observaciones,
 
     origen_id: r.id,
-    origen_href: `/operacion/partes-diarios/${r.id}`,
+    origen_href: `/mantencion/ordenes-trabajo/${r.id}`,
     fecha_registro: fechaLegibleUTC(fechaRef),
     equipo_codigo: r.equipo?.codigo ?? null,
     equipo_nombre: r.equipo?.nombre ?? null,
