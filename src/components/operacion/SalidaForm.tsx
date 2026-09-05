@@ -114,16 +114,21 @@ export default function SalidaForm({
           <input
             name="nombre_receptor"
             type="text"
-            defaultValue={parte.nombre_receptor ?? undefined}
+            defaultValue={parte.nombre_receptor ?? parte.nombre_responsable ?? undefined}
             className={inputCls}
           />
+          {!parte.nombre_receptor && parte.nombre_responsable && (
+            <span className="mt-1 block text-xs text-gray-500">
+              Copiado del responsable de ingreso. Cámbialo si recibe otra persona.
+            </span>
+          )}
         </label>
         <label className="block">
           <span className={labelCls}>RUT receptor</span>
           <input
             name="rut_receptor"
             type="text"
-            defaultValue={parte.rut_receptor ?? undefined}
+            defaultValue={parte.rut_receptor ?? parte.rut_responsable ?? undefined}
             className={inputCls}
           />
         </label>
@@ -134,11 +139,20 @@ export default function SalidaForm({
             type="number"
             min="0"
             step="any"
-            defaultValue={parte.horometro_fin != null ? String(parte.horometro_fin) : undefined}
+            defaultValue={
+              parte.horometro_fin != null
+                ? String(parte.horometro_fin)
+                : parte.horometro != null
+                  ? String(parte.horometro)
+                  : undefined
+            }
             className={inputCls}
           />
           <span className="mt-1 block text-xs text-gray-500">
             Ingreso: {parte.horometro != null ? `${fmtNum(parte.horometro)} h` : "sin dato"}
+            {parte.horometro_fin == null && parte.horometro != null
+              ? " — corrígelo si el equipo acumuló horas"
+              : ""}
           </span>
         </label>
         <label className="block">
@@ -148,11 +162,20 @@ export default function SalidaForm({
             type="number"
             min="0"
             step="any"
-            defaultValue={parte.km_fin != null ? String(parte.km_fin) : undefined}
+            defaultValue={
+              parte.km_fin != null
+                ? String(parte.km_fin)
+                : parte.odometro != null
+                  ? String(parte.odometro)
+                  : undefined
+            }
             className={inputCls}
           />
           <span className="mt-1 block text-xs text-gray-500">
             Ingreso: {parte.odometro != null ? `${fmtNum(parte.odometro)} km` : "sin dato"}
+            {parte.km_fin == null && parte.odometro != null
+              ? " — corrígelo si el equipo acumuló kilómetros"
+              : ""}
           </span>
         </label>
       </div>
