@@ -212,9 +212,9 @@ export default async function ParteDetallePage({ params, searchParams }: Props) 
               pdfUrl={pdfUrl}
               fileName={nombreArchivoPdf}
               title={tituloDocumento}
-              whatsappMessage={`Hola, te envío la ${tituloDocumento} de Solterra E.I.R.L. El PDF se descargó en este dispositivo para adjuntarlo si WhatsApp no lo adjunta automáticamente.`}
-              emailSubject={`${tituloDocumento} — Solterra E.I.R.L.`}
-              emailBody={`Estimados,\n\nAdjunto la ${tituloDocumento}${p.equipo ? ` del equipo ${p.equipoCodigo ?? ""} ${p.equipo}`.trimEnd() : ""}, con fecha de ingreso ${fechaUTC(p.fecha)}. Si el archivo no se adjuntó automáticamente, fue descargado para adjuntarlo manualmente.\n\nSaludos,\nSolterra E.I.R.L.`}
+              whatsappMessage={`Hola, te envío la ${tituloDocumento} de Solterra SpA. El PDF se descargó en este dispositivo para adjuntarlo si WhatsApp no lo adjunta automáticamente.`}
+              emailSubject={`${tituloDocumento} — Solterra SpA`}
+              emailBody={`Estimados,\n\nAdjunto la ${tituloDocumento}${p.equipo ? ` del equipo ${p.equipoCodigo ?? ""} ${p.equipo}`.trimEnd() : ""}, con fecha de ingreso ${fechaUTC(p.fecha)}. Si el archivo no se adjuntó automáticamente, fue descargado para adjuntarlo manualmente.\n\nSaludos,\nSolterra SpA`}
               variant="iconos"
               incluirImprimir
             />

@@ -1,7 +1,7 @@
 // React.createElement siempre (bug @react-pdf/reconciler v0.23 con JSX). NO JSX.
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
-import { registerFonts, PDF_COLORS } from "./pdf-base";
+import { registerFonts, PDF_COLORS, EMPRESA_NOMBRE } from "./pdf-base";
 
 registerFonts();
 
@@ -152,7 +152,7 @@ export function OrdenTrabajoDocument({ data }: { data: OTPDFData }) {
         ce(
           View,
           {},
-          ce(Text, { style: styles.brand }, "SOLTERRA E.I.R.L."),
+          ce(Text, { style: styles.brand }, EMPRESA_NOMBRE),
           ce(Text, { style: styles.brandSub }, "Movimiento de Tierra, Maquinarias y Equipos"),
         ),
         ce(
@@ -180,7 +180,7 @@ export function OrdenTrabajoDocument({ data }: { data: OTPDFData }) {
           { style: styles.firmaCol },
           ce(View, { style: styles.firmaLine }),
           ce(Text, { style: styles.firmaName }, data.responsable ?? "Encargado Mantención"),
-          ce(Text, { style: styles.firmaRole }, "Encargado Mantención · SOLTERRA E.I.R.L"),
+          ce(Text, { style: styles.firmaRole }, "Encargado Mantención · SOLTERRA SPA"),
         ),
         ce(
           View,
@@ -191,7 +191,7 @@ export function OrdenTrabajoDocument({ data }: { data: OTPDFData }) {
           // que el documento sea reproducible: el mismo PDF descargado por
           // cualquier usuario debe salir idéntico.
           ce(Text, { style: styles.firmaName }, "Administración"),
-          ce(Text, { style: styles.firmaRole }, "SOLTERRA E.I.R.L"),
+          ce(Text, { style: styles.firmaRole }, EMPRESA_NOMBRE),
         ),
       ),
     ),

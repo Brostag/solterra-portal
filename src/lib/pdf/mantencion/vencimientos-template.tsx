@@ -2,7 +2,7 @@
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import type { EquipoVencimientos, VencimientoDoc } from "@/lib/terreno/queries";
-import { registerFonts, PDF_COLORS } from "./pdf-base";
+import { registerFonts, PDF_COLORS, EMPRESA_NOMBRE } from "./pdf-base";
 
 registerFonts();
 
@@ -65,7 +65,7 @@ export function VencimientosDocument({ data }: { data: VencimientosPDFData }) {
     ce(
       Page,
       { size: "A4", orientation: "landscape", style: styles.page },
-      ce(Text, { style: styles.brand }, "SOLTERRA E.I.R.L."),
+      ce(Text, { style: styles.brand }, EMPRESA_NOMBRE),
       ce(Text, { style: styles.title }, "Reporte de Fechas"),
       ce(
         View,

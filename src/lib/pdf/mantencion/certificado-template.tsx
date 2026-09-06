@@ -2,25 +2,11 @@
 // (JSX transform de React 18.3). Se usa React.createElement siempre. NO JSX.
 import React from "react";
 import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";
-import fs from "fs";
-import path from "path";
-import { registerFonts, PDF_COLORS } from "./pdf-base";
+import { registerFonts, PDF_COLORS, EMPRESA_NOMBRE, getLogoSrc } from "./pdf-base";
 
 registerFonts();
 
 const { GRAY, BORDER } = PDF_COLORS;
-
-// Logo local (public/), igual que las fuentes de registerFonts(): se lee una
-// sola vez por proceso desde el filesystem, sin dependencia de red externa.
-// OJO: @react-pdf v4 trata un `src` de tipo string como URL y lo pasa por
-// fetch — con una ruta de disco falla en silencio ("fetch failed" en el log) y
-// el logo simplemente no se dibuja. Hay que entregarle el Buffer explícito.
-const LOGO_SRC = {
-  data: fs.readFileSync(
-    path.join(process.cwd(), "public", "solterra-logo-color.png"),
-  ),
-  format: "png" as const,
-};
 
 const styles = StyleSheet.create({
   page: { fontFamily: "Inter", fontSize: 10.5, color: "#1a1a1a", padding: 40, lineHeight: 1.5 },
@@ -89,7 +75,7 @@ function firmaBlock(cargo: string, firmaB64: string | null) {
     ),
     ce(View, { style: styles.firmaLine }),
     ce(Text, { style: styles.firmaCargo }, cargo),
-    ce(Text, { style: styles.firmaEmpresa }, "SOLTERRA E.I.R.L"),
+    ce(Text, { style: styles.firmaEmpresa }, EMPRESA_NOMBRE),
   );
 }
 
@@ -118,14 +104,14 @@ export function CertificadoMantencionDocument({ data }: { data: CertificadoPDFDa
           ce(Text, { style: styles.docNum }, `Certificado Nº ${data.correlativo}`),
           ce(Text, { style: styles.docCity }, `${data.ciudad}, ${fechaUTC(data.fecha)}`),
         ),
-        ce(Image, { style: styles.logo, src: LOGO_SRC }),
+        ce(Image, { style: styles.logo, src: getLogoSrc() }),
       ),
       ce(Text, { style: styles.title }, "CERTIFICADO MANTENCIÓN"),
       ce(
         Text,
         { style: styles.para },
-        ce(Text, { style: styles.bold }, "SOLTERRA E.I.R.L. Rut: 76.021.667-4, "),
-        "Empresa en el Rubro de Arriendo Maquinarias, Movimiento de Tierra y de Mantención Preventiva como Correctiva y que de acuerdo a las pautas de mantenimiento señaladas por el fabricante e impartidas por SOLTERRA E.I.R.L, se señala que existe un riguroso Plan de Mantenimiento de sus maquinarias pesadas como también a sus vehículos de menor tamaño; a su vez certifica que el siguiente vehículo motorizado",
+        ce(Text, { style: styles.bold }, "SOLTERRA SPA, Rut: 76.021.667-4, "),
+        "Empresa en el Rubro de Arriendo Maquinarias, Movimiento de Tierra y de Mantención Preventiva como Correctiva y que de acuerdo a las pautas de mantenimiento señaladas por el fabricante e impartidas por SOLTERRA SPA, se señala que existe un riguroso Plan de Mantenimiento de sus maquinarias pesadas como también a sus vehículos de menor tamaño; a su vez certifica que el siguiente vehículo motorizado",
       ),
       ce(
         View,

@@ -6,7 +6,7 @@ import {
   type ComponentesData,
   type ValorComponente,
 } from "@/lib/terreno/registro-componentes";
-import { registerFonts, PDF_COLORS } from "./pdf-base";
+import { registerFonts, PDF_COLORS, EMPRESA_NOMBRE } from "./pdf-base";
 
 registerFonts();
 
@@ -117,7 +117,7 @@ export function RegistroDocument({ data }: { data: RegistroPDFData }) {
     ce(
       Page,
       { size: "A4", style: styles.page },
-      ce(Text, { style: styles.brand }, "SOLTERRA E.I.R.L."),
+      ce(Text, { style: styles.brand }, EMPRESA_NOMBRE),
       ce(Text, { style: styles.title }, "REGISTRO INGRESO Y SALIDA DE EQUIPO · DEPTO. MAQUINARIAS"),
       ce(
         View,

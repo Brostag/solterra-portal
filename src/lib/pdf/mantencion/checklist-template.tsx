@@ -1,6 +1,6 @@
 // React.createElement siempre (bug @react-pdf/reconciler v0.23 con JSX). NO JSX.
 import React from "react";
-import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
 import {
   SECCION_A,
   SECCION_B,
@@ -9,7 +9,7 @@ import {
   type ItemValor,
   type ValorItem,
 } from "@/lib/terreno/checklist-mantencion-items";
-import { registerFonts, PDF_COLORS } from "./pdf-base";
+import { registerFonts, PDF_COLORS, getLogoSrc, EMPRESA_NOMBRE } from "./pdf-base";
 
 registerFonts();
 
@@ -17,7 +17,9 @@ const { BLUE, BORDER, HEAD } = PDF_COLORS;
 
 const styles = StyleSheet.create({
   page: { fontFamily: "Inter", fontSize: 7.5, color: "#1a1a1a", padding: 24 },
-  brand: { fontSize: 12, fontWeight: 700, color: BLUE },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  logo: { width: 86, height: 38, objectFit: "contain" },
+  brand: { fontSize: 8, fontWeight: 700, color: BLUE },
   title: { fontSize: 11, fontWeight: 700, textAlign: "center", marginVertical: 8, color: "#1a1a1a" },
   infoGrid: { flexDirection: "row", flexWrap: "wrap", border: `1px solid ${BORDER}`, marginBottom: 10 },
   infoCell: { width: "33.33%", flexDirection: "row", borderRight: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}` },
@@ -112,7 +114,12 @@ export function ChecklistMantencionDocument({ data }: { data: ChecklistPDFData }
     ce(
       Page,
       { size: "A4", style: styles.page },
-      ce(Text, { style: styles.brand }, "SOLTERRA E.I.R.L."),
+      ce(
+        View,
+        { style: styles.header },
+        ce(Image, { style: styles.logo, src: getLogoSrc() }),
+        ce(Text, { style: styles.brand }, EMPRESA_NOMBRE),
+      ),
       ce(Text, { style: styles.title }, "CHECK LIST MANTENIMIENTO"),
       ce(
         View,
