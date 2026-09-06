@@ -5,10 +5,17 @@ import { getSession } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
 import { revalidateTag, revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { logAudit } from "@/lib/audit";
 import { MANT_EQUIPOS_TAG, OPERACION_DASHBOARD_TAG } from "@/lib/terreno/queries";
 import type { UserSession } from "@/types";
 
 const ESTADOS = ["Activo", "En Mantención", "Fuera de Servicio"];
+
+// Literales de estado que definen "trabajo abierto" sobre un equipo. Una orden
+// del Taller deja de estarlo cuando se completa; un plan, cuando genera su OT o
+// se anula. Mismos valores que usan taller/actions.ts y planes/actions.ts.
+const OT_COMPLETADA = "Completada";
+const PLAN_PLANIFICADO = "Planificado";
 
 type ActionResult = { error: string };
 
@@ -188,4 +195,79 @@ export async function updateEquipo(
   revalidatePath("/operacion");
 
   redirect(`/mantencion/equipos/${id}`);
+}
+
+// Borrado lógico ÚNICAMENTE: el equipo tiene FK entrantes RESTRICT desde
+// partes diarios, checklists, mantenciones, planes, certificados, etc. Un
+// borrado físico fallaría (o peor, se necesitaría CASCADE, que borraría todo
+// el historial). deleted_at preserva ese historial intacto; las queries de
+// selección de equipos (getEquipos, getEquiposOptions, ...) ya filtran
+// deleted_at: null, así que el equipo simplemente deja de listarse.
+export async function deleteEquipo(id: string): Promise<ActionResult | void> {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  if (!puedeGestionarEquipos(session)) {
+    return { error: "No tienes permisos para eliminar equipos." };
+  }
+
+  const actual = await prisma.mantEquipo.findFirst({
+    where: { id, deleted_at: null },
+    select: { codigo: true, nombre: true },
+  });
+  if (!actual) return { error: "El equipo no existe." };
+
+  // Guarda de trabajo abierto: si el equipo tiene una orden del Taller sin
+  // completar o un plan todavía "Planificado", eliminarlo deja ese documento
+  // huérfano — el <select> de equipos de su formulario de edición ya no ofrece
+  // una opción válida y el documento no se puede guardar. El historial cerrado
+  // (órdenes completadas, checklists, certificados, partes) sí se conserva:
+  // es lo que promete el copy del diálogo de confirmación.
+  const [otsAbiertas, planesAbiertos] = await Promise.all([
+    prisma.mantMantencion.count({
+      where: { equipo_id: id, deleted_at: null, estado: { not: OT_COMPLETADA } },
+    }),
+    prisma.mantPlanMantencion.count({
+      where: { equipo_id: id, deleted_at: null, estado: PLAN_PLANIFICADO },
+    }),
+  ]);
+  if (otsAbiertas > 0 || planesAbiertos > 0) {
+    const partes: string[] = [];
+    if (otsAbiertas > 0) {
+      partes.push(
+        `${otsAbiertas} ${otsAbiertas === 1 ? "orden de trabajo" : "órdenes de trabajo"}`,
+      );
+    }
+    if (planesAbiertos > 0) {
+      partes.push(`${planesAbiertos} ${planesAbiertos === 1 ? "plan" : "planes"}`);
+    }
+    return {
+      error: `Este equipo tiene trabajo abierto (${partes.join(" y ")}). Ciérralo antes de eliminarlo.`,
+    };
+  }
+
+  // updateMany con precondición deleted_at: null: evita doble eliminación por
+  // doble clic o dos usuarios a la vez.
+  let res: { count: number };
+  try {
+    res = await prisma.mantEquipo.updateMany({
+      where: { id, deleted_at: null },
+      data: { deleted_at: new Date() },
+    });
+  } catch {
+    return { error: "No se pudo eliminar el equipo. Intenta nuevamente." };
+  }
+  if (res.count !== 1) return { error: "El equipo ya fue eliminado." };
+
+  await logAudit(
+    session.id,
+    "equipo_eliminado",
+    "mantencion",
+    `${actual.codigo} · ${actual.nombre}`,
+  );
+
+  revalidateTag(MANT_EQUIPOS_TAG);
+  revalidateTag(OPERACION_DASHBOARD_TAG);
+  revalidatePath("/mantencion");
+  revalidatePath("/mantencion/equipos");
+  revalidatePath("/operacion");
 }

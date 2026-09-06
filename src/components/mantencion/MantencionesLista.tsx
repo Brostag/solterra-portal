@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { MantencionLista } from "@/lib/terreno/queries";
+import EliminarMantencionIconButton from "./EliminarMantencionIconButton";
 
 const FILTROS_ESTADO = [
   { key: "todos", label: "Todas" },
@@ -41,9 +42,13 @@ function fmtCosto(costo: number | null): string {
 export default function MantencionesLista({
   mantenciones,
   filtroInicial,
+  puedeEliminar,
 }: {
   mantenciones: MantencionLista[];
   filtroInicial?: string;
+  // Controla solo el ícono de eliminar; el permiso real se valida siempre en
+  // el servidor (deleteMantencion).
+  puedeEliminar?: boolean;
 }) {
   const router = useRouter();
   const [q, setQ] = useState("");
@@ -127,6 +132,9 @@ export default function MantencionesLista({
                   <th className="px-4 py-3 font-semibold">Responsable</th>
                   <th className="px-4 py-3 text-right font-semibold">Costo</th>
                   <th className="px-4 py-3 font-semibold">Estado</th>
+                  {puedeEliminar && (
+                    <th className="px-4 py-3 text-right font-semibold">Acciones</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -176,6 +184,11 @@ export default function MantencionesLista({
                         {m.estado}
                       </span>
                     </td>
+                    {puedeEliminar && (
+                      <td className="whitespace-nowrap px-4 py-3 text-right">
+                        <EliminarMantencionIconButton id={m.id} />
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -185,42 +198,57 @@ export default function MantencionesLista({
           {/* Mobile */}
           <div className="space-y-3 md:hidden">
             {filtradas.map((m) => (
-              <Link
-                key={m.id}
-                href={href(m.id)}
-                className="block rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:border-[#253158]/30"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold text-[#253158]">
-                      {m.equipo ?? "—"}
-                    </p>
-                    <p className="mt-0.5 text-xs text-gray-400">
-                      {m.equipoCodigo ?? ""} · {fmtFecha(m.fecha_inicio)}
-                    </p>
+              // La tarjeta entera es un <Link>, así que el botón de eliminar no
+              // puede ir dentro (anidaría interactivos): va como hermano,
+              // posicionado sobre la esquina superior derecha. El padding
+              // condicional evita que tape el badge de estado.
+              <div key={m.id} className="relative">
+                <Link
+                  href={href(m.id)}
+                  className="block rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:border-[#253158]/30"
+                >
+                  <div
+                    className={
+                      "flex items-start justify-between gap-3" +
+                      (puedeEliminar ? " pr-9" : "")
+                    }
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-[#253158]">
+                        {m.equipo ?? "—"}
+                      </p>
+                      <p className="mt-0.5 text-xs text-gray-400">
+                        {m.equipoCodigo ?? ""} · {fmtFecha(m.fecha_inicio)}
+                      </p>
+                    </div>
+                    <span
+                      className={
+                        "flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium " +
+                        estadoBadge(m.estado)
+                      }
+                    >
+                      {m.estado}
+                    </span>
                   </div>
-                  <span
-                    className={
-                      "flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium " +
-                      estadoBadge(m.estado)
-                    }
-                  >
-                    {m.estado}
-                  </span>
-                </div>
-                <p className="mt-2 line-clamp-2 text-sm text-gray-600">{m.descripcion}</p>
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                  <span
-                    className={
-                      "rounded-full px-2 py-0.5 font-medium " + tipoBadge(m.tipo)
-                    }
-                  >
-                    {m.tipo}
-                  </span>
-                  <span>{m.responsable ?? "—"}</span>
-                  <span className="font-medium text-gray-700">{fmtCosto(m.costo)}</span>
-                </div>
-              </Link>
+                  <p className="mt-2 line-clamp-2 text-sm text-gray-600">{m.descripcion}</p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                    <span
+                      className={
+                        "rounded-full px-2 py-0.5 font-medium " + tipoBadge(m.tipo)
+                      }
+                    >
+                      {m.tipo}
+                    </span>
+                    <span>{m.responsable ?? "—"}</span>
+                    <span className="font-medium text-gray-700">{fmtCosto(m.costo)}</span>
+                  </div>
+                </Link>
+                {puedeEliminar && (
+                  <div className="absolute right-3 top-3 z-10">
+                    <EliminarMantencionIconButton id={m.id} />
+                  </div>
+                )}
+              </div>
             ))}
           </div>
 

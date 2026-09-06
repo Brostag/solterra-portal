@@ -5,6 +5,7 @@ import { getSession } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
 import { revalidateTag, revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { logAudit } from "@/lib/audit";
 import {
   MANT_CHECKLISTS_TAG,
   OPERACION_DASHBOARD_TAG,
@@ -105,18 +106,24 @@ export async function anularChecklist(
   const motivoLimpio = motivo.trim();
   if (!motivoLimpio) return { error: "Debes indicar el motivo de anulación." };
 
+  // updateMany con precondición deleted_at: null, mismo patrón que el borrado:
+  // una server action es alcanzable por id, y un update sin ese filtro anularía
+  // un checklist ya eliminado.
+  let res: { count: number };
   try {
-    await prisma.mantChecklist.update({
-      where: { id },
+    res = await prisma.mantChecklist.updateMany({
+      where: { id, deleted_at: null },
       data: {
         anulado_at: new Date(),
         motivo_anulacion: motivoLimpio,
         anulado_por_id: session.id,
       },
     });
-  } catch (e: unknown) {
-    if (esCodigo(e, "P2025")) return { error: "El checklist no existe." };
+  } catch {
     return { error: "No se pudo anular el checklist. Intenta nuevamente." };
+  }
+  if (res.count !== 1) {
+    return { error: "El checklist no existe o fue eliminado." };
   }
 
   revalidateTag(MANT_CHECKLISTS_TAG);
@@ -125,4 +132,55 @@ export async function anularChecklist(
   revalidatePath(`/operacion/checklists/${id}`);
 
   redirect(`/operacion/checklists/${id}`);
+}
+
+// Borrado lógico. Mismo permiso que anularChecklist (ADMIN/SUPERVISOR con
+// acceso a Operación): eliminar es igual de destructivo que anular. Se llama
+// desde el listado, sin redirect — revalidatePath refresca los datos in place.
+export async function deleteChecklist(id: string): Promise<ActionResult | void> {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  if (!puedeAnular(session)) {
+    return { error: "No tienes permisos para eliminar checklists." };
+  }
+
+  // Lectura previa para dejar en auditoría un detalle legible (antes se
+  // registraba el uuid pelado, ilegible en /auditoria). Mismo criterio que los
+  // otros cinco borrados del módulo.
+  const actual = await prisma.mantChecklist.findFirst({
+    where: { id, deleted_at: null },
+    select: {
+      fecha: true,
+      anulado_at: true,
+      equipo: { select: { codigo: true } },
+    },
+  });
+  if (!actual) return { error: "El checklist no existe." };
+
+  // updateMany con precondición deleted_at: null: evita doble eliminación por
+  // doble clic o dos usuarios a la vez.
+  let res: { count: number };
+  try {
+    res = await prisma.mantChecklist.updateMany({
+      where: { id, deleted_at: null },
+      data: { deleted_at: new Date() },
+    });
+  } catch {
+    return { error: "No se pudo eliminar el checklist. Intenta nuevamente." };
+  }
+  if (res.count !== 1) return { error: "El checklist ya fue eliminado." };
+
+  await logAudit(
+    session.id,
+    "checklist_eliminado",
+    "operacion",
+    `${actual.equipo.codigo} · ${actual.fecha.toISOString().slice(0, 10)} | ${
+      actual.anulado_at ? "anulado" : "vigente"
+    }`,
+  );
+
+  revalidateTag(MANT_CHECKLISTS_TAG);
+  revalidateTag(OPERACION_DASHBOARD_TAG);
+  revalidatePath("/operacion/checklists");
+  revalidatePath("/operacion");
 }

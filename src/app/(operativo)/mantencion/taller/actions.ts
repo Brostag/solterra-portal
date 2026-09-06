@@ -5,9 +5,11 @@ import { getSession } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
 import { revalidateTag, revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { logAudit } from "@/lib/audit";
 import {
   MANT_CHECKLIST_MANT_TAG,
   MANT_MANTENCIONES_TAG,
+  MANT_PLANES_TAG,
 } from "@/lib/terreno/queries";
 import type { UserSession } from "@/types";
 
@@ -171,6 +173,7 @@ export async function createMantencion(
       where: {
         id: checklistIdRaw,
         anulado_at: null,
+        deleted_at: null,
         equipo_id: parsed.data.equipo_id,
       },
       select: { id: true },
@@ -240,18 +243,70 @@ export async function deleteMantencion(
     return { error: "No tienes permisos para eliminar mantenciones." };
   }
 
-  try {
-    // Soft delete, consistente con el resto del módulo.
-    await prisma.mantMantencion.update({
-      where: { id },
-      data: { deleted_at: new Date() },
-    });
-  } catch (e: unknown) {
-    if (esCodigo(e, "P2025")) return { error: "La mantención no existe." };
-    return { error: "No se pudo eliminar la mantención. Intenta nuevamente." };
+  // No se puede eliminar una OT que ya tiene un certificado de mantención
+  // vigente colgando: perdería la trazabilidad del documento que la acredita
+  // (ver prefillCertificadoDesdeOT). Un certificado ya anulado no bloquea.
+  const certificadoVigente = await prisma.mantCertificadoMantencion.findFirst({
+    where: { mantencion_id: id, deleted_at: null, anulado_at: null },
+    select: { id: true },
+  });
+  if (certificadoVigente) {
+    return {
+      error:
+        "Esta orden de trabajo tiene un certificado de mantención vigente. Anúlalo antes de eliminar la orden.",
+    };
   }
 
+  // Tampoco se puede eliminar una OT que nació de un plan de mantención: el
+  // plan quedaría en estado "Con OT" apuntando a una orden inexistente, con su
+  // CTA "Ver OT de taller" en 404 y sin poder anularse ni regenerar la orden
+  // (ambos botones exigen estado "Planificado"). Misma guarda que el eslabón
+  // check list → OT y que OT → certificado: la cadena se desarma desde el
+  // extremo, no por el medio.
+  const planOrigen = await prisma.mantPlanMantencion.findFirst({
+    where: { orden_trabajo_id: id, deleted_at: null },
+    select: { id: true },
+  });
+  if (planOrigen) {
+    return {
+      error:
+        "Esta orden nació de un plan de mantención. Elimina o cierra el plan antes de eliminar la orden.",
+    };
+  }
+
+  const actual = await prisma.mantMantencion.findFirst({
+    where: { id, deleted_at: null },
+    select: { tipo: true, fecha_inicio: true, equipo: { select: { codigo: true } } },
+  });
+  if (!actual) return { error: "La mantención no existe." };
+
+  // updateMany con precondición deleted_at: null, igual que el resto de los
+  // borrados del módulo: evita la doble eliminación por doble clic.
+  let res: { count: number };
+  try {
+    res = await prisma.mantMantencion.updateMany({
+      where: { id, deleted_at: null },
+      data: { deleted_at: new Date() },
+    });
+  } catch {
+    return { error: "No se pudo eliminar la mantención. Intenta nuevamente." };
+  }
+  if (res.count !== 1) return { error: "La mantención ya fue eliminada." };
+
+  await logAudit(
+    session.id,
+    "mantencion_eliminada",
+    "mantencion",
+    `${actual.equipo.codigo} · ${actual.tipo} · ${actual.fecha_inicio.toISOString().slice(0, 10)}`,
+  );
+
   revalidateTag(MANT_MANTENCIONES_TAG);
+  // El otro lado de la cadena: las vistas de planes (listado y detalle) están
+  // cacheadas 60 s y muestran el vínculo con la orden. La guarda de arriba deja
+  // pasar el borrado solo si ningún plan vigente apunta a esta OT, pero
+  // invalidar el tag es barato y evita que un plan quede mostrando datos de una
+  // orden que ya no existe.
+  revalidateTag(MANT_PLANES_TAG);
   revalidatePath("/mantencion/taller");
 
   redirect("/mantencion/taller");

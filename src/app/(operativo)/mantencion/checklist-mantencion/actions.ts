@@ -2,9 +2,10 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
-import { canAccessModule } from "@/lib/modules";
+import { canAccessModule, requireModule } from "@/lib/modules";
 import { revalidateTag, revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { logAudit } from "@/lib/audit";
 import {
   MANT_CHECKLIST_MANT_TAG,
   MANT_PARTES_TAG,
@@ -136,9 +137,12 @@ export async function createChecklistMantencion(
   if ("error" in validado) return validado;
   const { fecha } = validado;
 
-  // Snapshot de la patente desde el equipo (los documentos históricos no cambian).
-  const equipo = await prisma.mantEquipo.findUnique({
-    where: { id: input.equipo_id },
+  // Snapshot de la patente desde el equipo (los documentos históricos no
+  // cambian). findFirst con deleted_at: null: un equipo eliminado ya no se
+  // ofrece en el selector, así que tampoco puede ser el equipo de un documento
+  // nuevo.
+  const equipo = await prisma.mantEquipo.findFirst({
+    where: { id: input.equipo_id, deleted_at: null },
     select: { patente: true },
   });
   if (!equipo) return { error: "El equipo seleccionado no existe." };
@@ -236,8 +240,8 @@ export async function updateChecklistMantencionCabecera(
   if ("error" in validado) return validado;
   const { fecha } = validado;
 
-  const actual = await prisma.mantChecklistMantencion.findUnique({
-    where: { id },
+  const actual = await prisma.mantChecklistMantencion.findFirst({
+    where: { id, deleted_at: null },
     select: { equipo_id: true, anulado_at: true },
   });
   if (!actual) return { error: "El check list no existe." };
@@ -245,8 +249,10 @@ export async function updateChecklistMantencionCabecera(
     return { error: "Un check list anulado no se puede editar." };
   }
 
-  const equipo = await prisma.mantEquipo.findUnique({
-    where: { id: input.equipo_id },
+  // findFirst con deleted_at: null: corregir la cabecera no puede reasignar el
+  // documento a un equipo que ya fue eliminado.
+  const equipo = await prisma.mantEquipo.findFirst({
+    where: { id: input.equipo_id, deleted_at: null },
     select: { patente: true },
   });
   if (!equipo) return { error: "El equipo seleccionado no existe." };
@@ -285,6 +291,69 @@ export async function updateChecklistMantencionCabecera(
   redirect(`/mantencion/checklist-mantencion/${id}`);
 }
 
+// Borrado lógico. Se llama desde el listado (sin redirect: la página ya está
+// donde debe estar, revalidatePath refresca los datos in place). Se permite
+// eliminar tanto un check list vigente como uno anulado — lo único que lo
+// bloquea es tener una orden de trabajo derivada, porque eliminarlo ahí
+// perdería la trazabilidad de esa OT (ver prefillOTDesdeChecklist).
+export async function deleteChecklistMantencion(
+  id: string,
+): Promise<ActionResult | void> {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  requireModule(session, "MANTENCION");
+  if (!puedeGestionar(session)) {
+    return { error: "No tienes permisos para eliminar check list de mantenimiento." };
+  }
+
+  const actual = await prisma.mantChecklistMantencion.findFirst({
+    where: { id, deleted_at: null },
+    select: {
+      correlativo: true,
+      anio: true,
+      anulado_at: true,
+      equipo: { select: { codigo: true } },
+    },
+  });
+  if (!actual) return { error: "El check list no existe." };
+
+  const otDerivada = await prisma.mantMantencion.findFirst({
+    where: { checklist_id: id, deleted_at: null },
+    select: { id: true },
+  });
+  if (otDerivada) {
+    return {
+      error:
+        "Este check list ya generó una orden de trabajo. Anúlalo en vez de eliminarlo.",
+    };
+  }
+
+  // updateMany con precondición deleted_at: null: evita que un doble clic (o
+  // dos usuarios a la vez) intente eliminar dos veces el mismo documento.
+  let res: { count: number };
+  try {
+    res = await prisma.mantChecklistMantencion.updateMany({
+      where: { id, deleted_at: null },
+      data: { deleted_at: new Date() },
+    });
+  } catch {
+    return { error: "No se pudo eliminar el check list. Intenta nuevamente." };
+  }
+  if (res.count !== 1) return { error: "El check list ya fue eliminado." };
+
+  await logAudit(
+    session.id,
+    "checklist_mantencion_eliminado",
+    "mantencion",
+    `N° ${actual.correlativo}/${actual.anio} | equipo ${actual.equipo?.codigo ?? "—"} | ${
+      actual.anulado_at ? "anulado" : "vigente"
+    }`,
+  );
+
+  revalidateTag(MANT_CHECKLIST_MANT_TAG);
+  revalidatePath("/mantencion/checklist-mantencion");
+}
+
 export async function anularChecklistMantencion(
   id: string,
   motivo: string,
@@ -297,18 +366,24 @@ export async function anularChecklistMantencion(
   const motivoLimpio = motivo.trim();
   if (!motivoLimpio) return { error: "Debes indicar el motivo de anulación." };
 
+  // updateMany con precondición deleted_at: null, mismo patrón que los
+  // borrados: una server action es alcanzable por id, y un update sin ese
+  // filtro anularía un check list ya eliminado.
+  let res: { count: number };
   try {
-    await prisma.mantChecklistMantencion.update({
-      where: { id },
+    res = await prisma.mantChecklistMantencion.updateMany({
+      where: { id, deleted_at: null },
       data: {
         anulado_at: new Date(),
         motivo_anulacion: motivoLimpio,
         anulado_por_id: session.id,
       },
     });
-  } catch (e: unknown) {
-    if (esCodigo(e, "P2025")) return { error: "El check list no existe." };
+  } catch {
     return { error: "No se pudo anular el check list. Intenta nuevamente." };
+  }
+  if (res.count !== 1) {
+    return { error: "El check list no existe o fue eliminado." };
   }
 
   revalidateTag(MANT_CHECKLIST_MANT_TAG);

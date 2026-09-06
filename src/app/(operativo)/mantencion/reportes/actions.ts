@@ -231,6 +231,7 @@ export async function generarReporte(
     if (!r) return { error: RANGO_INVALIDO };
     const rows = await prisma.mantChecklistMantencion.findMany({
       where: {
+        deleted_at: null,
         anulado_at: null,
         ...equipoFilter,
         fecha: { gte: r.gte, lte: r.lte },
@@ -268,6 +269,7 @@ export async function generarReporte(
     if (!r) return { error: RANGO_INVALIDO };
     const rows = await prisma.mantCertificadoMantencion.findMany({
       where: {
+        deleted_at: null,
         anulado_at: null,
         ...equipoFilter,
         fecha: { gte: r.gte, lte: r.lte },
@@ -307,6 +309,7 @@ export async function generarReporte(
   if (!r) return { error: RANGO_INVALIDO };
   const rows = await prisma.mantChecklist.findMany({
     where: {
+      deleted_at: null,
       anulado_at: null,
       ...equipoFilter,
       fecha: { gte: r.gte, lte: r.lte },

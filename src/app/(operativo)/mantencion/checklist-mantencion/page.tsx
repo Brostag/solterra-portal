@@ -4,6 +4,8 @@ import { getChecklistsMantencion } from "@/lib/terreno/queries";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
 import PageHeader from "@/components/terreno/PageHeader";
+import ChecklistPdfAcciones from "@/components/mantencion/ChecklistPdfAcciones";
+import EliminarChecklistMantButton from "@/components/mantencion/EliminarChecklistMantButton";
 
 function fechaUTC(iso: string): string {
   return new Date(iso).toLocaleDateString("es-CL", {
@@ -20,7 +22,7 @@ export default async function ChecklistMantPage() {
     getPortalSessionFast(),
   ]);
 
-  const puedeCrear =
+  const puedeGestionar =
     !!session &&
     canAccessModule(session, "MANTENCION") &&
     (session.rol === "ADMINISTRADOR" || session.rol === "SUPERVISOR");
@@ -39,7 +41,7 @@ export default async function ChecklistMantPage() {
         titulo="Check List de Mantenimiento"
         subtitulo="Pauta de taller: fabricante, preventivo y correctivo"
         accion={
-          puedeCrear
+          puedeGestionar
             ? { href: "/mantencion/checklist-mantencion/nuevo", label: "Nuevo check list" }
             : undefined
         }
@@ -61,6 +63,7 @@ export default async function ChecklistMantPage() {
                 <th className="px-4 py-3 font-semibold">Fecha</th>
                 <th className="px-4 py-3 font-semibold">Encargado</th>
                 <th className="px-4 py-3 font-semibold">Estado</th>
+                <th className="px-4 py-3 text-right font-semibold">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -91,6 +94,12 @@ export default async function ChecklistMantPage() {
                         Vigente
                       </span>
                     )}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <ChecklistPdfAcciones id={c.id} anulado={c.anulado} />
+                      {puedeGestionar && <EliminarChecklistMantButton id={c.id} />}
+                    </div>
                   </td>
                 </tr>
               ))}

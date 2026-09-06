@@ -78,7 +78,7 @@ export const getOperacionDashboard = unstable_cache(
         where: { deleted_at: null, fecha: { gte: inicioHoy, lt: manana } },
       }),
       prisma.mantChecklist.count({
-        where: { anulado_at: null, fecha: { gte: inicioHoy, lt: manana } },
+        where: { deleted_at: null, anulado_at: null, fecha: { gte: inicioHoy, lt: manana } },
       }),
       prisma.mantEquipo.findMany({
         where: { deleted_at: null },
@@ -107,7 +107,7 @@ export const getOperacionDashboard = unstable_cache(
         },
       }),
       prisma.mantChecklist.findMany({
-        where: { anulado_at: null },
+        where: { deleted_at: null, anulado_at: null },
         orderBy: { fecha: "desc" },
         take: 5,
         select: {
@@ -1061,6 +1061,7 @@ const CHECKLIST_BOOL_SELECT = CHECKLIST_ITEM_KEYS.reduce(
 // Sin unstable_cache: lista "viva" con AutoRefresh (polling).
 export async function getChecklists(): Promise<ChecklistLista[]> {
   const rows = await prisma.mantChecklist.findMany({
+    where: { deleted_at: null },
     orderBy: { fecha: "desc" },
     take: MAX_LISTA_TERRENO,
     select: {
@@ -1112,8 +1113,8 @@ export type ChecklistDetalle = {
 export async function getChecklistDetalle(
   id: string,
 ): Promise<ChecklistDetalle | null> {
-  const c = await prisma.mantChecklist.findUnique({
-    where: { id },
+  const c = await prisma.mantChecklist.findFirst({
+    where: { id, deleted_at: null },
     select: {
       id: true,
       fecha: true,
@@ -1163,6 +1164,7 @@ export type ChecklistMantLista = {
 export const getChecklistsMantencion = unstable_cache(
   async (): Promise<ChecklistMantLista[]> => {
     const rows = await prisma.mantChecklistMantencion.findMany({
+      where: { deleted_at: null },
       orderBy: { fecha: "desc" },
       take: MAX_LISTA_TERRENO,
       select: {
@@ -1217,8 +1219,8 @@ export type ChecklistMantDetalle = {
 export async function getChecklistMantencionDetalle(
   id: string,
 ): Promise<ChecklistMantDetalle | null> {
-  const c = await prisma.mantChecklistMantencion.findUnique({
-    where: { id },
+  const c = await prisma.mantChecklistMantencion.findFirst({
+    where: { id, deleted_at: null },
     select: {
       id: true,
       correlativo: true,
@@ -1292,6 +1294,7 @@ export type CertMantLista = {
 export const getCertificadosMantencion = unstable_cache(
   async (): Promise<CertMantLista[]> => {
     const rows = await prisma.mantCertificadoMantencion.findMany({
+      where: { deleted_at: null },
       orderBy: { fecha: "desc" },
       take: MAX_LISTA_TERRENO,
       select: {
@@ -1350,8 +1353,8 @@ export type CertMantDetalle = {
 export async function getCertificadoMantencionDetalle(
   id: string,
 ): Promise<CertMantDetalle | null> {
-  const c = await prisma.mantCertificadoMantencion.findUnique({
-    where: { id },
+  const c = await prisma.mantCertificadoMantencion.findFirst({
+    where: { id, deleted_at: null },
     select: {
       id: true,
       correlativo: true,

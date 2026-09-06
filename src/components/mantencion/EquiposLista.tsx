@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { EquipoLista } from "@/lib/terreno/queries";
+import EliminarEquipoButton from "./EliminarEquipoButton";
 
 const FILTROS = [
   { key: "todos", label: "Todos" },
@@ -26,9 +27,13 @@ function fmt(n: number): string {
 export default function EquiposLista({
   equipos,
   filtroInicial,
+  puedeEliminar,
 }: {
   equipos: EquipoLista[];
   filtroInicial?: string;
+  // Controla solo el ícono de eliminar; el permiso real se valida siempre en
+  // el servidor (deleteEquipo).
+  puedeEliminar?: boolean;
 }) {
   const router = useRouter();
   const [q, setQ] = useState("");
@@ -113,6 +118,9 @@ export default function EquiposLista({
                   <th className="px-4 py-3 text-right font-semibold">Horómetro</th>
                   <th className="px-4 py-3 text-right font-semibold">KM</th>
                   <th className="px-4 py-3 font-semibold">Estado</th>
+                  {puedeEliminar && (
+                    <th className="px-4 py-3 text-right font-semibold">Acciones</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -153,6 +161,11 @@ export default function EquiposLista({
                         {e.estado}
                       </span>
                     </td>
+                    {puedeEliminar && (
+                      <td className="whitespace-nowrap px-4 py-3 text-right">
+                        <EliminarEquipoButton id={e.id} />
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -162,39 +175,54 @@ export default function EquiposLista({
           {/* Mobile */}
           <div className="space-y-3 md:hidden">
             {filtrados.map((e) => (
-              <Link
-                key={e.id}
-                href={href(e.id)}
-                className="block rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:border-[#253158]/30"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold text-[#253158]">
-                      {e.codigo} · {e.nombre}
-                    </p>
-                    <p className="mt-0.5 text-xs text-gray-500">{e.tipo}</p>
-                  </div>
-                  <span
+              // La tarjeta entera es un <Link>, así que el botón de eliminar no
+              // puede ir dentro (anidaría interactivos): va como hermano,
+              // posicionado sobre la esquina superior derecha. El padding
+              // condicional evita que tape el badge de estado.
+              <div key={e.id} className="relative">
+                <Link
+                  href={href(e.id)}
+                  className="block rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:border-[#253158]/30"
+                >
+                  <div
                     className={
-                      "flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium " +
-                      estadoBadge(e.estado)
+                      "flex items-start justify-between gap-3" +
+                      (puedeEliminar ? " pr-9" : "")
                     }
                   >
-                    {e.estado}
-                  </span>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
-                  <span>
-                    Horómetro:{" "}
-                    <span className="font-medium text-gray-700">{fmt(e.horometro_actual)} h</span>
-                  </span>
-                  {e.km_actual > 0 && (
-                    <span>
-                      KM: <span className="font-medium text-gray-700">{fmt(e.km_actual)}</span>
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-[#253158]">
+                        {e.codigo} · {e.nombre}
+                      </p>
+                      <p className="mt-0.5 text-xs text-gray-500">{e.tipo}</p>
+                    </div>
+                    <span
+                      className={
+                        "flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium " +
+                        estadoBadge(e.estado)
+                      }
+                    >
+                      {e.estado}
                     </span>
-                  )}
-                </div>
-              </Link>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                    <span>
+                      Horómetro:{" "}
+                      <span className="font-medium text-gray-700">{fmt(e.horometro_actual)} h</span>
+                    </span>
+                    {e.km_actual > 0 && (
+                      <span>
+                        KM: <span className="font-medium text-gray-700">{fmt(e.km_actual)}</span>
+                      </span>
+                    )}
+                  </div>
+                </Link>
+                {puedeEliminar && (
+                  <div className="absolute right-3 top-3 z-10">
+                    <EliminarEquipoButton id={e.id} />
+                  </div>
+                )}
+              </div>
             ))}
           </div>
 

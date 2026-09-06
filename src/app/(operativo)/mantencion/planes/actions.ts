@@ -6,6 +6,7 @@ import { getSession } from "@/lib/auth/session";
 import { canAccessModule, requireModule } from "@/lib/modules";
 import { revalidateTag, revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { logAudit } from "@/lib/audit";
 import {
   MANT_PLANES_TAG,
   MANT_MANTENCIONES_TAG,
@@ -241,4 +242,46 @@ export async function anularPlan(
   revalidatePath(`/mantencion/planes/${planId}`);
 
   redirect(`/mantencion/planes/${planId}`);
+}
+
+// Borrado lógico, cualquiera sea el estado del plan (Planificado, Con OT o
+// Anulado): si ya generó una OT, esa orden queda intacta (el vínculo es
+// unidireccional vía orden_trabajo_id) — solo deja de listarse el plan. Se
+// llama desde el listado, sin redirect.
+export async function deletePlan(planId: string): Promise<ActionResult | void> {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  requireModule(session, "MANTENCION");
+  if (!puedeGestionar(session)) {
+    return { error: "No tienes permisos para eliminar planes." };
+  }
+
+  const actual = await prisma.mantPlanMantencion.findFirst({
+    where: { id: planId, deleted_at: null },
+    select: { correlativo: true, anio: true, estado: true },
+  });
+  if (!actual) return { error: "El plan no existe." };
+
+  // updateMany con precondición deleted_at: null: evita doble eliminación por
+  // doble clic o dos usuarios a la vez.
+  let res: { count: number };
+  try {
+    res = await prisma.mantPlanMantencion.updateMany({
+      where: { id: planId, deleted_at: null },
+      data: { deleted_at: new Date() },
+    });
+  } catch {
+    return { error: "No se pudo eliminar el plan. Intenta nuevamente." };
+  }
+  if (res.count !== 1) return { error: "El plan ya fue eliminado." };
+
+  await logAudit(
+    session.id,
+    "plan_mantencion_eliminado",
+    "mantencion",
+    `N° ${actual.correlativo}/${actual.anio} | estado ${actual.estado}`,
+  );
+
+  revalidateTag(MANT_PLANES_TAG);
+  revalidatePath("/mantencion/planes");
 }

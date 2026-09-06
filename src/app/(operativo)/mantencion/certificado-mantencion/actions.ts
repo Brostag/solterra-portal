@@ -2,9 +2,10 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
-import { canAccessModule } from "@/lib/modules";
+import { canAccessModule, requireModule } from "@/lib/modules";
 import { revalidateTag, revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { logAudit } from "@/lib/audit";
 import {
   MANT_CERT_MANT_TAG,
   MANT_MANTENCIONES_TAG,
@@ -75,8 +76,10 @@ export async function createCertificadoMantencion(
     return { error: "La fecha es obligatoria y válida." };
   }
 
-  const equipo = await prisma.mantEquipo.findUnique({
-    where: { id: input.equipo_id },
+  // findFirst con deleted_at: null: un equipo eliminado ya no se ofrece en el
+  // selector, así que tampoco puede ser el equipo de un documento nuevo.
+  const equipo = await prisma.mantEquipo.findFirst({
+    where: { id: input.equipo_id, deleted_at: null },
     select: { tipo: true, marca: true, patente: true },
   });
   if (!equipo) return { error: "El equipo seleccionado no existe." };
@@ -160,18 +163,24 @@ export async function anularCertificadoMantencion(
   const motivoLimpio = motivo.trim();
   if (!motivoLimpio) return { error: "Debes indicar el motivo de anulación." };
 
+  // updateMany con precondición deleted_at: null, mismo patrón que los
+  // borrados: una server action es alcanzable por id, y un update sin ese
+  // filtro anularía un certificado ya eliminado.
+  let res: { count: number };
   try {
-    await prisma.mantCertificadoMantencion.update({
-      where: { id },
+    res = await prisma.mantCertificadoMantencion.updateMany({
+      where: { id, deleted_at: null },
       data: {
         anulado_at: new Date(),
         motivo_anulacion: motivoLimpio,
         anulado_por_id: session.id,
       },
     });
-  } catch (e: unknown) {
-    if (esCodigo(e, "P2025")) return { error: "El certificado no existe." };
+  } catch {
     return { error: "No se pudo anular el certificado. Intenta nuevamente." };
+  }
+  if (res.count !== 1) {
+    return { error: "El certificado no existe o fue eliminado." };
   }
 
   revalidateTag(MANT_CERT_MANT_TAG);
@@ -179,4 +188,55 @@ export async function anularCertificadoMantencion(
   revalidatePath(`/mantencion/certificado-mantencion/${id}`);
 
   redirect(`/mantencion/certificado-mantencion/${id}`);
+}
+
+// Borrado lógico, restringido a ADMINISTRADOR: el certificado es el cierre de
+// la cadena (lleva firmas y se entrega al cliente), más restrictivo que crear
+// o anular. Se llama desde el listado, sin redirect: revalidatePath refresca
+// los datos in place.
+export async function deleteCertificadoMantencion(
+  id: string,
+): Promise<ActionResult | void> {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  requireModule(session, "MANTENCION");
+  if (session.rol !== "ADMINISTRADOR") {
+    return { error: "Solo un administrador puede eliminar certificados de mantención." };
+  }
+
+  const actual = await prisma.mantCertificadoMantencion.findFirst({
+    where: { id, deleted_at: null },
+    select: {
+      correlativo: true,
+      anio: true,
+      anulado_at: true,
+      equipo: { select: { codigo: true } },
+    },
+  });
+  if (!actual) return { error: "El certificado no existe." };
+
+  // updateMany con precondición deleted_at: null: evita doble eliminación por
+  // doble clic o dos usuarios a la vez.
+  let res: { count: number };
+  try {
+    res = await prisma.mantCertificadoMantencion.updateMany({
+      where: { id, deleted_at: null },
+      data: { deleted_at: new Date() },
+    });
+  } catch {
+    return { error: "No se pudo eliminar el certificado. Intenta nuevamente." };
+  }
+  if (res.count !== 1) return { error: "El certificado ya fue eliminado." };
+
+  await logAudit(
+    session.id,
+    "certificado_mantencion_eliminado",
+    "mantencion",
+    `N° ${actual.correlativo}/${actual.anio} | equipo ${actual.equipo?.codigo ?? "—"} | ${
+      actual.anulado_at ? "anulado" : "vigente"
+    }`,
+  );
+
+  revalidateTag(MANT_CERT_MANT_TAG);
+  revalidatePath("/mantencion/certificado-mantencion");
 }

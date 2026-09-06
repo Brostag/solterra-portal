@@ -697,6 +697,7 @@ model MantChecklist {
   anulado_at            DateTime?
   motivo_anulacion      String?
   anulado_por_id        String?
+  deleted_at            DateTime?
   created_at            DateTime   @default(now())
   updated_at            DateTime   @updatedAt
   equipo                MantEquipo @relation(fields: [equipo_id], references: [id])
@@ -707,6 +708,7 @@ model MantChecklist {
   @@index([operador_id])
   @@index([fecha])
   @@index([updated_at])
+  @@index([deleted_at])
   @@map("mant_checklists")
 }
 
@@ -753,6 +755,7 @@ model MantChecklistMantencion {
   anulado_at              DateTime?
   motivo_anulacion        String?
   anulado_por_id          String?
+  deleted_at              DateTime?
   created_at              DateTime   @default(now())
   updated_at              DateTime   @updatedAt
   equipo                  MantEquipo @relation(fields: [equipo_id], references: [id])
@@ -765,6 +768,7 @@ model MantChecklistMantencion {
   @@index([equipo_id])
   @@index([registro_id])
   @@index([fecha])
+  @@index([deleted_at])
   @@map("mant_checklists_mantencion")
 }
 
@@ -789,6 +793,7 @@ model MantCertificadoMantencion {
   anulado_at           DateTime?
   motivo_anulacion     String?
   anulado_por_id       String?
+  deleted_at           DateTime?
   created_at           DateTime   @default(now())
   updated_at           DateTime   @updatedAt
   equipo               MantEquipo @relation(fields: [equipo_id], references: [id])
@@ -801,6 +806,7 @@ model MantCertificadoMantencion {
   @@index([equipo_id])
   @@index([mantencion_id])
   @@index([fecha])
+  @@index([deleted_at])
   @@map("mant_certificados_mantencion")
 }
 

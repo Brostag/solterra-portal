@@ -14,6 +14,14 @@ interface ConfirmDialogProps {
   variant?: "default" | "destructive";
   onConfirm: () => void | Promise<void>;
   loading?: boolean;
+  /**
+   * Error a mostrar DENTRO del diálogo (por ejemplo, el { error } devuelto por
+   * una server action bloqueada por una guarda). Opcional y aditiva: si no se
+   * pasa, el diálogo se comporta exactamente igual que antes. El diálogo NO
+   * se cierra solo porque haya error — quien lo usa decide cuándo cerrarlo
+   * (normalmente solo en éxito).
+   */
+  error?: string | null;
 }
 
 export default function ConfirmDialog({
@@ -26,6 +34,7 @@ export default function ConfirmDialog({
   variant = "default",
   onConfirm,
   loading = false,
+  error = null,
 }: ConfirmDialogProps) {
   useEffect(() => {
     if (!open) return;
@@ -93,6 +102,18 @@ export default function ConfirmDialog({
             >
               {description}
             </p>
+
+            {/* Error de la action (p.ej. una guarda que bloqueó el borrado).
+                Dentro del diálogo para que nunca quede tapado ni recortado
+                por el contenedor que abrió el diálogo. */}
+            {error && (
+              <p
+                role="alert"
+                className="ml-14 mt-3 text-sm font-medium text-[#c6352e]"
+              >
+                {error}
+              </p>
+            )}
 
             {/* Botones */}
             <div className="flex items-center justify-end gap-3 mt-6">

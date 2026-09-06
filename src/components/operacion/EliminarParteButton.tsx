@@ -21,10 +21,19 @@ export default function EliminarParteButton({ id }: { id: string }) {
     }
     setError(null);
     startTransition(async () => {
-      // deleteParte no redirige: el borrado ocurre desde el propio listado,
-      // que ya está en la página correcta. En error devuelve { error }.
-      const res = await deleteParte(id);
-      if (res?.error) setError(res.error);
+      try {
+        // deleteParte no redirige: el borrado ocurre desde el propio listado,
+        // que ya está en la página correcta. En error devuelve { error }.
+        const res = await deleteParte(id);
+        if (res?.error) setError(res.error);
+      } catch {
+        // La action puede RECHAZAR en vez de devolver { error }: requireModule
+        // lanza, y en terreno la conexión se cae a media llamada. Sin este
+        // catch el usuario no ve nada y reintenta a ciegas.
+        setError(
+          "No se pudo completar la acción. Revisa tu conexión e intenta nuevamente.",
+        );
+      }
     });
   }
 

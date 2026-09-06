@@ -21,6 +21,8 @@ export default async function PlanesPage({
     !!session &&
     canAccessModule(session, "MANTENCION") &&
     (session.rol === "ADMINISTRADOR" || session.rol === "SUPERVISOR");
+  // Mismo criterio que puedeCrear: gestionar planes es de Mantención (ADMIN o SUPERVISOR).
+  const puedeEliminar = puedeCrear;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -46,6 +48,7 @@ export default async function PlanesPage({
         planes={planes}
         filtroPlanInicial={plan}
         filtroEstadoInicial={estado}
+        puedeEliminar={puedeEliminar}
       />
     </div>
   );

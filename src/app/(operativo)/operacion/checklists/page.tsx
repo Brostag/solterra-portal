@@ -14,6 +14,10 @@ export default async function ChecklistsPage() {
   ]);
 
   const puedeCrear = !!session && canAccessModule(session, "OPERACION");
+  const puedeEliminar =
+    !!session &&
+    canAccessModule(session, "OPERACION") &&
+    (session.rol === "ADMINISTRADOR" || session.rol === "SUPERVISOR");
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -36,7 +40,7 @@ export default async function ChecklistsPage() {
       />
 
       <AutoRefresh />
-      <ChecklistsLista checklists={checklists} />
+      <ChecklistsLista checklists={checklists} puedeEliminar={puedeEliminar} />
     </div>
   );
 }

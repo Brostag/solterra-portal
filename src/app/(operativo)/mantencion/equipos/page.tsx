@@ -21,6 +21,9 @@ export default async function EquiposPage({
     !!session &&
     canAccessModule(session, "MANTENCION") &&
     (session.rol === "ADMINISTRADOR" || session.rol === "SUPERVISOR");
+  // Mismo criterio que puedeCrear: gestionar el catálogo de equipos es de
+  // Mantención (ADMIN o SUPERVISOR).
+  const puedeEliminar = puedeCrear;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -42,7 +45,7 @@ export default async function EquiposPage({
         }
       />
 
-      <EquiposLista equipos={equipos} filtroInicial={estado} />
+      <EquiposLista equipos={equipos} filtroInicial={estado} puedeEliminar={puedeEliminar} />
     </div>
   );
 }

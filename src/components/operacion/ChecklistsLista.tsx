@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ChecklistLista } from "@/lib/terreno/queries";
+import EliminarChecklistButton from "./EliminarChecklistButton";
 
 const FILTROS = [
   { key: "todos", label: "Todos" },
@@ -28,8 +29,13 @@ function fmtFechaHora(iso: string): string {
 
 export default function ChecklistsLista({
   checklists,
+  puedeEliminar,
 }: {
   checklists: ChecklistLista[];
+  // Controla solo el ícono de eliminar; el permiso real se valida siempre en
+  // el servidor (deleteChecklist). Por defecto false: no se muestra si la
+  // página que renderiza la lista no lo pasa.
+  puedeEliminar?: boolean;
 }) {
   const router = useRouter();
   const [q, setQ] = useState("");
@@ -108,6 +114,9 @@ export default function ChecklistsLista({
                   <th className="px-4 py-3 text-center font-semibold">Ítems OK</th>
                   <th className="px-4 py-3 text-center font-semibold">Fallas</th>
                   <th className="px-4 py-3 font-semibold">Estado</th>
+                  {puedeEliminar && (
+                    <th className="px-4 py-3 text-right font-semibold">Acciones</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -156,6 +165,11 @@ export default function ChecklistsLista({
                         </span>
                       )}
                     </td>
+                    {puedeEliminar && (
+                      <td className="whitespace-nowrap px-4 py-3 text-right">
+                        <EliminarChecklistButton id={c.id} />
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -165,34 +179,49 @@ export default function ChecklistsLista({
           {/* Mobile */}
           <div className="space-y-3 md:hidden">
             {filtrados.map((c) => (
-              <Link
-                key={c.id}
-                href={href(c.id)}
-                className="block rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:border-[#253158]/30"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold text-[#253158]">
-                      {c.equipo ?? "—"}
-                    </p>
-                    <p className="mt-0.5 text-xs text-gray-400">{fmtFechaHora(c.fecha)}</p>
-                  </div>
-                  <span
+              // La tarjeta entera es un <Link>, así que el botón de eliminar no
+              // puede ir dentro (anidaría interactivos): va como hermano,
+              // posicionado sobre la esquina superior derecha. El padding
+              // condicional evita que tape el badge de estado.
+              <div key={c.id} className="relative">
+                <Link
+                  href={href(c.id)}
+                  className="block rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:border-[#253158]/30"
+                >
+                  <div
                     className={
-                      "flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium " +
-                      estadoBadge(c.estado_general)
+                      "flex items-start justify-between gap-3" +
+                      (puedeEliminar ? " pr-9" : "")
                     }
                   >
-                    {c.estado_general}
-                  </span>
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
-                  <span>{c.operador ?? "—"}</span>
-                  <span className="text-green-700">{c.ok}/{c.total} OK</span>
-                  {c.fail > 0 && <span className="text-[#c6352e]">{c.fail} falla(s)</span>}
-                  {c.anulado && <span className="text-gray-400">Anulado</span>}
-                </div>
-              </Link>
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-[#253158]">
+                        {c.equipo ?? "—"}
+                      </p>
+                      <p className="mt-0.5 text-xs text-gray-400">{fmtFechaHora(c.fecha)}</p>
+                    </div>
+                    <span
+                      className={
+                        "flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium " +
+                        estadoBadge(c.estado_general)
+                      }
+                    >
+                      {c.estado_general}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
+                    <span>{c.operador ?? "—"}</span>
+                    <span className="text-green-700">{c.ok}/{c.total} OK</span>
+                    {c.fail > 0 && <span className="text-[#c6352e]">{c.fail} falla(s)</span>}
+                    {c.anulado && <span className="text-gray-400">Anulado</span>}
+                  </div>
+                </Link>
+                {puedeEliminar && (
+                  <div className="absolute right-3 top-3 z-10">
+                    <EliminarChecklistButton id={c.id} />
+                  </div>
+                )}
+              </div>
             ))}
           </div>
 

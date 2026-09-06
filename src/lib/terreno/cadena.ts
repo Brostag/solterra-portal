@@ -303,9 +303,11 @@ export async function prefillOTDesdeChecklist(
 ): Promise<PrefillOT | null> {
   if (!checklistId) return null;
 
-  // mant_checklists_mantencion usa anulado_at (no tiene deleted_at).
+  // mant_checklists_mantencion usa anulado_at (estado de negocio) y ahora
+  // también deleted_at (borrado lógico): un check list eliminado no puede
+  // ser origen de una orden de trabajo.
   const c = await prisma.mantChecklistMantencion.findFirst({
-    where: { id: checklistId, anulado_at: null },
+    where: { id: checklistId, anulado_at: null, deleted_at: null },
     select: {
       id: true,
       correlativo: true,

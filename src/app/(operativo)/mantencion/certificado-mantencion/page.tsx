@@ -4,6 +4,8 @@ import { getCertificadosMantencion } from "@/lib/terreno/queries";
 import { getPortalSessionFast } from "@/lib/auth/session";
 import { canAccessModule } from "@/lib/modules";
 import PageHeader from "@/components/terreno/PageHeader";
+import CertificadoPdfAcciones from "@/components/mantencion/CertificadoPdfAcciones";
+import EliminarCertificadoMantButton from "@/components/mantencion/EliminarCertificadoMantButton";
 
 function fechaUTC(iso: string): string {
   return new Date(iso).toLocaleDateString("es-CL", {
@@ -24,6 +26,11 @@ export default async function CertMantPage() {
     !!session &&
     canAccessModule(session, "MANTENCION") &&
     (session.rol === "ADMINISTRADOR" || session.rol === "SUPERVISOR");
+
+  // Eliminar el certificado es más restrictivo que crearlo: es el cierre de
+  // la cadena, lleva firmas y se entrega al cliente.
+  const puedeEliminar =
+    !!session && canAccessModule(session, "MANTENCION") && session.rol === "ADMINISTRADOR";
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -60,6 +67,7 @@ export default async function CertMantPage() {
                 <th className="px-4 py-3 font-semibold">Fecha</th>
                 <th className="px-4 py-3 font-semibold">Encargado</th>
                 <th className="px-4 py-3 font-semibold">Estado</th>
+                <th className="px-4 py-3 text-right font-semibold">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -89,6 +97,12 @@ export default async function CertMantPage() {
                         Vigente
                       </span>
                     )}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <CertificadoPdfAcciones id={c.id} anulado={c.anulado} />
+                      {puedeEliminar && <EliminarCertificadoMantButton id={c.id} />}
+                    </div>
                   </td>
                 </tr>
               ))}
